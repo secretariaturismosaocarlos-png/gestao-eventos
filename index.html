@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌸 Gestão de Eventos — São Carlos</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#0f1923;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
+/* ── Login ── */
+#login-screen{width:100%;max-width:400px;text-align:center}
+#login-screen h2{color:#fff;font-size:22px;margin-bottom:6px}
+#login-screen p{color:#8a9bb0;font-size:13px;margin-bottom:28px}
+.login-box{background:#1a2535;border:1px solid #2a3a50;border-radius:16px;padding:32px 28px}
+.login-box label{display:block;text-align:left;font-size:11px;color:#8a9bb0;margin-bottom:5px;margin-top:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.login-box input{width:100%;background:#0f1923;border:1px solid #2a3a50;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;font-family:Arial,sans-serif;outline:none}
+.login-box input:focus{border-color:#3a7bd5}
+.btn-login{width:100%;margin-top:22px;padding:13px;background:#3a7bd5;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif}
+.btn-login:hover{background:#4a8be5}
+.login-box input:focus{border-color:#3a7bd5;box-shadow:0 0 0 2px rgba(58,123,213,.2)}
+#login-error{color:#f07a7a;font-size:12px;margin-top:10px;min-height:18px}
+/* ── Portal ── */
+#portal{display:none;width:100%;max-width:1100px}
+.header{text-align:center;margin-bottom:40px}
+.header-icon{font-size:42px;margin-bottom:10px}
+.header h1{font-size:26px;color:#fff;margin-bottom:6px}
+.header p{font-size:12px;color:#8a9bb0}
+.cards{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.card{display:block;background:#1a2535;border:1px solid #2a3a50;border-radius:20px;padding:36px 32px;width:320px;text-decoration:none;transition:all .25s;position:relative;overflow:hidden;cursor:pointer}
+.card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.5);border-color:transparent}
+.card.green:hover{border-color:#2e7d4f44}
+.card.gold:hover{border-color:#c9a84c44}
+.card.blue:hover{border-color:#3a7bd544}
+.card-icon{font-size:36px;margin-bottom:16px;display:block}
+.card-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:8px}
+.card-desc{font-size:12px;color:#8a9bb0;line-height:1.7;margin-bottom:22px}
+.card-features{list-style:none;margin-bottom:26px}
+.card-features li{font-size:11px;color:#aec6d8;padding:3px 0 3px 14px;position:relative}
+.card-features li::before{content:'→';position:absolute;left:0;font-weight:700}
+.card.green .card-features li::before{color:#4a9a6a}
+.card.gold  .card-features li::before{color:#c9a84c}
+.card.blue  .card-features li::before{color:#3a7bd5}
+.card-btn{display:block;text-align:center;width:100%;padding:12px;border-radius:10px;font-size:12px;font-weight:700;font-family:Arial,sans-serif}
+.card.green .card-btn{background:#2e7d4f;color:#fff}
+.card.gold  .card-btn{background:#c9a84c;color:#1a1a0a}
+.card.blue  .card-btn{background:#3a7bd5;color:#fff}
+.badge{display:inline-block;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;margin-bottom:12px;letter-spacing:.8px;text-transform:uppercase}
+.card.green .badge{background:#1e4d30;color:#4cd98a}
+.card.gold  .badge{background:#3d2e0a;color:#f0c060}
+.card.blue  .badge{background:#0a1a3a;color:#7ab3f0}
+.topbar-user{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-bottom:20px;font-size:12px;color:#8a9bb0}
+.topbar-user span{color:#aec6d8;font-weight:600}
+.btn-logout{background:transparent;border:1px solid #2a3a50;color:#8a9bb0;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-family:Arial,sans-serif}
+.btn-logout:hover{border-color:#3a7bd5;color:#7ab3f0}
+.footer{margin-top:40px;text-align:center;font-size:11px;color:#3a4a5a;line-height:1.8}
+@media(max-width:700px){.card{width:100%}}
+</style>
+</head>
+<body>
+
+<!-- ── TELA DE LOGIN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div style="font-size:36px;margin-bottom:14px">🌸</div>
+    <h2>Gestão de Eventos</h2>
+    <p>Prefeitura de São Carlos · SMCT<br>Acesso restrito à equipe autorizada</p>
+    <label>E-mail</label>
+    <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
+    <label>Senha</label>
+    <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="btn-login" onclick="fazerLogin()">Entrar</button>
+    <div id="login-error"></div>
+    <div style="margin-top:16px;font-size:11px;color:#3a4a5a">
+      Não tem acesso? Solicite ao administrador.
+    </div>
+  </div>
+</div>
+
+<!-- ── PORTAL PRINCIPAL ── -->
+<div id="portal">
+  <div class="topbar-user">
+    <span id="user-email-display">—</span>
+    <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+  </div>
+  <div class="header">
+    <div class="header-icon">🌸</div>
+    <h1>Gestão de Eventos</h1>
+    <p>Prefeitura Municipal de São Carlos · Secretaria Municipal de Cultura e Turismo</p>
+  </div>
+  <div class="cards">
+    <a class="card green" href="gerenciador_eventos_v2.html">
+      <span class="badge">Gerenciador</span>
+      <span class="card-icon">📁</span>
+      <div class="card-title">Gerenciador de Eventos</div>
+      <p class="card-desc">Gestão completa de produção: staff, estrutura, hospedagem, contratos e resumo executivo.</p>
+      <ul class="card-features">
+        <li>Staff detalhado por bloco e função</li>
+        <li>Estrutura e equipamentos por seção</li>
+        <li>Hospedagem com cálculo automático</li>
+        <li>Atas & Contratos com extração por IA</li>
+        <li>Resumo executivo consolidado</li>
+      </ul>
+      <span class="card-btn">📂 Abrir Gerenciador</span>
+    </a>
+    <a class="card gold" href="artistas_chamamento.html">
+      <span class="badge">Chamamento Público</span>
+      <span class="card-icon">🎭</span>
+      <div class="card-title">Artistas · Chamamento</div>
+      <p class="card-desc">Banco de artistas do chamamento público com fila, programação, cachês e resumo artístico.</p>
+      <ul class="card-features">
+        <li>188 artistas pré-cadastrados do D.O.</li>
+        <li>Fila com Stand By e penalidade</li>
+        <li>Detecção de conflito de horário</li>
+        <li>Tabela de cachês por área e categoria</li>
+        <li>Edições por vigência com histórico</li>
+      </ul>
+      <span class="card-btn">🎤 Abrir Chamamento</span>
+    </a>
+    <a class="card blue" href="emendas_parlamentares.html">
+      <span class="badge">Parlamentar</span>
+      <span class="card-icon">💰</span>
+      <div class="card-title">Emendas Parlamentares</div>
+      <p class="card-desc">Gestão das emendas LOA com vinculação a eventos, processos e controle de saldo em tempo real.</p>
+      <ul class="card-features">
+        <li>Emendas LOA 2026 pré-carregadas</li>
+        <li>Vinculação com nº de processo</li>
+        <li>Saldo atualizado em tempo real</li>
+        <li>Relatórios por vereador e evento</li>
+        <li>Histórico por exercício fiscal (LOA)</li>
+      </ul>
+      <span class="card-btn">💰 Abrir Emendas</span>
+    </a>
+  </div>
+  <div class="footer">
+    Dados sincronizados em tempo real com toda a equipe.<br>
+    <span style="color:#4a6a7a">Todos os acessos são registrados · Uso restrito à equipe SMCT</span>
+  </div>
+</div>
+
+<script>
+// ── Configuração Supabase ────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://uhalxchwpspupvfmpixq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYWx4Y2h3cHNwdXB2Zm1waXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODcwOTIsImV4cCI6MjA4OTI2MzA5Mn0.kVlk3z8__heq3bRbAMmra_LiNDmRs0wuMFkLtokSL6M';
+
+// Expõe as credenciais para os módulos filhos via sessionStorage
+window.SMCT_SUPABASE_URL = SUPABASE_URL;
+window.SMCT_SUPABASE_KEY = SUPABASE_KEY;
+sessionStorage.setItem('smct_url', SUPABASE_URL);
+sessionStorage.setItem('smct_key', SUPABASE_KEY);
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Login ────────────────────────────────────────────────────────────────────
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!email || !senha) { errEl.textContent = 'Preencha e-mail e senha.'; return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+  if (error) {
+    errEl.textContent = error.message.includes('Invalid') ? 'E-mail ou senha incorretos.' : error.message;
+  } else {
+    mostrarPortal(data.user);
+  }
+}
+
+async function fazerLogout() {
+  await sb.auth.signOut();
+  document.getElementById('portal').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('login-senha').value = '';
+}
+
+function mostrarPortal(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('portal').style.display = 'block';
+  document.getElementById('user-email-display').textContent = user.email;
+}
+
+// ── Verificar sessão existente ───────────────────────────────────────────────
+(async function() {
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    mostrarPortal(data.session.user);
+  }
+})();
+</script>
+</body>
+</html>

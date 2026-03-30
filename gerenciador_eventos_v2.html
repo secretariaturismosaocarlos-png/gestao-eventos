@@ -1,0 +1,2999 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciador de Eventos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root {
+  --gd: #1a4731; --gm: #2e7d4f; --gl: #d6ead8; --gp: #f0f7f1;
+  --gold: #f9a825; --gold-l: #fff9c4;
+  --or: #e65100; --or-l: #fff3e0;
+  --red: #b71c1c; --red-l: #ffebee;
+  --blue: #0d47a1; --blue-l: #e3f2fd;
+  --pur: #4a148c; --pur-l: #f3e5f5;
+  --gray: #424242; --gray-l: #f5f5f5;
+  --border: rgba(26,71,49,.13);
+  --edit-ring: rgba(249,168,37,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;background:#0d1f16;color:var(--gray);min-height:100vh}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--gd);padding:0 28px;height:52px;display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50}
+.topbar-logo{font-family:'DM Serif Display',serif;font-size:17px;color:#fff;white-space:nowrap}
+.topbar-sep{width:1px;height:24px;background:rgba(255,255,255,.15)}
+.event-selector{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.event-selector select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-family:sans-serif;font-size:12px;padding:5px 10px;border-radius:6px;cursor:pointer;max-width:260px}
+.event-selector select option{background:#1a4731;color:#fff}
+.btn-new-event{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:sans-serif;white-space:nowrap;transition:.15s}
+.btn-new-event:hover{background:rgba(255,255,255,.2);color:#fff}
+.btn-del-event{background:rgba(183,28,28,.25);border:1px solid rgba(183,28,28,.4);color:#ff8a80;font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:sans-serif;transition:.15s}
+.btn-del-event:hover{background:rgba(183,28,28,.45)}
+.topbar-hint{font-size:9px;color:rgba(255,255,255,.3);font-family:monospace;background:rgba(255,255,255,.06);padding:4px 10px;border-radius:10px;white-space:nowrap;margin-left:auto}
+.btn-export{background:linear-gradient(135deg,var(--gold),#f57f17);color:var(--gd);font-size:11px;font-weight:700;padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-family:sans-serif;transition:.15s;white-space:nowrap}
+.btn-export:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(249,168,37,.35)}
+.btn-pdf{background:linear-gradient(135deg,#c62828,#b71c1c);color:#fff;font-size:11px;font-weight:700;padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-family:sans-serif;transition:.15s;white-space:nowrap;margin-left:4px}
+.btn-pdf:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(183,28,28,.35)}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:196px 1fr;min-height:calc(100vh - 52px)}
+
+/* ── SIDEBAR ── */
+.sidebar{background:#0f2318;padding:18px 0;border-right:1px solid rgba(255,255,255,.05)}
+.sb-label{font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.25);padding:0 16px 8px;font-family:monospace;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;font-size:11.5px;color:rgba(255,255,255,.42);transition:.15s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.04);color:rgba(255,255,255,.7)}
+.nav-item.active{background:rgba(46,125,79,.18);color:#fff;border-left-color:var(--gold);font-weight:600}
+.nav-item .ne{font-size:15px}
+.nav-cnt{margin-left:auto;background:rgba(255,255,255,.09);border-radius:8px;padding:1px 6px;font-size:9px;font-family:monospace}
+.nav-item.active .nav-cnt{background:var(--gold);color:var(--gd)}
+.sb-div{height:1px;background:rgba(255,255,255,.05);margin:12px 0}
+.module-toggle{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:11px;color:rgba(255,255,255,.4);cursor:pointer;transition:.15s}
+.module-toggle:hover{color:rgba(255,255,255,.65)}
+.module-toggle input[type=checkbox]{accent-color:var(--gold);width:13px;height:13px;cursor:pointer}
+.module-toggle.active-mod{color:rgba(255,255,255,.7)}
+
+/* ── MAIN ── */
+.main{background:#f4f8f5;overflow-y:auto}
+
+/* ── SECTION HEADER ── */
+.sh{background:#fff;border-bottom:1px solid var(--border);padding:18px 28px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+.sh-emoji{font-size:22px}
+.sh h2{font-family:'DM Serif Display',serif;font-size:17px;color:var(--gd)}
+.sh p{font-size:10px;color:#999;margin-top:1px}
+.add-btn{margin-left:auto;background:var(--gd);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.15s;font-family:sans-serif;white-space:nowrap}
+.add-btn:hover{background:var(--gm);transform:translateY(-1px)}
+.sh-actions{margin-left:auto;display:flex;gap:8px}
+
+/* ── CONTENT ── */
+.content{padding:20px 28px}
+
+/* ── CARDS ── */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.card{background:#fff;border-radius:9px;border:1px solid var(--border);padding:14px 16px}
+.card.gold{border-top:3px solid var(--gold)}
+.card.orange{border-top:3px solid var(--or)}
+.card.blue{border-top:3px solid var(--blue)}
+.card-lbl{font-size:9px;font-weight:700;color:#aaa;letter-spacing:.8px;text-transform:uppercase;font-family:monospace}
+.card-val{font-family:'DM Serif Display',serif;font-size:20px;color:var(--gd);margin-top:3px}
+.card-sub{font-size:9px;color:#bbb;margin-top:2px}
+
+/* ── GROUP TITLE ── */
+.grp{font-size:10px;font-weight:700;color:var(--gd);letter-spacing:.5px;text-transform:uppercase;font-family:monospace;padding:12px 0 7px;display:flex;align-items:center;gap:8px}
+.grp::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── TABLE ── */
+.tw{background:#fff;border-radius:9px;border:1px solid var(--border);overflow:hidden;margin-bottom:16px}
+.tw table{width:100%;border-collapse:collapse}
+.tw thead tr{background:var(--gd)}
+.tw thead th{padding:9px 12px;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);text-align:left;letter-spacing:.5px;font-family:monospace;text-transform:uppercase;white-space:nowrap}
+.tw tbody tr{border-bottom:1px solid #f0f0f0;transition:background .1s}
+.tw tbody tr:hover{background:var(--gp)}
+.tw tbody tr:last-child{border-bottom:none}
+.tw td{padding:8px 12px;font-size:11.5px;color:var(--gray);vertical-align:middle}
+.sub-tr td{background:var(--gl)!important;font-weight:700;font-size:11px;color:var(--gd)}
+.tot-tr td{background:var(--gold-l)!important;font-weight:700;font-size:12px;color:var(--gd);border-top:2px solid var(--gold)!important}
+.sec-tr td{background:#e8f4ea!important;font-weight:700;font-size:10.5px;color:var(--gd);letter-spacing:.3px}
+
+/* ── INLINE EDIT ── */
+.editable{cursor:pointer;border-radius:4px;padding:2px 4px;transition:.12s;position:relative}
+.editable:hover{background:rgba(249,168,37,.15);outline:1px dashed rgba(249,168,37,.5)}
+.editable.editing{background:#fff;outline:2px solid var(--gold);box-shadow:0 0 0 3px var(--edit-ring);border-radius:4px;padding:0}
+.editable input,.editable select,.editable textarea{border:none;outline:none;background:transparent;font-family:sans-serif;font-size:11.5px;color:var(--gray);width:100%;padding:2px 4px;min-width:60px}
+.editable input[type=number]{text-align:right;font-family:monospace}
+.editable textarea{resize:none;min-width:180px;font-size:11px}
+.edit-tip{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--gd);color:#fff;font-size:11px;padding:8px 16px;border-radius:20px;font-family:monospace;pointer-events:none;opacity:0;transition:.3s;z-index:200;border:1px solid var(--gold)}
+.edit-tip.show{opacity:1}
+
+/* ── OBS CELL ── */
+.obs-cell{font-size:10px;color:#777;font-style:italic;max-width:200px;white-space:pre-wrap;line-height:1.3}
+.obs-cell.empty-obs{color:#ccc}
+
+/* ── TAGS ── */
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;font-family:monospace;white-space:nowrap}
+.t-ata{background:var(--gl);color:var(--gd)}
+.t-cd{background:var(--blue-l);color:var(--blue)}
+.t-lic{background:var(--pur-l);color:var(--pur)}
+.t-pend{background:var(--or-l);color:var(--or)}
+.val-r{font-family:monospace;text-align:right!important}
+.val-p{color:var(--or);font-style:italic;font-size:10px}
+.muted{color:#bbb;font-size:10px;font-style:italic}
+
+/* ── ACTION BTNS ── */
+.abts{display:flex;gap:4px}
+.bdel{background:none;border:1px solid #eee;color:#ccc;width:24px;height:24px;border-radius:4px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.bdel:hover{border-color:var(--red);color:var(--red);background:var(--red-l)}
+.bobs{background:none;border:1px solid #ddd;color:#aaa;width:24px;height:24px;border-radius:4px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.bobs:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-l)}
+
+/* ── MODAL ── */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);animation:fadeIn .15s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;border-radius:12px;width:620px;max-width:94vw;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.3);animation:slideUp .18s ease}
+.modal.wide{width:820px}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.mh{background:var(--gd);padding:18px 22px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:10px}
+.mh h3{font-family:'DM Serif Display',serif;font-size:16px;color:#fff}
+.mh p{font-size:10px;color:rgba(255,255,255,.45);margin-top:1px}
+.mclose{margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.mclose:hover{background:rgba(255,255,255,.25)}
+.mb{padding:20px 22px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg.full{grid-template-columns:1fr}
+.fg.three{grid-template-columns:1fr 1fr 1fr}
+.field label{display:block;font-size:9px;font-weight:700;color:#999;letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;font-family:monospace}
+.field input,.field select,.field textarea{width:100%;padding:8px 11px;border:1.5px solid #e8e8e8;border-radius:6px;font-size:12px;color:var(--gray);font-family:sans-serif;transition:.15s;background:#fff}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gm);box-shadow:0 0 0 3px rgba(46,125,79,.1)}
+.field textarea{resize:vertical;min-height:56px}
+.mfoot{padding:14px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid #f0f0f0}
+.bcancel{background:var(--gray-l);border:none;color:#666;padding:8px 16px;border-radius:6px;font-size:11px;cursor:pointer;font-family:sans-serif;font-weight:600}
+.bsave{background:var(--gd);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:sans-serif;transition:.15s}
+.bsave:hover{background:var(--gm)}
+.section-sep{font-size:10px;font-weight:700;color:#aaa;letter-spacing:.6px;text-transform:uppercase;font-family:monospace;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid #f0f0f0}
+
+/* ── ATA PANEL ── */
+.ata-panel{background:#fff;border-radius:9px;border:1px solid var(--border);overflow:hidden;margin-bottom:16px}
+.ata-panel-header{background:var(--gd);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.ata-panel-header h3{font-family:'DM Serif Display',serif;font-size:14px;color:#fff}
+.ata-card{background:#fff;border-radius:8px;border:1px solid var(--border);padding:14px 16px;margin:12px;transition:.15s}
+.ata-card:hover{box-shadow:0 2px 12px rgba(26,71,49,.1)}
+.ata-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ata-badge{background:var(--gd);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px;font-family:monospace}
+.ata-fornecedor{font-size:11px;font-weight:600;color:var(--gd)}
+.ata-info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.ata-info-item label{font-size:8px;font-weight:700;color:#aaa;letter-spacing:.6px;text-transform:uppercase;font-family:monospace;display:block}
+.ata-info-item span{font-size:11px;color:var(--gray)}
+.ata-itens-title{font-size:9px;font-weight:700;color:var(--gd);letter-spacing:.5px;text-transform:uppercase;font-family:monospace;margin-bottom:6px;margin-top:8px}
+.ata-item-row{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--gp);border-radius:4px;margin-bottom:4px;font-size:11px}
+.ata-item-row .item-nome{flex:1;color:var(--gray)}
+.ata-item-row .item-vlr{font-family:monospace;font-weight:700;color:var(--gd);font-size:11px}
+
+/* ── UPLOAD AREA ── */
+.upload-area{border:2px dashed rgba(46,125,79,.3);border-radius:8px;padding:28px;text-align:center;cursor:pointer;transition:.2s;background:var(--gp);margin-bottom:12px}
+
+/* ── AI EXTRACT ZONE ── */
+.ai-upload-zone{border:2px dashed rgba(249,168,37,.4);border-radius:9px;padding:20px;text-align:center;cursor:pointer;transition:.2s;background:linear-gradient(135deg,#fffde7,#fff9c4);margin-bottom:14px;position:relative}
+.ai-upload-zone:hover,.ai-upload-zone.dragover{border-color:var(--gold);background:linear-gradient(135deg,#fff9c4,#ffecb3)}
+.ai-badge{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,var(--gd),var(--gm));color:#fff;font-size:9px;font-weight:700;padding:3px 9px;border-radius:10px;font-family:monospace;letter-spacing:.5px;margin-bottom:8px}
+.apikey-bar{background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(249,168,37,.3);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.apikey-bar label{font-size:10px;font-weight:700;color:var(--gold);font-family:monospace;letter-spacing:.5px;white-space:nowrap}
+.apikey-bar input{flex:1;min-width:200px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);color:#fff;font-family:monospace;font-size:11px;padding:6px 10px;border-radius:5px}
+.apikey-bar input:focus{outline:none;border-color:var(--gold)}
+.apikey-bar input::placeholder{color:rgba(255,255,255,.3)}
+.apikey-save-btn{background:var(--gold);color:var(--gd);border:none;padding:6px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:sans-serif;white-space:nowrap}
+.apikey-status{font-size:9px;font-family:monospace;padding:3px 8px;border-radius:4px}
+.apikey-status.ok{background:#1b5e20;color:#a5d6a7}
+.apikey-status.missing{background:rgba(183,28,28,.3);color:#ff8a80}
+.ai-status{margin-top:10px;padding:10px 14px;border-radius:7px;font-size:11px;display:none}
+.ai-status.loading{display:flex;align-items:center;gap:8px;background:#e8f4ea;color:var(--gd);border:1px solid var(--border)}
+.ai-status.success{display:flex;align-items:center;gap:8px;background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7}
+.ai-status.error{display:flex;align-items:center;gap:8px;background:var(--red-l);color:var(--red);border:1px solid #ef9a9a}
+.ai-spinner{width:16px;height:16px;border:2px solid rgba(26,71,49,.2);border-top:2px solid var(--gd);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-preview{background:#fff;border:1px solid var(--border);border-radius:7px;padding:12px 14px;margin-top:10px;font-size:11px;display:none}
+.ai-preview-title{font-weight:700;color:var(--gd);font-size:10px;letter-spacing:.4px;text-transform:uppercase;font-family:monospace;margin-bottom:8px}
+.ai-preview-row{display:flex;gap:6px;margin-bottom:4px;font-size:11px}
+.ai-preview-row label{color:#aaa;min-width:90px;font-size:10px;font-family:monospace}
+.ai-preview-row span{color:var(--gray);font-weight:500}
+.ai-item-chip{display:inline-flex;align-items:center;gap:4px;background:var(--gp);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:10px;color:var(--gd);margin:2px;font-family:monospace}
+.btn-ai-apply{background:var(--gd);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:sans-serif;margin-top:10px;width:100%;transition:.15s}
+.btn-ai-apply:hover{background:var(--gm)}
+.upload-area:hover,.upload-area.dragover{border-color:var(--gm);background:#e8f5e9}
+.upload-area .ui{font-size:28px;margin-bottom:6px}
+.upload-area p{font-size:12px;color:#888}
+.upload-area p strong{color:var(--gd)}
+.upload-file-list{display:grid;gap:8px;margin-top:12px}
+.upload-file-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px 14px}
+.upload-file-item .fi{font-size:20px}
+.upload-file-item .fn{font-size:12px;font-weight:600;color:var(--gd);flex:1}
+.upload-file-item .fs{font-size:10px;color:#aaa;font-family:monospace}
+.upload-file-item .fview{background:var(--gd);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:sans-serif;font-weight:600}
+.upload-file-item .fdel{background:none;border:1px solid #eee;color:#ccc;width:24px;height:24px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:.15s}
+.upload-file-item .fdel:hover{border-color:var(--red);color:var(--red)}
+
+/* ── PDF VIEWER OVERLAY ── */
+.pdf-viewer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.pdf-viewer-bar{background:var(--gd);width:100%;padding:10px 20px;display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--gold)}
+.pdf-viewer-bar span{color:#fff;font-size:13px;font-weight:600;font-family:'DM Serif Display',serif;flex:1}
+.pdf-viewer-bar button{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-family:sans-serif}
+.pdf-viewer-bar button:hover{background:rgba(255,255,255,.28)}
+.pdf-viewer-frame{flex:1;width:100%;border:none}
+
+/* ── EVENT CONFIG PANEL ── */
+.cfg-panel{background:#fff;border-radius:9px;border:1px solid var(--border);padding:20px 24px;margin-bottom:18px}
+.cfg-title{font-family:'DM Serif Display',serif;font-size:15px;color:var(--gd);margin-bottom:14px}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cfg-grid.full{grid-template-columns:1fr}
+.cfg-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5}
+.cfg-row:last-child{border-bottom:none}
+.cfg-row label{font-size:11px;color:var(--gray);flex:1}
+.cfg-row input[type=checkbox]{accent-color:var(--gm);width:14px;height:14px;cursor:pointer}
+.alert-box{background:var(--red-l);border:1px solid #ef9a9a;border-radius:7px;padding:10px 14px;font-size:11px;color:var(--red);margin-bottom:14px}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:32px;color:#ccc;font-size:12px}
+.empty .ei{font-size:28px;margin-bottom:6px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--gd);color:#fff;padding:10px 16px;border-radius:7px;font-size:12px;font-weight:500;z-index:300;display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);border-left:4px solid var(--gold);animation:slideUp .2s ease}
+
+/* ── PRINT / PDF STYLES ── */
+@media print {
+  @page {
+    margin: 1.2cm 1cm;
+    size: A4 landscape;
+  }
+
+  /* ── Hide all chrome ── */
+  .topbar, .sidebar, .sh-actions, .add-btn, .abts, .bdel, .bobs,
+  .edit-tip, .toast, #save-indicator,
+  [onclick="window.print()"] { display: none !important; }
+
+  /* ── Reset layout ── */
+  html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+  .main  { margin-left: 0 !important; padding: 0 !important; width: 100% !important; }
+  .layout { display: block !important; }
+  .content { padding: 4px 0 !important; }
+
+  /* ── Header (sh) — always printed at top ── */
+  .sh {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    border-bottom: 2.5px solid #1a4731 !important;
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+  .sh h2 { font-size: 16px !important; color: #1a4731 !important; margin: 0 !important; }
+  .sh p  { font-size: 10px !important; color: #666 !important; margin: 2px 0 0 !important; }
+  .sh-emoji { font-size: 22px !important; }
+
+  /* ── Summary cards — keep together on page 1 ── */
+  .cards {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+  .card {
+    flex: 1 1 18% !important;
+    border: 1.5px solid #1a4731 !important;
+    box-shadow: none !important;
+    padding: 6px 10px !important;
+    border-radius: 5px !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .card.gold { border-color: #b8860b !important; background: #fffbf0 !important; }
+  .card-lbl { font-size: 8px !important; font-weight: 700 !important; color: #888 !important; text-transform: uppercase !important; }
+  .card-val { font-size: 15px !important; font-weight: 800 !important; color: #1a4731 !important; line-height: 1.2 !important; }
+  .card-sub { font-size: 8px !important; color: #aaa !important; }
+
+  /* ── Section group headers ── */
+  .grp {
+    background: #1a4731 !important;
+    color: #fff !important;
+    padding: 5px 10px !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    border-radius: 3px !important;
+    margin: 10px 0 2px !important;
+    page-break-after: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── Block sub-headers (gradient div) ── */
+  div[style*="linear-gradient"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── Tables ── */
+  .tw { page-break-inside: auto !important; margin-bottom: 8px !important; }
+  .tw table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8px !important;
+    table-layout: auto !important;
+  }
+  .tw th {
+    background: #1a4731 !important;
+    color: #fff !important;
+    padding: 3px 5px !important;
+    font-size: 8px !important;
+    text-align: left !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .tw td {
+    padding: 2px 5px !important;
+    border-bottom: 1px solid #e8e8e8 !important;
+    font-size: 8px !important;
+    vertical-align: middle !important;
+    word-break: break-word !important;
+  }
+  .tw tr { page-break-inside: avoid !important; }
+
+  /* Subtotal / total rows */
+  .sub-tr td {
+    background: #e4f0e8 !important;
+    font-weight: 700 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .tot-tr td {
+    background: #1a4731 !important;
+    color: #fff !important;
+    font-weight: 800 !important;
+    font-size: 10px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Total / summary bars */
+  div[style*="background:var(--gd)"],
+  div[style*="background:linear-gradient"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Tags */
+  .tag {
+    font-size: 7px !important;
+    padding: 1px 3px !important;
+    border-radius: 3px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Val pending */
+  .val-p { color: #aaa !important; font-style: italic !important; }
+  .val-r { text-align: right !important; }
+
+  /* Avoid orphan block headers */
+  .tw + .tw { page-break-before: auto !important; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div style="background:#0f1923;padding:7px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e2e40;font-family:'DM Sans',sans-serif">
+  <a href="index.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;background:#1a2535;border:1px solid #2a3a50;color:#8a9bb0;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;transition:.15s" onmouseover="this.style.color='#fff';this.style.borderColor='#3a5a70'" onmouseout="this.style.color='#8a9bb0';this.style.borderColor='#2a3a50'">
+    ← Início
+  </a>
+  <div style="width:1px;height:18px;background:#1e2e40"></div>
+  <span style="font-size:11px;color:#3a4a5a">Abrir:</span>
+  <a href="artistas_chamamento.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;background:#2a1e06;border:1px solid #3d2e0a;color:#c9a84c;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;transition:.15s" onmouseover="this.style.background='#3d2e0a'" onmouseout="this.style.background='#2a1e06'">
+    🎭 Chamamento Público
+  </a>
+</div>
+<div class="topbar">
+  <span style="font-size:26px">🌸</span>
+  <div class="topbar-logo">Gerenciador de Eventos</div>
+  <div class="topbar-sep"></div>
+  <div class="event-selector">
+    <select id="event-select" onchange="switchEvent(this.value)"></select>
+    <button class="btn-new-event" onclick="newEvent()">＋ Novo Evento</button>
+    <button class="btn-del-event" onclick="deleteEvent()">✕ Excluir</button>
+  </div>
+  <div class="topbar-hint">✏ Clique duplo nas células para editar</div>
+  <button class="btn-export" onclick="exportExcel()">⬇ Excel</button>
+  <button class="btn-pdf" onclick="exportPDF()">📄 PDF</button>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-label">Visualização</div>
+    <div class="nav-item active" onclick="setTab('resumo')" id="nav-resumo"><span class="ne">📋</span> Resumo Executivo</div>
+    <div class="nav-item" onclick="setTab('atas')" id="nav-atas"><span class="ne">📑</span> Atas &amp; Contratos<span class="nav-cnt" id="cnt-atas">0</span></div>
+    <div class="nav-item" onclick="setTab('config')" id="nav-config"><span class="ne">⚙️</span> Configurações</div>
+    <div class="nav-item" onclick="setTab('historico')" id="nav-historico"><span class="ne">📊</span> Histórico &amp; Comparativo</div>
+    <div class="sb-div"></div>
+    <div class="sb-label">Módulos Ativos</div>
+    <div id="module-nav"></div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<!-- MODAL -->
+<div id="modal" style="display:none" class="mo" onclick="closeModalOut(event)">
+  <div class="modal" id="modal-inner">
+    <div class="mh"><div><h3 id="mtitle">Novo Item</h3><p id="msub"></p></div><button class="mclose" onclick="closeModal()">✕</button></div>
+    <div class="mb" id="mbody"></div>
+    <div class="mfoot"><button class="bcancel" onclick="closeModal()">Cancelar</button><button id="btn-salvar-mais" class="bsave" style="background:var(--or);display:none" onclick="saveItemAndAddMore()">＋ Salvar e Adicionar Outro</button><button class="bsave" onclick="saveItem()">✓ Salvar</button></div>
+  </div>
+</div>
+
+<!-- PDF VIEWER -->
+<div id="pdf-viewer" style="display:none" class="pdf-viewer-overlay">
+  <div class="pdf-viewer-bar">
+    <span id="pdf-viewer-title">Visualizando ATA</span>
+    <button onclick="closePdfViewer()">✕ Fechar</button>
+  </div>
+  <iframe id="pdf-viewer-frame" class="pdf-viewer-frame"></iframe>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+<div class="edit-tip" id="edittip">Enter para confirmar · Esc para cancelar</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  HISTÓRICO & COMPARATIVO
+// ═══════════════════════════════════════════════
+function renderHistorico() {
+  // Get unique event name roots (strip edition numbers for grouping)
+  var allEvents = events.slice().sort(function(a,b){ return (a.dataEvento||'').localeCompare(b.dataEvento||''); });
+
+  // Build search/filter UI
+  var filterVal = window._historicoFilter || '';
+
+  // Filter events by name search
+  var filtered = filterVal.trim()
+    ? allEvents.filter(function(e){ return e.name.toLowerCase().includes(filterVal.toLowerCase()); })
+    : allEvents;
+
+  // Group by event name (base name without edition)
+  var groups = {};
+  filtered.forEach(function(e) {
+    var key = e.name.replace(/^\d+[ªº°]?\s*/,'').replace(/\s+\d{4}$/,'').trim();
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+
+  // ── Summary cards per event ──
+  var eventCards = filtered.map(function(e) {
+    var totalS  = e.staff.reduce(function(s,x){ return s+(x.custo||0); },0);
+    var totalEst= e.estrutura.reduce(function(s,x){ return s+(x.custo||0); },0);
+    var total   = totalS + totalEst;
+    var totalH  = e.staff.reduce(function(s,x){ return s+(x.totalH||0); },0);
+    var nStaff  = e.staff.length;
+    var nEst    = e.estrutura.length;
+    var nHosp   = e.hospedagem.length;
+    var isCur   = e.id === curEventId;
+
+    return '<div style="border:2px solid '+(isCur?'var(--gm)':'var(--border)')+';border-radius:10px;padding:16px 18px;background:'+(isCur?'var(--gp)':'#fff')+';position:relative;cursor:pointer" onclick="switchEvent('+e.id+')">' +
+      (isCur ? '<span style="position:absolute;top:10px;right:12px;background:var(--gm);color:#fff;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700">ATUAL</span>' : '') +
+      '<div style="font-size:14px;font-weight:800;color:var(--gd);margin-bottom:2px;padding-right:60px">'+(e.name||'Sem nome')+'</div>' +
+      '<div style="font-size:11px;color:#888;margin-bottom:10px">'+(e.edicao||'')+(e.edicao&&e.dataEvento?' · ':'')+''+(e.dataEvento||'Data não definida')+''+(e.local?' &nbsp;·&nbsp; '+e.local:'')+'</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">' +
+        '<div style="background:#f5f5f5;border-radius:6px;padding:8px 10px;text-align:center">' +
+          '<div style="font-size:16px;font-weight:800;color:var(--gd)">'+(total?fmtV(total):'—')+'</div>' +
+          '<div style="font-size:9px;color:#888">TOTAL GERAL</div>' +
+        '</div>' +
+        '<div style="background:#f5f5f5;border-radius:6px;padding:8px 10px;text-align:center">' +
+          '<div style="font-size:16px;font-weight:800;color:var(--gm)">'+(totalS?fmtV(totalS):'—')+'</div>' +
+          '<div style="font-size:9px;color:#888">STAFF ('+nStaff+' itens · '+totalH+'h)</div>' +
+        '</div>' +
+        '<div style="background:#f5f5f5;border-radius:6px;padding:8px 10px;text-align:center">' +
+          '<div style="font-size:16px;font-weight:800;color:var(--gm)">'+(totalEst?fmtV(totalEst):'—')+'</div>' +
+          '<div style="font-size:9px;color:#888">ESTRUTURA ('+nEst+' itens)</div>' +
+        '</div>' +
+        '<div style="background:#f5f5f5;border-radius:6px;padding:8px 10px;text-align:center">' +
+          '<div style="font-size:16px;font-weight:800;color:#5c6bc0">'+(nHosp||'—')+'</div>' +
+          '<div style="font-size:9px;color:#888">GRUPOS HOSP.</div>' +
+        '</div>' +
+      '</div>' +
+      // Programação se existir
+      (e.programacao && e.programacao.length ?
+        '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">' +
+          '<div style="font-size:9px;font-weight:700;color:#aaa;margin-bottom:4px">PROGRAMAÇÃO</div>' +
+          e.programacao.map(function(p){
+            return '<div style="font-size:10px;color:#555;margin-bottom:2px">📅 '+(p.data||'—')+' &nbsp;·&nbsp; '+(p.horario||'—')+' &nbsp;·&nbsp; '+(p.local||'—')+(p.descricao?' &nbsp;— '+p.descricao:'')+'</div>';
+          }).join('') +
+        '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  // ── Comparativo table (only when multiple events with same base name) ──
+  var comparativoHtml = '';
+  var groupKeys = Object.keys(groups);
+  groupKeys.forEach(function(gkey) {
+    var gevents = groups[gkey];
+    if (gevents.length < 2) return; // só mostra comparativo se tiver 2+ edições
+
+    var rows = '';
+    // Staff rows comparison
+    var allSecoes = [...new Set(gevents.flatMap(function(e){ return e.staff.map(function(x){ return x.secao; }); }))];
+    allSecoes.forEach(function(sec) {
+      var cells = gevents.map(function(e) {
+        var items = e.staff.filter(function(x){ return x.secao===sec; });
+        var sub = items.reduce(function(s,x){ return s+(x.custo||0); },0);
+        var h   = items.reduce(function(s,x){ return s+(x.totalH||0); },0);
+        return '<td class="val-r" style="font-size:11px">'+(sub?fmtV(sub):'—')+'<br><span style="font-size:9px;color:#aaa">'+h+'h</span></td>';
+      }).join('');
+      rows += '<tr><td style="font-size:11px;padding-left:12px">👥 '+sec+'</td>'+cells+'</tr>';
+    });
+
+    // Estrutura rows
+    var allSecEst = [...new Set(gevents.flatMap(function(e){ return e.estrutura.map(function(x){ return x.secao||'Geral'; }); }))];
+    allSecEst.forEach(function(sec) {
+      var cells = gevents.map(function(e) {
+        var items = e.estrutura.filter(function(x){ return (x.secao||'Geral')===sec; });
+        var sub = items.reduce(function(s,x){ return s+(x.custo||0); },0);
+        return '<td class="val-r" style="font-size:11px">'+(sub?fmtV(sub):'—')+'</td>';
+      }).join('');
+      rows += '<tr><td style="font-size:11px;padding-left:12px">🏗️ '+sec+'</td>'+cells+'</tr>';
+    });
+
+    // Total row
+    var totCells = gevents.map(function(e) {
+      var t = e.staff.reduce(function(s,x){ return s+(x.custo||0); },0) +
+              e.estrutura.reduce(function(s,x){ return s+(x.custo||0); },0);
+      return '<td class="val-r" style="font-weight:800;font-size:13px">'+(t?fmtV(t):'—')+'</td>';
+    }).join('');
+
+    var headerCols = gevents.map(function(e){
+      return '<th style="text-align:center;min-width:120px">'+(e.edicao||e.dataEvento||e.name)+'<br><span style="font-size:9px;font-weight:400;opacity:.8">'+(e.dataEvento||'')+'</span></th>';
+    }).join('');
+
+    comparativoHtml +=
+      '<div class="grp" style="margin-top:20px">📊 COMPARATIVO — '+gkey.toUpperCase()+'</div>' +
+      '<div class="tw"><table>' +
+        '<thead><tr><th style="min-width:180px">Bloco / Módulo</th>'+headerCols+'</tr></thead>' +
+        '<tbody>' + rows +
+          '<tr class="tot-tr"><td>TOTAL GERAL</td>'+totCells+'</tr>' +
+        '</tbody>' +
+      '</table></div>';
+  });
+
+  if (!comparativoHtml && filtered.length >= 2) {
+    comparativoHtml = '<div style="background:var(--gold-l);border:1px solid var(--gold);border-radius:8px;padding:12px 16px;font-size:11px;color:var(--gd);margin-top:16px">💡 Para ver o comparativo entre edições, certifique-se de que os eventos têm nomes semelhantes (ex: <strong>Exposição Nacional de Orquídeas</strong> em diferentes anos).</div>';
+  }
+
+  return '<div class="sh resumo-sh" style="justify-content:space-between">' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+      '<span class="sh-emoji">📊</span>' +
+      '<div><h2>Histórico &amp; Comparativo</h2>' +
+      '<p>Compare edições anteriores · clique em um evento para acessá-lo</p></div>' +
+    '</div>' +
+    '<button onclick="newEventFromCopy()" style="background:var(--gm);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">＋ Nova Edição (copiar estrutura)</button>' +
+  '</div>' +
+  '<div class="content">' +
+
+    // Search bar
+    '<div style="margin-bottom:16px">' +
+      '<input id="hist-search" value="'+(filterVal||'')+'" placeholder="🔍 Filtrar eventos por nome..." oninput="filterHistorico(this.value)" ' +
+        'style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:Sora,sans-serif;box-sizing:border-box">' +
+    '</div>' +
+
+    // Event cards
+    (filtered.length ?
+      '<div style="display:grid;gap:12px">' + eventCards + '</div>' :
+      '<div style="text-align:center;padding:40px;color:#bbb"><div style="font-size:32px;margin-bottom:8px">🔍</div><div>Nenhum evento encontrado com esse nome.</div></div>'
+    ) +
+
+    // Comparativo
+    comparativoHtml +
+
+  '</div>';
+}
+
+function filterHistorico(val) {
+  window._historicoFilter = val;
+  document.getElementById('main').innerHTML = renderHistorico();
+  document.getElementById('hist-search').focus();
+  var inp = document.getElementById('hist-search');
+  if (inp) { inp.value = val; inp.setSelectionRange(val.length,val.length); }
+}
+
+function newEventFromCopy() {
+  var src = ev();
+  var newName = prompt('Nome do novo evento (a estrutura de blocos será copiada):', src.name);
+  if (!newName || !newName.trim()) return;
+  var ne = defaultEvent(newName.trim());
+  // Copy module config and block structure, but not items
+  ne.modules   = Object.assign({}, src.modules);
+  ne.modDesc   = Object.assign({}, src.modDesc||{});
+  ne.secoes    = (src.secoes||[]).slice();
+  ne.secoesEst = (src.secoesEst||[]).slice();
+  ne.secoesHosp= (src.secoesHosp||[]).slice();
+  ne.local     = src.local || '';
+  events.push(ne);
+  curEventId = ne.id;
+  curTab = 'config';
+  toast('Nova edição criada! Configure as datas e adicione os itens.');
+  render();
+}
+
+
+// ═══════════════════════════════════════════════
+//  INITIAL DATA
+// ═══════════════════════════════════════════════
+const MH  = 'MH Transportes Sigoli LTDA';
+const ALT = 'Alternativa Comunicação, Produção e Eventos LTDA';
+const BON = 'Bonini Geradores LTDA';
+
+function defaultEvent(name) {
+  return {
+    id: Date.now(),
+    name: name || 'Novo Evento',
+    edicao: '',
+    local: '',
+    dataEvento: '',
+    observacoes: '',
+    programacao: [],
+    modDesc: { staff: 'Escalas, turnos, limpeza, coordenação', estrutura: 'Tendas, geradores, mobiliário, identidade visual', hospedagem: 'Grupos, diárias, refeições, check-in/out' },
+    modules: { staff: true, estrutura: true, hospedagem: false },
+    staff: [],
+    estrutura: [],
+    hospedagem: [],
+    secoes:     [],
+    secoesEst:  [],
+    secoesHosp: [],
+    nextStaff: 1, nextEstrutura: 1, nextHospedagem: 1,
+  };
+}
+
+// ── CADASTRO MESTRE GLOBAL DE ATAs (compartilhado entre todos os eventos) ──
+// {id, numero, ano, fornecedor, cnpj, contato, email, vigencia, objeto, itens:[{id,desc,unidade,vlrUnit}], arquivos:[{id,nome,size,dataUrl}]}
+let atasMestre = [];
+let nextAtaMestre = 1;
+
+const seed = defaultEvent('61ª Exposição Nacional de Orquídeas');
+seed.local = 'Praça XV de Novembro, São Carlos/SP';
+seed.dataEvento = '24 a 26/04/2026';
+seed.modules = { staff: true, estrutura: true, hospedagem: true };
+// Seções são criadas manualmente pelo usuário por evento
+
+// Registro mestre de ATAs — cadastre suas ATAs na aba "Atas & Contratos"
+// atasMestre começa vazio; os itens do dropdown vêm das ATAs que você cadastrar
+nextAtaMestre = 1;
+
+seed.staff = [];
+seed.nextStaff = 1;
+
+seed.estrutura = [];
+seed.nextEstrutura = 1;
+
+seed.hospedagem = [];
+seed.nextHospedagem = 1;
+let events = [seed];
+let curEventId = seed.id;
+let curTab = 'resumo';
+let modalCtx = null;
+
+function ev() { return events.find(e => e.id === curEventId); }
+
+// ═══════════════════════════════════════════════
+//  EVENT MANAGEMENT
+// ═══════════════════════════════════════════════
+function newEvent() {
+  const name = prompt('Nome do novo evento:');
+  if (!name) return;
+  const e = defaultEvent(name);
+  events.push(e);
+  curEventId = e.id;
+  renderEventSelect();
+  curTab = 'config';
+  render();
+  toast('Evento criado! Configure os detalhes na aba ⚙️ Configurações.');
+}
+
+function switchEvent(id) {
+  curEventId = parseInt(id);
+  render();
+}
+
+function deleteEvent() {
+  if (events.length === 1) { toast('Não é possível excluir o único evento.'); return; }
+  if (!confirm(`Excluir "${ev().name}"? Esta ação não pode ser desfeita.`)) return;
+  events = events.filter(e => e.id !== curEventId);
+  curEventId = events[0].id;
+  renderEventSelect();
+  render();
+}
+
+function renderEventSelect() {
+  const sel = document.getElementById('event-select');
+  sel.innerHTML = events.map(e =>
+    `<option value="${e.id}" ${e.id===curEventId?'selected':''}>${e.name}</option>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+const fmt  = v => v != null ? 'R$ ' + (+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : null;
+const fmtV = v => fmt(v) ?? '<span class="val-p">A cotar</span>';
+
+function tagAta(ata) {
+  if (!ata || ata==='A definir') return `<span class="tag t-pend">⚠ A definir</span>`;
+  if (ata.toLowerCase().includes('direta')||ata.toLowerCase().includes('sem ata')) return `<span class="tag t-cd">🛒 Compra Direta</span>`;
+  if (ata.toLowerCase().includes('proc')||ata.toLowerCase().includes('licitaç')) return `<span class="tag t-lic">⚖️ ${ata}</span>`;
+  return `<span class="tag t-ata">✅ ATA ${ata}</span>`;
+}
+
+
+// Auto-format date input: types digits, inserts / automatically
+function fmtDateInput(el) {
+  var v = el.value.replace(/\D/g,'');
+  if (v.length >= 5) v = v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4,8);
+  else if (v.length >= 3) v = v.slice(0,2)+'/'+v.slice(2);
+  el.value = v;
+}
+// Auto-format time input: types digits, inserts : automatically
+function fmtTimeInput(el) {
+  var v = el.value.replace(/\D/g,'');
+  if (v.length >= 3) v = v.slice(0,2)+':'+v.slice(2,4);
+  el.value = v;
+  // Auto-calculate CH when both times are filled
+  var ini = document.getElementById('f-hrInicio');
+  var fim = document.getElementById('f-hrFim');
+  if (ini && fim && ini.value.match(/^\d{2}:\d{2}$/) && fim.value.match(/^\d{2}:\d{2}$/)) {
+    autoCalcChInd(ini.value, fim.value);
+  }
+}
+// Calculate CH Individual from start/end times
+function autoCalcChInd(hrIni, hrFim) {
+  var p1 = hrIni.split(':'), p2 = hrFim.split(':');
+  var m1 = parseInt(p1[0])*60 + parseInt(p1[1]);
+  var m2 = parseInt(p2[0])*60 + parseInt(p2[1]);
+  var diff = m2 - m1;
+  if (diff <= 0) diff += 24*60; // overnight
+  var hours = Math.round(diff / 60 * 100) / 100;
+  var fld = document.getElementById('f-chInd');
+  if (fld && !fld._manuallyEdited) {
+    fld.value = hours % 1 === 0 ? hours : hours.toFixed(2);
+    calcStaffCusto();
+  }
+}
+
+// Parse Brazilian currency strings like "2.900,00" or "2900.00" or "2.900" → 2900
+function parseBRL(val) {
+  if (val === null || val === undefined || val === '') return null;
+  var s = String(val).trim();
+  // Remove currency symbols and spaces
+  s = s.replace(/R\$\s*/g, '').trim();
+  if (!s) return null;
+  // Brazilian format: 2.900,00 or 2.900 (dot=thousands, comma=decimal)
+  // vs US format: 2900.00 (dot=decimal)
+  // Heuristic: if has both dot and comma → Brazilian
+  if (s.indexOf(',') !== -1 && s.indexOf('.') !== -1) {
+    // e.g. "2.900,00" → remove dots, replace comma with dot
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (s.indexOf(',') !== -1) {
+    // e.g. "2900,00" → replace comma with dot
+    s = s.replace(',', '.');
+  } else if (s.indexOf('.') !== -1) {
+    // Could be "2.900" (thousands) or "2.9" (decimal)
+    // If the part after dot has exactly 3 digits → thousands separator
+    var parts = s.split('.');
+    if (parts[parts.length - 1].length === 3) {
+      // e.g. "2.900" → 2900
+      s = s.replace(/\./g, '');
+    }
+    // else normal decimal like "2.90" → leave as is
+  }
+  var n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+// Uppercase all text values — standardize input
+function up(val) {
+  if (!val || typeof val !== 'string') return val || '';
+  return val.trim().toUpperCase();
+}
+
+// Normalize ATA reference to always show "numero/ano" format
+// If only number given (e.g. "154"), tries to find in atasMestre and appends /ano
+function normalizeAta(ref) {
+  if (!ref || !ref.trim()) return ref || '';
+  const s = ref.trim();
+  // Already has "/" and year — return as-is
+  if (/^\d+\/\d{4}$/.test(s)) return s;
+  if (/^\d+\/\d{4}/.test(s)) return s;
+  // Pure number — look up in atasMestre to get the year
+  if (/^\d+$/.test(s)) {
+    const found = atasMestre.find(function(a){ return a.numero === s; });
+    if (found && found.ano) return s + '/' + found.ano;
+    return s; // can't determine year, return as-is
+  }
+  // Something like "154/25" (short year) — expand to 4 digits if looks like a year
+  const shortYear = s.match(/^(\d+)\/(\d{2})$/);
+  if (shortYear) {
+    const year = parseInt(shortYear[2]) + 2000;
+    return shortYear[1] + '/' + year;
+  }
+  // Something like "Proc. 29552/2025" or "Contratação Direta" — leave alone
+  return s;
+}
+
+// Render ATA ref with year always visible — used in table cells
+function fmtAta(ataRaw) {
+  if (!ataRaw) return '—';
+  const norm = normalizeAta(ataRaw);
+  return norm;
+}
+
+// Normalize all ATA refs in current event items
+function normalizeAllAtas() {
+  const e = ev();
+  e.staff.forEach(function(it){ if(it.ata) it.ata = normalizeAta(it.ata); });
+  e.estrutura.forEach(function(it){ if(it.ata) it.ata = normalizeAta(it.ata); });
+  e.hospedagem.forEach(function(it){ if(it.ata) it.ata = normalizeAta(it.ata); });
+  toast('ATAs padronizadas para formato número/ano!');
+  render();
+}
+
+function sumStaff(secao) { return ev().staff.filter(x=>x.secao===secao).reduce((s,x)=>s+(x.custo||0),0); }
+function totalStaff()    { return ev().staff.reduce((s,x)=>s+(x.custo||0),0); }
+function totalEst()      { return ev().estrutura.reduce((s,x)=>s+(x.custo||0),0); }
+function totalHosp() { return ev().hospedagem.reduce(function(s,x){ return s+(x.custoHosp||0); },0); }
+function totalEstAprov() { return ev().estrutura.filter(x=>x.custo&&x.ata&&!x.ata.toLowerCase().includes('direta')&&!x.ata.toLowerCase().includes('definir')).reduce((s,x)=>s+(x.custo||0),0); }
+function totalAprov()    { return totalStaff() + totalEstAprov() + totalHosp(); }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.innerHTML = '✓ ' + msg; t.style.display='flex';
+  clearTimeout(t._t); t._t = setTimeout(()=>t.style.display='none',2800);
+}
+
+// ═══════════════════════════════════════════════
+//  NAV
+// ═══════════════════════════════════════════════
+function setTab(tab) {
+  curTab = tab;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById('nav-'+tab);
+  if (el) el.classList.add('active');
+  render();
+}
+
+function renderModuleNav() {
+  const m = ev().modules;
+  // Update global atas count
+  const cntAtas = document.getElementById('cnt-atas');
+  if (cntAtas) cntAtas.textContent = atasMestre.length;
+  let html = '';
+  if (m.staff)      html += `<div class="nav-item" onclick="setTab('staff')" id="nav-staff"><span class="ne">👥</span> Staff<span class="nav-cnt" id="cnt-staff">${ev().staff.length}</span></div>`;
+  if (m.estrutura)  html += `<div class="nav-item" onclick="setTab('estrutura')" id="nav-estrutura"><span class="ne">🏗️</span> Estrutura<span class="nav-cnt" id="cnt-estrutura">${ev().estrutura.length}</span></div>`;
+  if (m.hospedagem) html += `<div class="nav-item" onclick="setTab('hospedagem')" id="nav-hospedagem"><span class="ne">🛏️</span> Hospedagem<span class="nav-cnt" id="cnt-hospedagem">${ev().hospedagem.length}</span></div>`;
+  document.getElementById('module-nav').innerHTML = html;
+  const el = document.getElementById('nav-'+curTab);
+  if (el) el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+//  MAIN RENDER
+// ═══════════════════════════════════════════════
+function render() {
+  renderEventSelect();
+  renderModuleNav();
+  const main = document.getElementById('main');
+  if      (curTab==='resumo')     main.innerHTML = renderResumo();
+  else if (curTab==='atas')       main.innerHTML = renderAtas();
+  else if (curTab==='config')     main.innerHTML = renderConfig();
+  else if (curTab==='historico')  main.innerHTML = renderHistorico();
+  else if (curTab==='staff')      main.innerHTML = renderStaff();
+  else if (curTab==='estrutura')  main.innerHTML = renderEstrutura();
+  else if (curTab==='hospedagem') main.innerHTML = renderHospedagem();
+  bindEditable();
+  bindUploadArea();
+}
+
+// ═══════════════════════════════════════════════
+//  CONFIG TAB
+// ═══════════════════════════════════════════════
+function renderConfig() {
+  const e = ev();
+  // Ensure new fields exist (migration)
+  if (!e.programacao) e.programacao = [];
+  if (!e.modDesc) e.modDesc = { staff: '', estrutura: '', hospedagem: '' };
+
+  // Programação rows
+  var progRows = e.programacao.length ? e.programacao.map(function(p, i) {
+    return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 32px;gap:8px;margin-bottom:8px;align-items:center" id="prog-row-'+i+'">' +
+      '<input value="'+(p.data||'').replace(/"/g,'&quot;')+'" placeholder="Data (ex: 24/04/2026)" oninput="updateProg('+i+',\x27data\x27,this.value)" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:Sora,sans-serif">' +
+      '<input value="'+(p.horario||'').replace(/"/g,'&quot;')+'" placeholder="Horário (ex: 09h às 18h)" oninput="updateProg('+i+',\x27horario\x27,this.value)" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:Sora,sans-serif">' +
+      '<input value="'+(p.local||'').replace(/"/g,'&quot;')+'" placeholder="Local (ex: Teatro Municipal)" oninput="updateProg('+i+',\x27local\x27,this.value)" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:Sora,sans-serif">' +
+      '<input value="'+(p.descricao||'').replace(/"/g,'&quot;')+'" placeholder="Descrição (ex: Abertura oficial)" oninput="updateProg('+i+',\x27descricao\x27,this.value)" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:Sora,sans-serif">' +
+      '<button onclick="delProg('+i+')" style="background:#fee;border:1px solid #fcc;color:#c00;border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:14px">✕</button>' +
+    '</div>';
+  }).join('') : '<p style="color:#bbb;font-size:11px;font-style:italic;margin:0 0 8px">Nenhum dia/local cadastrado ainda.</p>';
+
+  return `
+  <div class="sh"><span class="sh-emoji">⚙️</span><div><h2>Configurações do Evento</h2><p>Dados gerais, programação e módulos ativos</p></div></div>
+  <div class="content">
+
+    <!-- DADOS GERAIS -->
+    <div class="cfg-panel">
+      <div class="cfg-title">📌 Identificação do Evento</div>
+      <div class="cfg-grid" style="grid-template-columns:1fr 1fr">
+        <div class="field" style="grid-column:1/-1">
+          <label>Nome do Evento</label>
+          <input id="cfg-name" value="${e.name}" oninput="updateCfg('name',this.value)" style="font-size:15px;font-weight:700">
+        </div>
+        <div class="field">
+          <label>Edição / Ano</label>
+          <input id="cfg-edicao" value="${e.edicao||''}" placeholder="ex: 61ª edição · 2026" oninput="updateCfg('edicao',this.value)">
+        </div>
+        <div class="field">
+          <label>Data Geral do Evento</label>
+          <input id="cfg-dataEvento" value="${e.dataEvento}" placeholder="ex: 24 a 26/04/2026" oninput="updateCfg('dataEvento',this.value)">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Local Principal</label>
+          <input id="cfg-local" value="${e.local}" placeholder="ex: Praça XV de Novembro, São Carlos/SP" oninput="updateCfg('local',this.value)">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Observações Gerais <span style="color:#aaa;font-size:9px">(público esperado, contexto, patrocinadores, etc.)</span></label>
+          <textarea id="cfg-obs" rows="3" oninput="updateCfg('observacoes',this.value)" placeholder="ex: Evento aberto ao público, estimativa de 5.000 visitantes. Patrocínio: Prefeitura de São Carlos.">${e.observacoes||''}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRAMAÇÃO POR DIA/LOCAL -->
+    <div class="cfg-panel">
+      <div class="cfg-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>📅 Programação por Dia / Local</span>
+        <button onclick="addProg()" style="background:var(--gm);color:#fff;border:none;padding:5px 14px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">＋ Adicionar dia</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 32px;gap:8px;margin-bottom:6px;padding:0 2px">
+        <span style="font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase">Data</span>
+        <span style="font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase">Horário</span>
+        <span style="font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase">Local</span>
+        <span style="font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase">Descrição</span>
+        <span></span>
+      </div>
+      <div id="prog-container">${progRows}</div>
+    </div>
+
+    <!-- MÓDULOS ATIVOS -->
+    <div class="cfg-panel">
+      <div class="cfg-title">🧩 Módulos Ativos e Descrições</div>
+      <p style="font-size:11px;color:#888;margin-top:0;margin-bottom:12px">Ative ou desative módulos e personalize a descrição de cada um para este evento específico.</p>
+
+      <div style="display:grid;gap:12px">
+        <!-- STAFF -->
+        <div style="border:1.5px solid ${e.modules.staff ? 'var(--gm)' : '#e0e0e0'};border-radius:8px;padding:12px 16px;transition:.2s">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:${e.modules.staff ? '10px' : '0'}">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+              <input type="checkbox" id="mod-staff" ${e.modules.staff?'checked':''} onchange="toggleModule('staff',this.checked)" style="width:16px;height:16px;accent-color:var(--gm)">
+              <span style="font-size:13px;font-weight:700">👥 Staff Detalhada</span>
+            </label>
+          </div>
+          ${e.modules.staff ? `<input value="${(e.modDesc&&e.modDesc.staff)||''}" placeholder="Descreva o que este módulo cobre neste evento (ex: Vigilância, limpeza e coordenação)" oninput="updateModDesc('staff',this.value)" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Sora,sans-serif;box-sizing:border-box">` : ''}
+        </div>
+
+        <!-- ESTRUTURA -->
+        <div style="border:1.5px solid ${e.modules.estrutura ? 'var(--gm)' : '#e0e0e0'};border-radius:8px;padding:12px 16px;transition:.2s">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:${e.modules.estrutura ? '10px' : '0'}">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+              <input type="checkbox" id="mod-estrutura" ${e.modules.estrutura?'checked':''} onchange="toggleModule('estrutura',this.checked)" style="width:16px;height:16px;accent-color:var(--gm)">
+              <span style="font-size:13px;font-weight:700">🏗️ Estrutura</span>
+            </label>
+          </div>
+          ${e.modules.estrutura ? `<input value="${(e.modDesc&&e.modDesc.estrutura)||''}" placeholder="ex: Tendas, geradores, identidade visual, transporte" oninput="updateModDesc('estrutura',this.value)" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Sora,sans-serif;box-sizing:border-box">` : ''}
+        </div>
+
+        <!-- HOSPEDAGEM -->
+        <div style="border:1.5px solid ${e.modules.hospedagem ? 'var(--gm)' : '#e0e0e0'};border-radius:8px;padding:12px 16px;transition:.2s">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:${e.modules.hospedagem ? '10px' : '0'}">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+              <input type="checkbox" id="mod-hospedagem" ${e.modules.hospedagem?'checked':''} onchange="toggleModule('hospedagem',this.checked)" style="width:16px;height:16px;accent-color:var(--gm)">
+              <span style="font-size:13px;font-weight:700">🛏️ Hospedagem</span>
+            </label>
+          </div>
+          ${e.modules.hospedagem ? `<input value="${(e.modDesc&&e.modDesc.hospedagem)||''}" placeholder="ex: Grupos, diárias, refeições, check-in/out" oninput="updateModDesc('hospedagem',this.value)" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Sora,sans-serif;box-sizing:border-box">` : ''}
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+}
+
+function updateCfg(field, val) {
+  ev()[field] = val;
+  renderEventSelect();
+  renderModuleNav();
+}
+
+function updateModDesc(mod, val) {
+  if (!ev().modDesc) ev().modDesc = {};
+  ev().modDesc[mod] = val;
+}
+
+function addProg() {
+  if (!ev().programacao) ev().programacao = [];
+  ev().programacao.push({ data:'', horario:'', local:'', descricao:'' });
+  // Re-render just config (no full render to keep focus)
+  document.getElementById('main').innerHTML = renderConfig();
+  // Focus the last row date field
+  var rows = document.querySelectorAll('#prog-container > div');
+  if (rows.length) rows[rows.length-1].querySelector('input').focus();
+}
+
+function updateProg(i, field, val) {
+  if (!ev().programacao) return;
+  if (ev().programacao[i]) ev().programacao[i][field] = val.toUpperCase();
+}
+
+function delProg(i) {
+  if (!ev().programacao) return;
+  ev().programacao.splice(i,1);
+  document.getElementById('main').innerHTML = renderConfig();
+}
+
+function toggleModule(mod, checked) {
+  ev().modules[mod] = checked;
+  renderModuleNav();
+  if (curTab === mod && !checked) { curTab = 'resumo'; render(); }
+  else { document.getElementById('main').innerHTML = renderConfig(); renderModuleNav(); saveData(); }
+}
+
+
+
+// ═══════════════════════════════════════════════
+//  ATAS TAB — Cadastro Mestre Global
+// ═══════════════════════════════════════════════
+function findAtaMestre(refStr) {
+  // refStr pode ser "154/2025", "154", etc.
+  if (!refStr) return null;
+  const clean = String(refStr).trim();
+  return atasMestre.find(a => {
+    const full = a.numero + '/' + a.ano;
+    return full === clean || a.numero === clean || a.numero.toLowerCase() === clean.toLowerCase();
+  }) || null;
+}
+
+function renderAtas() {
+  let ataCards = '';
+  if (!atasMestre.length) {
+    ataCards = `<div class="tw"><div class="empty"><div class="ei">📑</div>Nenhuma ATA cadastrada. Clique em "+ Nova ATA" para começar.</div></div>`;
+  } else {
+    atasMestre.forEach(ata => {
+      const arquivos = ata.arquivos || [];
+      let itensHtml = (ata.itens||[]).map(it => `
+        <div class="ata-item-row">
+          <span class="item-nome">${it.desc} <span style="color:#aaa;font-size:10px">(${it.unidade})</span></span>
+          <span class="item-vlr">${fmt(it.vlrUnit)}</span>
+          <button class="bdel" style="margin-left:8px" onclick="delAtaItem(${ata.id},${it.id})" title="Remover item">✕</button>
+        </div>`).join('');
+
+      let arquivosHtml = arquivos.length === 0
+        ? '<div style="color:#bbb;font-size:10px;font-style:italic;padding:6px 0">Nenhum arquivo enviado para esta ATA.</div>'
+        : arquivos.map(f => `
+          <div class="upload-file-item">
+            <span class="fi">📄</span>
+            <span class="fn">${f.nome}</span>
+            <span class="fs">${f.size}</span>
+            <button class="fview" onclick="viewFile('${f.id}')">👁 Visualizar</button>
+            <button class="fdel" onclick="delArquivo('${f.id}')">✕</button>
+          </div>`).join('');
+
+      ataCards += `
+      <div class="ata-card">
+        <div class="ata-card-header">
+          <span class="ata-badge">ATA ${ata.numero}/${ata.ano}</span>
+          <span class="ata-fornecedor">${ata.fornecedor}</span>
+          <div class="abts" style="margin-left:auto">
+            <button class="add-btn" style="padding:4px 10px;font-size:10px;margin:0" onclick="openModalAta(${ata.id})">✏ Editar</button>
+            <button class="bdel" onclick="delAta(${ata.id})" style="width:28px;height:28px" title="Excluir ATA">✕</button>
+          </div>
+        </div>
+        <div class="ata-info-grid">
+          <div class="ata-info-item"><label>CNPJ</label><span>${ata.cnpj||'—'}</span></div>
+          <div class="ata-info-item"><label>Contato</label><span>${ata.contato||'—'}</span></div>
+          <div class="ata-info-item"><label>E-mail</label><span>${ata.email||'—'}</span></div>
+          <div class="ata-info-item"><label>Vigência</label><span>${ata.vigencia||'—'}</span></div>
+          ${ata.valorGlobal?`<div class="ata-info-item"><label>Valor Global</label><span>R$ ${ata.valorGlobal}</span></div>`:''}
+          ${ata.processo?`<div class="ata-info-item"><label>Processo</label><span>${ata.processo}</span></div>`:''}
+          ${ata.representante?`<div class="ata-info-item"><label>Representante</label><span>${ata.representante}</span></div>`:''}
+          ${ata.endereco?`<div class="ata-info-item" style="grid-column:1/-1"><label>Endereço</label><span>${ata.endereco}</span></div>`:''}
+          <div class="ata-info-item" style="grid-column:1/-1"><label>Objeto</label><span>${ata.objeto||'—'}</span></div>
+        </div>
+
+        <div class="ata-itens-title">📦 Itens da ATA (${(ata.itens||[]).length} itens)</div>
+        ${itensHtml || '<div class="muted" style="padding:6px 0">Nenhum item cadastrado.</div>'}
+        <button class="add-btn" style="padding:5px 12px;font-size:10px;margin-top:8px;margin-left:0" onclick="openModalAtaItem(${ata.id})">＋ Adicionar Item</button>
+
+        <div class="ata-itens-title" style="margin-top:14px">📎 Documentos desta ATA</div>
+        <div
+          class="upload-area" style="padding:14px;margin-bottom:8px"
+          onclick="document.getElementById('upload-ata-${ata.id}').click()"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="handleDropAta(event,${ata.id})"
+        >
+          <div class="ui" style="font-size:20px">📂</div>
+          <p style="font-size:11px"><strong>Clique ou arraste</strong> o arquivo da ATA aqui (PDF, imagem)</p>
+        </div>
+        <input type="file" id="upload-ata-${ata.id}" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple onchange="handleFileUpload(this.files,${ata.id})">
+        <div>${arquivosHtml}</div>
+      </div>`;
+    });
+  }
+
+  return `
+  <div class="sh">
+    <span class="sh-emoji">📑</span>
+    <div><h2>Atas &amp; Contratos — Cadastro Mestre</h2><p>Cadastre suas ATAs uma única vez · use o número ATA em qualquer módulo para preencher automaticamente</p></div>
+    <div class="sh-actions">
+      <button class="add-btn" onclick="openModalAta(null)">＋ Nova ATA</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="cfg-panel" style="background:var(--gold-l);border:1px solid var(--gold);margin-bottom:18px;padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gd);font-weight:600">
+        💡 <span>Como usar: cadastre aqui as ATAs e seus itens. Nos módulos Staff, Estrutura e Hospedagem, ao informar o <strong>número da ATA</strong> (ex: 154/2025), o sistema busca automaticamente o fornecedor e exibe os itens disponíveis para seleção.</span>
+      </div>
+    </div>
+    ${ataCards}
+
+  <div class="section-sep" style="margin-top:20px">💾 Dados &amp; Backup</div>
+  <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+    <div style="flex:1;min-width:200px">
+      <p style="font-size:12px;font-weight:600;color:var(--gd);margin:0 0 4px">Salvamento automático ativo</p>
+      <p style="font-size:11px;color:#888;margin:0">Todos os dados são salvos no navegador automaticamente. Use os botões abaixo para fazer backup ou restaurar em outro computador.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="exportBackup()" style="background:var(--gd);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Sora,sans-serif">⬇ Exportar Backup</button>
+      <label style="background:#e8f4ea;color:var(--gd);border:1.5px solid var(--gm);padding:8px 16px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Sora,sans-serif">⬆ Importar Backup<input type="file" accept=".json" style="display:none" onchange="importBackup(this)"></label>
+      <button onclick="clearData()" style="background:#fff;color:#c62828;border:1.5px solid #ef9a9a;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Sora,sans-serif">🗑 Limpar tudo</button>
+    </div>
+  </div>
+  </div>`;
+}
+
+// ── ATA CRUD ──
+function buildItensHtml(itens) {
+  if (!itens || !itens.length) return '';
+  return itens.map(function(it, i) {
+    var desc    = (it.desc    || '').replace(/"/g, '&quot;');
+    var unidade = (it.unidade || '').replace(/"/g, '&quot;');
+    var vlr     = it.vlrUnit != null ? it.vlrUnit : '';
+    return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px" id="ai-item-row-' + i + '">' +
+      '<input style="flex:2;padding:5px 8px;border:1.5px solid #e8e8e8;border-radius:5px;font-size:11px;font-family:Sora,sans-serif" value="' + desc + '" placeholder="Descrição do item" data-field="desc" oninput="updateInlineItem(' + i + ',this)">' +
+      '<input style="flex:1;padding:5px 8px;border:1.5px solid #e8e8e8;border-radius:5px;font-size:11px;font-family:Sora,sans-serif" value="' + unidade + '" placeholder="unidade" data-field="unidade" oninput="updateInlineItem(' + i + ',this)">' +
+      '<input type="number" style="flex:1;padding:5px 8px;border:1.5px solid #e8e8e8;border-radius:5px;font-size:11px;font-family:Sora,sans-serif;text-align:right" value="' + vlr + '" placeholder="R$ unit." data-field="vlrUnit" oninput="updateInlineItem(' + i + ',this)">' +
+      '<button class="bdel" onclick="removeInlineItem(' + i + ')" style="flex-shrink:0">✕</button>' +
+      '</div>';
+  }).join('');
+}
+
+function openModalAta(id) {
+  const ata = id ? atasMestre.find(a=>a.id===id) : null;
+  modalCtx = { type: 'ata', id };
+  document.getElementById('modal-inner').classList.add('wide');
+  document.getElementById('mtitle').textContent = ata ? `Editar ATA ${ata.numero}/${ata.ano}` : 'Nova ATA / Contrato';
+  document.getElementById('msub').textContent = 'Faça upload do PDF da ATA para extração automática, ou preencha manualmente';
+
+  document.getElementById('mbody').innerHTML = `
+  <!-- API KEY CONFIG -->
+  <div class="apikey-bar" id="apikey-bar">
+    <label>🔑 CHAVE API ANTHROPIC</label>
+    <input type="password" id="ai-apikey-input" placeholder="sk-ant-api03-..." oninput="saveApiKey(this.value)">
+    <span class="apikey-status" id="apikey-status-badge">Não configurada</span>
+    <button onclick="testApiKey()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;font-family:sans-serif;white-space:nowrap">🔍 Testar</button>
+    <a href="https://console.anthropic.com/settings/keys" target="_blank" style="font-size:9px;color:var(--gold);text-decoration:none;white-space:nowrap">Obter chave →</a>
+  </div>
+  <div id="apikey-test-result" style="display:none;font-size:10px;padding:6px 12px;border-radius:5px;margin-bottom:8px"></div>
+
+  <!-- AI UPLOAD ZONE -->
+  <div class="ai-upload-zone" id="ai-drop-zone"
+    onclick="document.getElementById('ai-pdf-input').click()"
+    ondragover="event.preventDefault();this.classList.add('dragover')"
+    ondragleave="this.classList.remove('dragover')"
+    ondrop="handleAiDrop(event)">
+    <div class="ai-badge">✨ IA · Extração Automática</div>
+    <div style="font-size:22px;margin-bottom:6px">📄</div>
+    <p style="font-size:12px;font-weight:600;color:var(--gd)">Faça upload do PDF da ATA</p>
+    <p style="font-size:10px;color:#888;margin-top:3px">A IA lê o documento e preenche todos os campos automaticamente</p>
+    <p style="font-size:9px;color:#bbb;margin-top:6px">Suporta PDFs de ATAs de Registro de Preços, contratos e similares</p>
+  </div>
+  <input type="file" id="ai-pdf-input" style="display:none" accept=".pdf" onchange="extractAtaFromPdf(this.files[0])">
+
+  <div class="ai-status" id="ai-status">
+    <div class="ai-spinner"></div>
+    <span id="ai-status-msg">Lendo o PDF com IA...</span>
+  </div>
+
+  <div class="ai-preview" id="ai-preview">
+    <div class="ai-preview-title">✨ Dados extraídos pela IA — revise e confirme</div>
+    <div id="ai-preview-content"></div>
+    <button class="btn-ai-apply" onclick="applyAiExtraction()">✓ Aplicar dados extraídos nos campos abaixo</button>
+  </div>
+
+  <div class="section-sep" style="margin-top:14px">📋 Dados da ATA</div>
+  <div class="fg">
+    <div class="field"><label>Número da ATA</label><input id="f-numero" value="${ata?.numero||''}" placeholder="ex: 154"></div>
+    <div class="field"><label>Ano</label><input id="f-ano" value="${ata?.ano||new Date().getFullYear()}" placeholder="ex: 2025"></div>
+  </div>
+  <div class="section-sep">Fornecedor</div>
+  <div class="fg">
+    <div class="field"><label>Razão Social</label><input id="f-fornecedor" value="${ata?.fornecedor||''}" placeholder="Razão social completa"></div>
+    <div class="field"><label>CNPJ</label><input id="f-cnpj" value="${ata?.cnpj||''}" placeholder="00.000.000/0000-00"></div>
+    <div class="field"><label>Telefone / Contato</label><input id="f-contato" value="${ata?.contato||''}" placeholder="(00) 00000-0000"></div>
+    <div class="field"><label>E-mail</label><input id="f-email" value="${ata?.email||''}" placeholder="email@fornecedor.com.br"></div>
+    <div class="field"><label>Endereço</label><input id="f-endereco" value="${ata?.endereco||''}" placeholder="Rua, número, cidade/UF"></div>
+    <div class="field"><label>Representante Legal</label><input id="f-representante" value="${ata?.representante||''}" placeholder="Nome do representante"></div>
+  </div>
+  <div class="section-sep">Vigência &amp; Objeto</div>
+  <div class="fg">
+    <div class="field"><label>Vigência</label><input id="f-vigencia" value="${ata?.vigencia||''}" placeholder="01/01/2025 a 31/12/2025"></div>
+    <div class="field"><label>Valor Global (R$)</label><input id="f-valorGlobal" value="${ata?.valorGlobal||''}" placeholder="ex: 150.000,00"></div>
+    <div class="field" style="grid-column:1/-1"><label>Objeto / Descrição</label><textarea id="f-objeto" rows="2">${ata?.objeto||''}</textarea></div>
+    <div class="field" style="grid-column:1/-1"><label>Processo / Licitação de Origem</label><input id="f-processo" value="${ata?.processo||''}" placeholder="ex: Pregão Eletrônico nº 012/2025"></div>
+  </div>
+
+  <div class="section-sep">📦 Itens da ATA <span style="color:#aaa;font-weight:400;font-size:10px">(serão adicionados ao cadastro)</span></div>
+  <div id="f-itens-list" style="margin-bottom:8px">
+    ${buildItensHtml(ata?.itens||[])}
+  </div>
+  <button onclick="addInlineItem()" style="background:none;border:1.5px dashed var(--border);color:var(--gm);padding:7px 14px;border-radius:6px;font-size:11px;cursor:pointer;font-family:sans-serif;font-weight:600;width:100%;transition:.15s" onmouseover="this.style.borderColor='var(--gm)'" onmouseout="this.style.borderColor='var(--border)'">＋ Adicionar item manualmente</button>
+  `;
+
+  // Initialize inline items array for the modal
+  window._modalItens = ata ? JSON.parse(JSON.stringify(ata.itens||[])) : [];
+  window._aiExtracted = null;
+
+  document.getElementById('modal').style.display = 'flex';
+  setTimeout(function() {
+    loadApiKeyIntoModal();
+    // Clear any leftover status from previous opens
+    setAiStatus('', '');
+    const statusEl = document.getElementById('ai-status');
+    if (statusEl) statusEl.style.display = 'none';
+    const previewEl = document.getElementById('ai-preview');
+    if (previewEl) previewEl.style.display = 'none';
+  }, 30);
+}
+
+function openModalAtaItem(ataId) {
+  modalCtx = { type: 'ata-item', ataId };
+  document.getElementById('modal-inner').classList.remove('wide');
+  document.getElementById('mtitle').textContent = 'Adicionar Item à ATA';
+  document.getElementById('msub').textContent = 'Informe o item, unidade e valor unitário';
+  document.getElementById('mbody').innerHTML = `
+  <div class="fg">
+    <div class="field fg full" style="grid-column:1/-1"><label>Descrição do Item</label><input id="f-desc" placeholder="ex: Vigia Noturno"></div>
+    <div class="field"><label>Unidade</label><input id="f-unidade" placeholder="hora, diária, unidade, metro..."></div>
+    <div class="field"><label>Valor Unitário (R$)</label><input type="number" id="f-vlrUnit" step="0.01" placeholder="ex: 30.00"></div>
+  </div>`;
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function delAta(id) {
+  if (!confirm('Excluir esta ATA do cadastro mestre? Todos os eventos que a referenciam não serão alterados.')) return;
+  atasMestre = atasMestre.filter(a=>a.id!==id);
+  toast('ATA excluída do cadastro mestre.'); render();
+}
+
+function delAtaItem(ataId, itemId) {
+  const ata = atasMestre.find(a=>a.id===ataId);
+  if (!ata) return;
+  ata.itens = ata.itens.filter(i=>i.id!==itemId);
+  toast('Item removido.'); render();
+}
+
+// ── FILE UPLOAD ──
+function bindUploadArea() {}
+
+function handleFileUpload(files, ataId) {
+  if (!files || !files.length) return;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const fid = 'f_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+      const sizeStr = file.size > 1024*1024
+        ? (file.size/1024/1024).toFixed(1) + ' MB'
+        : (file.size/1024).toFixed(0) + ' KB';
+      const ata = atasMestre.find(a=>a.id===ataId);
+      if (ata) {
+        if (!ata.arquivos) ata.arquivos = [];
+        ata.arquivos.push({ id: fid, nome: file.name, size: sizeStr, dataUrl: evt.target.result });
+        toast('Arquivo "' + file.name + '" vinculado à ATA ' + ata.numero + '/' + ata.ano + '!');
+      }
+      render();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('upload-drop-zone')?.classList.remove('dragover');
+  handleFileUpload(event.dataTransfer.files, null);
+}
+
+function handleDropAta(event, ataId) {
+  event.preventDefault();
+  handleFileUpload(event.dataTransfer.files, ataId);
+}
+
+function viewFile(fid) {
+  let f = null;
+  atasMestre.forEach(a=>{ const found=(a.arquivos||[]).find(x=>x.id===fid); if(found) f=found; });
+  if (!f) return;
+  document.getElementById('pdf-viewer-title').textContent = f.nome;
+  document.getElementById('pdf-viewer-frame').src = f.dataUrl;
+  document.getElementById('pdf-viewer').style.display = 'flex';
+}
+
+function closePdfViewer() {
+  document.getElementById('pdf-viewer').style.display = 'none';
+  document.getElementById('pdf-viewer-frame').src = '';
+}
+
+function delArquivo(fid) {
+  if (!confirm('Remover este arquivo?')) return;
+  atasMestre.forEach(a=>{ a.arquivos = (a.arquivos||[]).filter(x=>x.id!==fid); });
+  toast('Arquivo removido.'); render();
+}
+
+
+function autoPopulateConsolidado(e) {
+  // Build consolidado from ATAs used in staff + estrutura + hospedagem
+  var rows = [];
+  var seen = {};
+  function addRow(mod, ata, fornecedor, contato) {
+    var key = (mod||'') + '||' + (ata||'');
+    if (seen[key]) return;
+    seen[key] = true;
+    var valor = 0;
+    if (mod === 'Staff')      valor = e.staff.filter(function(x){ return normalizeAta(x.ata)===normalizeAta(ata); }).reduce(function(s,x){ return s+(x.custo||0); }, 0);
+    if (mod === 'Estrutura')  valor = e.estrutura.filter(function(x){ return normalizeAta(x.ata)===normalizeAta(ata); }).reduce(function(s,x){ return s+(x.custo||0); }, 0);
+    if (mod === 'Hospedagem') valor = e.hospedagem.filter(function(x){ return normalizeAta(x.ata)===normalizeAta(ata); }).reduce(function(s,x){ return s+(x.custoHosp||0); }, 0);
+    var ataInfo = findAtaMestre(ata);
+    rows.push({
+      modulo: mod,
+      ata: normalizeAta(ata),
+      fornecedor: fornecedor || (ataInfo ? ataInfo.fornecedor : ''),
+      contato: contato || (ataInfo ? ataInfo.contato : ''),
+      processo: ataInfo ? ataInfo.processo||'' : '',
+      vigencia: ataInfo ? ataInfo.vigencia||'' : '',
+      status: ata && ata.toLowerCase().includes('direta') ? 'Contratação Direta' : 'Com ATA',
+      valor: valor || ''
+    });
+  }
+  e.staff.forEach(function(it){ addRow('Staff', it.ata, it.fornecedor, it.contato); });
+  e.estrutura.forEach(function(it){ addRow('Estrutura', it.ata, it.fornecedor, it.contato); });
+  e.hospedagem.forEach(function(it){ addRow('Hospedagem', it.ata, it.fornecedor, it.contato); });
+  e.consolidado = rows;
+}
+
+// ═══════════════════════════════════════════════
+//  RESUMO TAB
+// ═══════════════════════════════════════════════
+function renderResumo() {
+  const e = ev();
+
+  // ── Totals ──
+  const totalStaffVal  = totalStaff();
+  const totalEstVal    = totalEst();
+  const totalGeral     = totalStaffVal + totalEstVal + totalHosp();
+  const totalStaffH    = e.staff.reduce(function(s,x){ return s+(x.totalH||0); },0);
+  const totalStaffQtd  = e.staff.reduce(function(s,x){ return s+(x.qtd||0); },0);
+  const totalEstItens  = e.estrutura.length;
+  const totalHospGrupos= e.hospedagem.length;
+  const infoLine       = [e.local, e.dataEvento].filter(Boolean).join(' · ');
+  const now            = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  // ── STAFF DETAIL ──
+  var staffHtml = '';
+  if (e.modules.staff && e.staff.length) {
+    const secoes = [...new Set([...(e.secoes||[]), ...e.staff.map(function(x){ return x.secao; })])];
+    secoes.forEach(function(sec) {
+      const items = e.staff.filter(function(x){ return x.secao === sec; });
+      if (!items.length) return;
+      const subTotal = sumStaff(sec);
+      var rows = items.map(function(it, i) {
+        var bg = i%2===0 ? '' : 'background:#f7faf8';
+        return '<tr style="'+bg+'">' +
+          '<td style="font-size:10px;font-weight:600;color:var(--gd);min-width:140px">'+(it.descricao||'—')+'</td>' +
+          '<td>'+(it.turno||'—')+'</td>' +
+          '<td style="font-size:10px;white-space:nowrap">'+(it.dtInicio||'—')+(it.dtFim&&it.dtFim!==it.dtInicio?' a '+it.dtFim:'')+'</td>' +
+          '<td style="white-space:nowrap;font-size:10px">'+(it.hrInicio||'—')+' – '+(it.hrFim||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.qtd||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.chInd||'—')+'h</td>' +
+          '<td style="text-align:center;font-weight:600;color:var(--gm)">'+(it.totalH||0)+'h</td>' +
+          '<td class="val-r">'+(it.vlrH ? fmtV(it.vlrH)+'/h' : '—')+'</td>' +
+          '<td class="val-r" style="font-weight:700">'+(it.custo ? fmtV(it.custo) : '—')+'</td>' +
+          '<td style="font-size:10px">'+fmtAta(it.ata)+'</td>' +
+          '<td style="font-size:10px;max-width:180px">'+(it.fornecedor||'—')+'</td>' +
+          '<td style="font-size:10px;color:#888;max-width:200px">'+(it.obs||'—')+'</td>' +
+        '</tr>';
+      }).join('');
+      staffHtml +=
+        '<div style="margin-bottom:2px;padding:8px 12px;background:linear-gradient(90deg,var(--gd),var(--gm));color:#fff;border-radius:6px 6px 0 0;display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-weight:800;font-size:12px;letter-spacing:.5px">'+sec+'</span>' +
+          '<span style="font-size:11px;opacity:.85">'+items.length+' item(s) · '+(subTotal?fmtV(subTotal):'a cotar')+'</span>' +
+        '</div>' +
+        '<div class="tw" style="margin-top:0;border-radius:0 0 6px 6px;margin-bottom:14px"><table>' +
+          '<thead><tr>' +
+            '<th>Descrição</th><th>Turno</th><th>Período</th><th>Horário</th>' +
+            '<th style="text-align:center">Qtd</th><th style="text-align:center">CH Ind.</th><th style="text-align:center">Total H</th>' +
+            '<th>Vlr/Hora</th><th>Custo</th><th>ATA</th><th>Fornecedor</th><th>Observações</th>' +
+          '</tr></thead>' +
+          '<tbody>'+rows+
+            '<tr class="sub-tr"><td colspan="8" style="text-align:right;padding-right:12px">Subtotal — '+sec+'</td>' +
+            '<td class="val-r">'+fmtV(subTotal)+'</td><td colspan="3"></td></tr>' +
+          '</tbody>' +
+        '</table></div>';
+    });
+    staffHtml +=
+      '<div style="background:var(--gd);color:#fff;border-radius:6px;padding:9px 16px;display:flex;justify-content:space-between;margin-bottom:6px">' +
+        '<span style="font-weight:700;font-size:12px">TOTAL STAFF &nbsp;·&nbsp; '+totalStaffQtd+' pessoa(s) &nbsp;·&nbsp; '+totalStaffH+'h totais</span>' +
+        '<span style="font-size:14px;font-weight:800">'+fmtV(totalStaffVal)+'</span>' +
+      '</div>';
+  }
+
+  // ── ESTRUTURA DETAIL ──
+  var estHtml = '';
+  if (e.modules.estrutura && e.estrutura.length) {
+    const secoesEst = [...new Set([...(e.secoesEst||[]), ...e.estrutura.map(function(x){ return x.secao||'Geral'; })])];
+    secoesEst.forEach(function(sec) {
+      const items = e.estrutura.filter(function(x){ return (x.secao||'Geral')===sec; });
+      if (!items.length) return;
+      const sub = items.reduce(function(s,x){ return s+(x.custo||0); },0);
+      var rows = items.map(function(it, i) {
+        var bg = i%2===0 ? '' : 'background:#f7faf8';
+        return '<tr style="'+bg+'">' +
+          '<td style="min-width:180px">'+(it.item||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.qtd!=null?it.qtd:'—')+'</td>' +
+          '<td>'+(it.unidade||'—')+'</td>' +
+          '<td class="val-r">'+(it.vlrUnit!=null?fmtV(it.vlrUnit):'—')+'</td>' +
+          '<td class="val-r" style="font-weight:700">'+(it.custo?fmtV(it.custo):'<span class="val-p">A cotar</span>')+'</td>' +
+          '<td style="font-size:10px">'+fmtAta(it.ata)+'</td>' +
+          '<td style="font-size:10px">'+(it.fornecedor||'—')+'</td>' +
+          '<td style="font-size:10px;color:#888;max-width:200px">'+(it.obs||'—')+'</td>' +
+        '</tr>';
+      }).join('');
+      estHtml +=
+        '<div style="margin-bottom:2px;padding:8px 12px;background:linear-gradient(90deg,var(--gd),var(--gm));color:#fff;border-radius:6px 6px 0 0;display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-weight:800;font-size:12px;letter-spacing:.5px">'+sec+'</span>' +
+          '<span style="font-size:11px;opacity:.85">'+items.length+' item(s) · '+(sub?fmtV(sub):'a cotar')+'</span>' +
+        '</div>' +
+        '<div class="tw" style="margin-top:0;border-radius:0 0 6px 6px;margin-bottom:14px"><table>' +
+          '<thead><tr>' +
+            '<th>Item / Serviço</th><th style="text-align:center">Qtd</th><th>Unid.</th>' +
+            '<th>Vlr. Unit.</th><th>Custo Total</th><th>ATA</th><th>Fornecedor</th><th>Observações</th>' +
+          '</tr></thead>' +
+          '<tbody>'+rows+
+            '<tr class="sub-tr"><td colspan="4" style="text-align:right;padding-right:12px">Subtotal — '+sec+'</td>' +
+            '<td class="val-r">'+fmtV(sub)+'</td><td colspan="3"></td></tr>' +
+          '</tbody>' +
+        '</table></div>';
+    });
+    estHtml +=
+      '<div style="background:var(--gd);color:#fff;border-radius:6px;padding:9px 16px;display:flex;justify-content:space-between;margin-bottom:6px">' +
+        '<span style="font-weight:700;font-size:12px">TOTAL ESTRUTURA &nbsp;·&nbsp; '+totalEstItens+' item(s)</span>' +
+        '<span style="font-size:14px;font-weight:800">'+fmtV(totalEstVal)+'</span>' +
+      '</div>';
+  }
+
+  // ── HOSPEDAGEM DETAIL ──
+  var hospHtml = '';
+  if (e.modules.hospedagem && e.hospedagem.length) {
+    const secoesH = [...new Set([...(e.secoesHosp||[]), ...e.hospedagem.map(function(x){ return x.secao||'Hospedagem'; })])];
+    secoesH.forEach(function(sec) {
+      const items = e.hospedagem.filter(function(x){ return (x.secao||'Hospedagem')===sec; });
+      if (!items.length) return;
+      var rows = items.map(function(it, i) {
+        var bg = i%2===0 ? '' : 'background:#f7faf8';
+        return '<tr style="'+bg+'">' +
+          '<td style="font-weight:600">'+(it.grupo||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.qtdCidades||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.pessoas||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.quartos||'—')+'</td>' +
+          '<td style="font-size:10px;white-space:nowrap">'+(it.checkin||'—')+' → '+(it.checkout||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.totalDiarias||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.cafes||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.almocos||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.jantares||'—')+'</td>' +
+          '<td style="font-size:10px">'+fmtAta(it.ata)+'</td>' +
+          '<td><span class="tag '+(it.status==='Contratado'?'t-ata':it.status==='Em licitação'?'t-lic':'t-pend')+'" style="font-size:9px">'+(it.status||'—')+'</span></td>' +
+          '<td style="font-size:10px;color:#888">'+(it.obs||'—')+'</td>' +
+        '</tr>';
+      }).join('');
+      hospHtml +=
+        '<div style="margin-bottom:2px;padding:8px 12px;background:linear-gradient(90deg,var(--gd),var(--gm));color:#fff;border-radius:6px 6px 0 0;display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-weight:800;font-size:12px;letter-spacing:.5px">'+sec+'</span>' +
+          '<span style="font-size:11px;opacity:.85">'+items.length+' grupo(s)</span>' +
+        '</div>' +
+        '<div class="tw" style="margin-top:0;border-radius:0 0 6px 6px;margin-bottom:14px"><table>' +
+          '<thead><tr>' +
+            '<th>Grupo</th><th style="text-align:center">Cidades</th><th style="text-align:center">Pessoas</th>' +
+            '<th style="text-align:center">Quartos</th><th>Período</th><th style="text-align:center">Diárias</th>' +
+            '<th>Custo Total</th><th>ATA/Processo</th><th>Status</th><th>Observações</th>' +
+          '</tr></thead>' +
+          '<tbody>'+rows+'</tbody>' +
+        '</table></div>';
+    });
+    hospHtml +=
+      '<div style="background:var(--gd);color:#fff;border-radius:6px;padding:9px 16px;display:flex;justify-content:space-between;margin-bottom:6px">' +
+        '<span style="font-weight:700;font-size:12px">HOSPEDAGEM &nbsp;·&nbsp; '+totalHospGrupos+' grupo(s)</span>' +
+        '<span style="font-size:14px;font-weight:800">'+(totalHosp()?fmtV(totalHosp()):'<span style="opacity:.6">A cotar</span>')+'</span>' +
+      '</div>';
+  }
+
+  // ── CONSOLIDADO FINAL TABLE ──
+  if (!e.consolidado) e.consolidado = [];
+  if (!e.consolidado.length) autoPopulateConsolidado(e);
+
+  var consolidadoRows = e.consolidado.map(function(row, i) {
+    var bg = i%2===0 ? '' : 'background:#f7faf8';
+    var ataInfo = row.ata ? findAtaMestre(row.ata) : null;
+    var forn = row.fornecedor || (ataInfo ? ataInfo.fornecedor : '—');
+    var proc = row.processo  || (ataInfo ? ataInfo.processo||'' : '');
+    var vig  = row.vigencia  || (ataInfo ? ataInfo.vigencia||'—' : '—');
+    var s = (row.status||'').toLowerCase();
+    var statusTag = s.includes('ata')||s.includes('com ata')
+      ? '<span class="tag t-ata" style="font-size:9px">✅ Com ATA</span>'
+      : s.includes('pendente') ? '<span class="tag t-pend" style="font-size:9px">⚠ Pendente</span>'
+      : s.includes('licita')   ? '<span class="tag t-lic" style="font-size:9px">⚖️ Licitação</span>'
+      : s.includes('direta')   ? '<span class="tag t-cd" style="font-size:9px">🤝 Direta</span>'
+      : '<span class="tag" style="font-size:9px;background:#eee;color:#666">'+(row.status||'—')+'</span>';
+    var valDisp = row.valor ? fmtV(parseFloat(row.valor)) : '<span class="val-p">A cotar</span>';
+    return '<tr style="'+bg+'">' +
+      '<td style="font-weight:600">'+(row.modulo||'—')+'</td>' +
+      '<td style="font-weight:700;color:var(--gd)">'+(row.ata||'—')+'</td>' +
+      '<td style="font-size:10px">'+(proc||'—')+'</td>' +
+      '<td>'+(forn||'—')+'</td>' +
+      '<td style="font-size:10px">'+(row.contato||(ataInfo?ataInfo.contato:'—')||'—')+'</td>' +
+      '<td style="font-size:10px">'+(vig)+'</td>' +
+      '<td>'+statusTag+'</td>' +
+      '<td class="val-r" style="font-weight:700">'+valDisp+'</td>' +
+    '</tr>';
+  }).join('');
+
+  var totalConsolidado = e.consolidado.reduce(function(s,r){ return s+(r.valor?parseFloat(r.valor):0); },0);
+
+  // ── RENDER ──
+  return '<div class="sh" style="justify-content:space-between">' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+      '<span class="sh-emoji">📋</span>' +
+      '<div><h2>Relatório — '+e.name+'</h2>' +
+      '<p>'+(infoLine||'Configure o evento em ⚙️ Configurações')+' &nbsp;·&nbsp; Emitido em '+now+'</p></div>' +
+    '</div>' +
+    '<button onclick="window.print()" style="background:var(--gd);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🖨 Imprimir / PDF</button>' +
+  '</div>' +
+  '<div class="content">' +
+
+    // ── CARDS TOTAIS ──
+    '<div class="cards resumo-cards" style="margin-bottom:20px">' +
+      '<div class="card gold"><div class="card-lbl">Total Geral do Evento</div><div class="card-val">'+fmtV(totalGeral)+'</div><div class="card-sub">Staff + Estrutura contratados</div></div>' +
+      (e.modules.staff ? '<div class="card"><div class="card-lbl">Total Staff</div><div class="card-val">'+fmtV(totalStaffVal)+'</div><div class="card-sub">'+totalStaffQtd+' pessoas · '+totalStaffH+'h</div></div>' : '') +
+      (e.modules.estrutura ? '<div class="card"><div class="card-lbl">Total Estrutura</div><div class="card-val">'+fmtV(totalEstVal)+'</div><div class="card-sub">'+totalEstItens+' item(s) contratados</div></div>' : '') +
+      (e.modules.hospedagem ? '<div class="card blue"><div class="card-lbl">Hospedagem</div><div class="card-val">'+(totalHosp()?fmtV(totalHosp()):totalHospGrupos+' grupo(s)')+'</div><div class="card-sub">'+(totalHosp()?totalHospGrupos+' grupo(s) · pensão completa':'valor a cotar')+'</div></div>' : '') +
+    '</div>' +
+
+    // ── STAFF ──
+    (e.modules.staff && e.staff.length ?
+      '<div class="grp" style="margin-top:0">👥 STAFF — DETALHAMENTO</div>' + staffHtml : '') +
+
+    // ── ESTRUTURA ──
+    (e.modules.estrutura && e.estrutura.length ?
+      '<div class="grp">🏗️ ESTRUTURA — DETALHAMENTO</div>' + estHtml : '') +
+
+    // ── HOSPEDAGEM ──
+    (e.modules.hospedagem && e.hospedagem.length ?
+      '<div class="grp">🛏️ HOSPEDAGEM — DETALHAMENTO</div>' + hospHtml : '') +
+
+
+    '<p style="font-size:10px;color:#aaa;text-align:right;margin-top:6px">Gerado em '+now+' · Sistema de Gerenciamento de Eventos</p>' +
+  '</div>';
+}
+
+
+
+// ═══════════════════════════════════════════════
+//  STAFF TAB
+// ═══════════════════════════════════════════════
+function renderStaff() {
+  const e = ev();
+  const secoes = [...new Set([...(e.secoes||[]), ...e.staff.map(x=>x.secao)])];
+  let html = '';
+
+  if (!secoes.length) {
+    html = '<div class="tw"><div class="empty"><div class="ei">📋</div>Nenhum bloco criado ainda.<br><span style="font-size:11px;color:#aaa">Clique em "+ Novo Bloco" para criar uma seção e adicionar itens.</span></div></div>';
+  } else {
+    secoes.forEach(sec => {
+      const items = e.staff.filter(x => x.secao === sec);
+      const sub   = sumStaff(sec);
+      html += buildSecaoBlock('staff', sec, sub, items);
+    });
+    html += '<div class="tw" style="margin-top:6px"><table><tbody><tr class="tot-tr">' +
+      '<td colspan="8" style="padding:12px;font-size:13px;font-weight:800;text-align:right">TOTAL GERAL — STAFF</td>' +
+      '<td class="val-r" style="font-size:15px;font-weight:800;padding-right:12px">' + (fmt(totalStaff())||'R$ 0,00') + '</td>' +
+      '<td colspan="5"></td></tr></tbody></table></div>';
+  }
+
+  return '<div class="sh"><span class="sh-emoji">👥</span>' +
+    '<div><h2>Staff Detalhada</h2><p>Clique duplo em qualquer célula para editar · Crie blocos por função</p></div>' +
+    '<div class="sh-actions">' +
+    '<button class="add-btn" style="background:var(--gm)" onclick="openNovoBloco(&quot;staff&quot;)">＋ Novo Bloco</button>' +
+    '<button class="add-btn" onclick="openModal(&quot;staff&quot;)">＋ Novo Item</button>' +
+    '</div></div>' +
+    '<div class="content">' + html + '</div>';
+}
+
+function buildSecaoBlock(mod, sec, subtotal, items) {
+  var secEsc = (sec||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  var cols = mod==='staff' ? 15 : mod==='estrutura' ? 10 : 12;
+  var tabLabel = mod==='staff' ? 'staff' : mod==='estrutura' ? 'estrutura' : 'hospedagem';
+
+  var thead = '';
+  if (mod === 'staff') {
+    thead = '<th>Descri&ccedil;&atilde;o</th><th>Turno</th><th>Data In&iacute;cio</th><th>Data Fim</th><th>Hor&aacute;rio</th>' +
+      '<th>Qtd.<br>Pessoas</th><th>C.H.<br>Individual</th><th>Total<br>de Horas</th>' +
+      '<th>Valor/Hora</th><th>Custo Total</th><th>N&ordm; ATA</th><th>Fornecedor</th>' +
+      '<th>Contato</th><th>Observa&ccedil;&otilde;es</th><th></th>';
+  } else if (mod === 'estrutura') {
+    thead = '<th>Item / Servi&ccedil;o</th><th>Qtd</th><th>Unid.</th><th>Vlr.Unit.</th>' +
+      '<th>Custo Total</th><th>ATA</th><th>Fornecedor</th><th>Contato</th>' +
+      '<th>Observa&ccedil;&otilde;es</th><th></th>';
+  } else {
+    thead = '<th>Grupo</th><th>Cidades</th><th>Pessoas</th><th>Quartos</th>' +
+      '<th>Check-in</th><th>Check-out</th><th>Di&aacute;rias</th>' +
+      '<th style="background:rgba(255,255,255,.15)">Tot.Di&aacute;rias<br><span style="font-size:8px;opacity:.8">qtd&times;di&aacute;rias</span></th>' +
+      '<th>Vlr.Di&aacute;ria</th><th>Custo Total</th><th>ATA</th><th></th>';
+  }
+
+  var rows = '';
+  if (!items.length) {
+    rows = '<tr><td colspan="' + cols + '">' +
+      '<div class="empty" style="padding:18px 16px">' +
+      '<div style="font-size:22px;margin-bottom:6px">&#x2795;</div>' +
+      '<div style="font-size:12px;color:#aaa">Sem itens neste bloco.</div>' +
+      '<button onclick="openModal(\x27' + tabLabel + '\x27,\x27' + secEsc + '\x27)" ' +
+        'style="margin-top:10px;background:var(--gm);color:#fff;border:none;padding:7px 18px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">' +
+        '&#xFF0B; Adicionar item aqui' +
+      '</button>' +
+      '</div></td></tr>';
+  } else {
+    if (mod === 'staff') {
+      // ── Group by Descrição, subtotal per function ──
+      var descOrder = [];
+      var descGroups = {};
+      items.forEach(function(it) {
+        var key = (it.descricao || '').trim().toUpperCase() || '(SEM DESCRIÇÃO)';
+        if (!descGroups[key]) { descGroups[key] = []; descOrder.push(key); }
+        descGroups[key].push(it);
+      });
+      descOrder.forEach(function(desc) {
+        var grpItems = descGroups[desc];
+        var grpTotal = grpItems.reduce(function(s,x){ return s+(x.custo||0); }, 0);
+        var grpTotalH = grpItems.reduce(function(s,x){ return s+(x.totalH||0); }, 0);
+        // Group header row
+        rows += '<tr style="background:linear-gradient(90deg,rgba(26,71,49,.09),rgba(46,125,79,.04));border-top:2px solid rgba(46,125,79,.25)">' +
+          '<td colspan="15" style="padding:7px 14px">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between">' +
+              '<span style="font-weight:800;font-size:12px;color:var(--gd);letter-spacing:.4px">▸ ' + desc + '</span>' +
+              '<span style="font-size:10px;color:#888;font-family:monospace">' +
+                grpItems.length + ' item(s) &nbsp;·&nbsp; ' + grpTotalH + 'h &nbsp;·&nbsp; ' +
+                '<strong style="color:var(--gd)">' + (grpTotal ? fmtV(grpTotal) : 'a cotar') + '</strong>' +
+              '</span>' +
+            '</div>' +
+          '</td></tr>';
+        grpItems.forEach(function(it, i) {
+          var bg = i % 2 === 0 ? '' : 'background:#fafafa';
+          rows += '<tr style="' + bg + '">' +
+            '<td style="font-weight:600;color:var(--gd);font-size:11px;min-width:130px;padding-left:20px">' + edCell('staff',it.id,'descricao',it.descricao||'','text',120) + '</td>' +
+            '<td>' + edCell('staff',it.id,'turno',it.turno,'text',80) + '</td>' +
+            '<td style="font-size:11px">' + edCell('staff',it.id,'dtInicio',it.dtInicio,'text',90) + '</td>' +
+            '<td style="font-size:11px">' + edCell('staff',it.id,'dtFim',it.dtFim,'text',90) + '</td>' +
+            '<td><div style="display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap">' +
+              edCell('staff',it.id,'hrInicio',it.hrInicio,'text',52) +
+              '<span style="color:#aaa">&ndash;</span>' +
+              edCell('staff',it.id,'hrFim',it.hrFim,'text',52) +
+            '</div></td>' +
+            '<td style="text-align:center">' + edCell('staff',it.id,'qtd',it.qtd,'number',36) + '</td>' +
+            '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:2px">' +
+              edCell('staff',it.id,'chInd',it.chInd,'number',36) +
+              '<span style="color:#aaa;font-size:10px">h</span></div></td>' +
+            '<td style="text-align:center;font-weight:600;color:var(--gm)">' + it.totalH + 'h</td>' +
+            '<td class="val-r">' + edCell('staff',it.id,'vlrH',it.vlrH,'number',60) + '</td>' +
+            '<td class="val-r" style="font-weight:700;color:var(--gd)">' + (fmt(it.custo)||'&mdash;') + '</td>' +
+            '<td style="font-size:10px">' + edCell('staff',it.id,'ata',normalizeAta(it.ata),'text',80) + '</td>' +
+            '<td style="font-size:10px">' + edCell('staff',it.id,'fornecedor',it.fornecedor,'text',160) + '</td>' +
+            '<td style="font-size:10px">' + edCell('staff',it.id,'contato',it.contato,'text',100) + '</td>' +
+            '<td style="max-width:200px">' + edCell('staff',it.id,'obs',it.obs||'','textarea',180) + '</td>' +
+            '<td><div class="abts"><button class="bdel" onclick="delItem(\x27staff\x27,' + it.id + ')">&#x2715;</button></div></td>' +
+            '</tr>';
+        });
+        // Subtotal row per function (always show, even for 1 item — helps readability)
+        rows += '<tr style="background:rgba(46,125,79,.07);border-bottom:2px solid rgba(46,125,79,.18)">' +
+          '<td colspan="9" style="text-align:right;padding:5px 12px;font-size:10px;font-weight:700;color:var(--gd);font-family:monospace;letter-spacing:.3px">' +
+            'Subtotal — ' + desc +
+          '</td>' +
+          '<td class="val-r" style="font-weight:800;color:var(--gd);font-size:11px;padding:5px 8px">' + (grpTotal ? fmtV(grpTotal) : '—') + '</td>' +
+          '<td colspan="5" style="background:rgba(46,125,79,.04)"></td></tr>';
+      });
+
+    } else if (mod === 'estrutura') {
+      items.forEach(function(it, i) {
+        var bg = i % 2 === 0 ? '' : 'background:#fafafa';
+        rows += '<tr style="' + bg + '">' +
+          '<td style="min-width:160px">' + edCell('estrutura',it.id,'item',it.item,'textarea',220) + '</td>' +
+          '<td>' + edCell('estrutura',it.id,'qtd',it.qtd!=null?it.qtd:'','number') + '</td>' +
+          '<td>' + edCell('estrutura',it.id,'unidade',it.unidade,'text',80) + '</td>' +
+          '<td class="val-r">' + edCell('estrutura',it.id,'vlrUnit',it.vlrUnit!=null?it.vlrUnit:'','number') + '</td>' +
+          '<td class="val-r" style="font-weight:700;color:var(--gd)">' + fmtV(it.custo) + '</td>' +
+          '<td>' + edCell('estrutura',it.id,'ata',normalizeAta(it.ata),'text',110) + '</td>' +
+          '<td style="font-size:10px">' + edCell('estrutura',it.id,'fornecedor',it.fornecedor,'text',160) + '</td>' +
+          '<td style="font-size:10px">' + edCell('estrutura',it.id,'contato',it.contato,'text',110) + '</td>' +
+          '<td style="max-width:220px">' + edCell('estrutura',it.id,'obs',it.obs||'','textarea',200) + '</td>' +
+          '<td><div class="abts"><button class="bdel" onclick="delItem(\x27estrutura\x27,' + it.id + ')">&#x2715;</button></div></td>' +
+          '</tr>';
+      });
+    } else {
+      items.forEach(function(it, i) {
+        var bg = i % 2 === 0 ? '' : 'background:#fafafa';
+        rows += '<tr style="' + bg + '">' +
+          '<td style="font-weight:600">' + edCell('hospedagem',it.id,'grupo',it.grupo,'text',160) + '</td>' +
+          '<td style="text-align:center">' + edCell('hospedagem',it.id,'qtdCidades',it.qtdCidades,'number',40) + '</td>' +
+          '<td style="text-align:center">' + edCell('hospedagem',it.id,'pessoas',it.pessoas,'number',40) + '</td>' +
+          '<td style="text-align:center">' + edCell('hospedagem',it.id,'quartos',it.quartos,'number',40) + '</td>' +
+          '<td style="font-size:11px">' + edCell('hospedagem',it.id,'checkin',it.checkin,'text',90) + '</td>' +
+          '<td style="font-size:11px">' + edCell('hospedagem',it.id,'checkout',it.checkout,'text',90) + '</td>' +
+          '<td style="text-align:center">' + edCell('hospedagem',it.id,'totalDiarias',it.totalDiarias,'number',36) + '</td>' +
+          '<td style="text-align:center">' + edCell('hospedagem',it.id,'cafes',it.cafes,'number',50) + '</td>' +
+          '<td style="text-align:center">' + edCell('hospedagem',it.id,'almocos',it.almocos,'number',50) + '</td>' +
+          '<td style="text-align:center">' + edCell('hospedagem',it.id,'jantares',it.jantares,'number',50) + '</td>' +
+          '<td class="val-r">' + edCell('hospedagem',it.id,'vlrDiaria',it.vlrDiaria,'number',80) + '</td>' +
+          '<td class="val-r" style="font-weight:700;color:var(--gd)">' + (it.custoHosp ? fmtV(it.custoHosp) : '<span class="val-p">A cotar</span>') + '</td>' +
+          '<td>' + edCell('hospedagem',it.id,'ata',normalizeAta(it.ata),'text',120) + '</td>' +
+          '<td><div class="abts"><button class="bdel" onclick="delItem(\x27hospedagem\x27,' + it.id + ')">&#x2715;</button></div></td>' +
+          '</tr>';
+      });
+    }
+  }
+
+  var subRow = '';
+  if (mod === 'staff' && subtotal) {
+    subRow = '<tr class="sub-tr"><td colspan="9" style="text-align:right;padding-right:12px">Subtotal &mdash; ' + sec + '</td>' +
+      '<td class="val-r">' + (fmt(subtotal)||'&mdash;') + '</td><td colspan="5"></td></tr>';
+  } else if (mod === 'estrutura' && subtotal) {
+    subRow = '<tr class="sub-tr"><td colspan="4" style="text-align:right;padding-right:12px">Subtotal &mdash; ' + sec + '</td>' +
+      '<td class="val-r">' + (fmt(subtotal)||'&mdash;') + '</td><td colspan="5"></td></tr>';
+  }
+
+  var itemCount = items.length;
+  var subtotalStr = subtotal ? ' &nbsp;&bull;&nbsp; <span style="color:var(--gold);font-weight:800">' + fmt(subtotal) + '</span>' : '';
+  var countStr = '<span style="background:rgba(255,255,255,.25);font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px">' + itemCount + ' item' + (itemCount!==1?'s':'') + '</span>';
+
+  // ── Block header — bold, large, prominent ──
+  var header =
+    '<div style="' +
+      'background:linear-gradient(135deg,var(--gd) 0%,var(--gm) 100%);' +
+      'color:#fff;' +
+      'border-radius:10px 10px 0 0;' +
+      'padding:14px 20px;' +
+      'display:flex;align-items:center;justify-content:space-between;' +
+      'margin-top:20px;' +
+      'box-shadow:0 2px 8px rgba(26,71,49,.25)' +
+    '">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="width:4px;height:32px;background:var(--gold);border-radius:2px;flex-shrink:0"></div>' +
+        '<div>' +
+          '<div style="font-size:15px;font-weight:800;letter-spacing:.3px;line-height:1.2">' + sec.toUpperCase() + '</div>' +
+          '<div style="font-size:10px;opacity:.75;margin-top:2px">' + countStr + subtotalStr + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        '<button onclick="openModal(\x27' + tabLabel + '\x27,\x27' + secEsc + '\x27)" ' +
+          'style="background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);color:#fff;font-size:11px;padding:6px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-family:Sora,sans-serif;transition:.15s" ' +
+          'onmouseover="this.style.opacity=.8" onmouseout="this.style.opacity=1">' +
+          '&#xFF0B; Novo Item' +
+        '</button>' +
+        '<button onclick="deleteBloco(\x27' + mod + '\x27,\x27' + secEsc + '\x27,event)" ' +
+          'style="background:rgba(183,28,28,.35);border:1px solid rgba(255,100,100,.4);color:#ffcdd2;font-size:10px;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-family:Sora,sans-serif;transition:.15s" ' +
+          'onmouseover="this.style.opacity=.8" onmouseout="this.style.opacity=1">' +
+          '&#x1F5D1; Excluir bloco' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+
+  return header +
+    '<div class="tw" style="margin-top:0;border-radius:0 0 8px 8px;overflow:hidden"><table>' +
+      '<thead><tr>' + thead + '</tr></thead>' +
+      '<tbody>' + rows + subRow + '</tbody>' +
+    '</table></div>';
+}
+
+function deleteBloco(mod, secao, event) {
+  if (event) event.stopPropagation();
+  const arr = mod==='staff' ? ev().staff : mod==='estrutura' ? ev().estrutura : ev().hospedagem;
+  const count = arr.filter(function(x){ return (x.secao||'Geral')===secao; }).length;
+  const msg = count > 0
+    ? 'Excluir o bloco "' + secao + '" e seus ' + count + ' item(s)? Esta ação não pode ser desfeita.'
+    : 'Excluir o bloco "' + secao + '"?';
+  if (!confirm(msg)) return;
+  if (mod==='staff') {
+    ev().staff = ev().staff.filter(function(x){ return x.secao!==secao; });
+    ev().secoes = (ev().secoes||[]).filter(function(s){ return s!==secao; });
+  } else if (mod==='estrutura') {
+    ev().estrutura = ev().estrutura.filter(function(x){ return (x.secao||'Geral')!==secao; });
+    ev().secoesEst = (ev().secoesEst||[]).filter(function(s){ return s!==secao; });
+  } else {
+    ev().hospedagem = ev().hospedagem.filter(function(x){ return (x.secao||'Hospedagem')!==secao; });
+    ev().secoesHosp = (ev().secoesHosp||[]).filter(function(s){ return s!==secao; });
+  }
+  toast('Bloco "' + secao + '" removido.');
+  render();
+}
+
+// Keep old name as alias
+function deleteSecao(secao, event) { deleteBloco('staff', secao, event); }
+
+function openNovoBloco(mod) {
+  const label = mod==='staff' ? 'Staff' : mod==='estrutura' ? 'Estrutura' : 'Hospedagem';
+  const name = prompt('Nome do novo bloco de ' + label + ' (ex: Vigilância, Geradores, Expositores A...)');
+  if (!name || !name.trim()) return;
+  const n = name.trim();
+  if (mod==='staff') {
+    if (!(ev().secoes||[]).includes(n)) { ev().secoes = [...(ev().secoes||[]), n]; }
+  } else if (mod==='estrutura') {
+    if (!(ev().secoesEst||[]).includes(n)) { ev().secoesEst = [...(ev().secoesEst||[]), n]; }
+  } else {
+    if (!(ev().secoesHosp||[]).includes(n)) { ev().secoesHosp = [...(ev().secoesHosp||[]), n]; }
+  }
+  toast('Bloco "' + n + '" criado! Agora clique em "+ Novo Item" para adicionar itens.');
+  render();
+}
+
+
+// ═══════════════════════════════════════════════
+//  ESTRUTURA TAB
+// ═══════════════════════════════════════════════
+function renderEstrutura() {
+  const e = ev();
+  const secoes = [...new Set([...(e.secoesEst||[]), ...e.estrutura.map(x=>x.secao||'Geral')])];
+  let html = '';
+
+  if (!secoes.length) {
+    html = '<div class="tw"><div class="empty"><div class="ei">📋</div>Nenhum bloco criado ainda.<br><span style="font-size:11px;color:#aaa">Clique em "+ Novo Bloco" para criar uma seção.</span></div></div>';
+  } else {
+    secoes.forEach(function(sec) {
+      const items = e.estrutura.filter(function(x){ return (x.secao||'Geral') === sec; });
+      const sub = items.reduce(function(s,x){ return s+(x.custo||0); }, 0);
+      html += buildSecaoBlock('estrutura', sec, sub, items);
+    });
+    html += '<div class="tw" style="margin-top:6px"><table><tbody><tr class="tot-tr">' +
+      '<td colspan="4" style="padding:12px;font-size:13px;font-weight:800;text-align:right">TOTAL GERAL — ESTRUTURA</td>' +
+      '<td class="val-r" style="font-size:15px;font-weight:800;padding-right:12px">' + (fmt(totalEst())||'R$ 0,00') + '</td>' +
+      '<td colspan="5"></td></tr></tbody></table></div>';
+  }
+
+  return '<div class="sh"><span class="sh-emoji">🏗️</span>' +
+    '<div><h2>Estrutura</h2><p>Organize por blocos — Tendas, Geradores, Identidade Visual, etc.</p></div>' +
+    '<div class="sh-actions">' +
+    '<button class="add-btn" style="background:var(--gm)" onclick="openNovoBloco(&quot;estrutura&quot;)">＋ Novo Bloco</button>' +
+    '<button class="add-btn" onclick="openModal(&quot;estrutura&quot;)">＋ Novo Item</button>' +
+    '</div></div>' +
+    '<div class="content">' + html + '</div>';
+}
+
+
+// ═══════════════════════════════════════════════
+//  HOSPEDAGEM TAB
+// ═══════════════════════════════════════════════
+function renderHospedagem() {
+  const e = ev();
+  const secoes = [...new Set([...(e.secoesHosp||[]), ...e.hospedagem.map(x=>x.secao||'Hospedagem')])];
+  let html = '';
+
+  if (!secoes.length) {
+    html = '<div class="tw"><div class="empty"><div class="ei">📋</div>Nenhum bloco criado ainda.<br><span style="font-size:11px;color:#aaa">Clique em "+ Novo Bloco" para criar uma seção.</span></div></div>';
+  } else {
+    secoes.forEach(function(sec) {
+      const items = e.hospedagem.filter(function(x){ return (x.secao||'Hospedagem') === sec; });
+      html += buildSecaoBlock('hospedagem', sec, 0, items);
+    });
+    // ── Total geral hospedagem ──
+    var totalH = totalHosp();
+    var totalDiariasGeral = e.hospedagem.reduce(function(s,x){ return s+((x.quartos&&x.totalDiarias)?x.quartos*x.totalDiarias:0); },0);
+    html += '<div style="background:var(--gd);color:#fff;border-radius:8px;padding:11px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">' +
+      '<span style="font-weight:700;font-size:12px">💰 TOTAL GERAL HOSPEDAGEM' +
+        (totalDiariasGeral ? ' &nbsp;·&nbsp; ' + totalDiariasGeral + ' diárias totais' : '') + '</span>' +
+      '<span style="font-size:18px;font-weight:800">' + (totalH ? fmtV(totalH) : '<span style="opacity:.7;font-size:13px">A cotar — preencha o valor da diária</span>') + '</span>' +
+    '</div>';
+  }
+
+  return '<div class="sh"><span class="sh-emoji">🛏️</span>' +
+    '<div><h2>Hospedagem</h2><p>Organize por blocos — Expositores, Palestrantes, Equipe, etc.</p></div>' +
+    '<div class="sh-actions">' +
+    '<button class="add-btn" style="background:var(--gm)" onclick="openNovoBloco(&quot;hospedagem&quot;)">＋ Novo Bloco</button>' +
+    '<button class="add-btn" onclick="openModal(&quot;hospedagem&quot;)">＋ Novo Item</button>' +
+    '</div></div>' +
+    '<div class="content">' + html + '</div>';
+}
+
+// ═══════════════════════════════════════════════
+//  EDITABLE CELLS
+// ═══════════════════════════════════════════════
+function edCell(tab, id, field, val, type, minW) {
+  const dispVal = (val===null||val===undefined||val==='') ? '<span class="muted">—</span>' : String(val).replace(/</g,'&lt;');
+  const mw = minW ? 'min-width:'+minW+'px' : '';
+  return '<span class="editable" data-tab="'+tab+'" data-id="'+id+'" data-field="'+field+'" data-type="'+(type||'text')+'" style="'+mw+'" ondblclick="startEdit(this)">'+dispVal+'</span>';
+}
+
+function bindEditable() {}
+
+function startEdit(el) {
+  if (el.querySelector('input,textarea,select')) return;
+  const tab   = el.dataset.tab;
+  const id    = parseInt(el.dataset.id);
+  const field = el.dataset.field;
+  const type  = el.dataset.type || 'text';
+  const arr   = tab==='staff' ? ev().staff : tab==='estrutura' ? ev().estrutura : ev().hospedagem;
+  const item  = arr.find(x=>x.id===id);
+  if (!item) return;
+  const curVal = item[field] ?? '';
+  const w = el.style.minWidth || '80px';
+
+  let inp;
+  if (type === 'textarea') {
+    inp = document.createElement('textarea');
+    inp.rows = 2;
+    inp.style.cssText = 'width:100%;min-width:'+w+';font-family:Sora,sans-serif;font-size:11px;padding:3px 6px;border:1.5px solid var(--gold);border-radius:4px;resize:vertical;box-shadow:0 0 0 3px var(--edit-ring)';
+  } else {
+    inp = document.createElement('input');
+    inp.type = type === 'number' ? 'number' : 'text';
+    inp.style.cssText = 'width:100%;min-width:'+w+';font-family:Sora,sans-serif;font-size:11px;padding:3px 6px;border:1.5px solid var(--gold);border-radius:4px;box-shadow:0 0 0 3px var(--edit-ring)';
+    if (type==='number') inp.step = '0.01';
+  }
+  inp.value = curVal;
+  el.innerHTML = '';
+  el.appendChild(inp);
+  inp.focus();
+  inp.select && inp.select();
+
+  function commit() {
+    let v = inp.value;
+    if (type==='number') {
+      v = v==='' ? null : parseFloat(v);
+    } else {
+      // Uppercase all text fields except observations (keep obs as typed? no — uppercase all)
+      v = v.trim().toUpperCase();
+    }
+    item[field] = v;
+    // Recalculate staff custo
+    if (tab==='staff') {
+      item.totalH = (item.qtd||0) * (item.chInd||0);
+      item.custo  = item.totalH * (item.vlrH||0) || null;
+    }
+    // Recalculate estrutura custo
+    if (tab==='estrutura') {
+      item.custo = (item.qtd && item.vlrUnit) ? item.qtd * item.vlrUnit : null;
+    }
+    // Recalculate hospedagem custo
+    if (tab==='hospedagem') {
+      item.custoHosp = (item.quartos && item.totalDiarias && item.vlrDiaria)
+        ? item.quartos * item.totalDiarias * item.vlrDiaria : null;
+    }
+    render();
+  }
+
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', function(e) {
+    if (e.key==='Enter' && type!=='textarea') { inp.blur(); }
+    if (e.key==='Escape') { render(); }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  MODAL — ADD ITEM
+// ═══════════════════════════════════════════════
+function openModal(tab, preselectedBloco) {
+  modalCtx = { tab };
+  document.getElementById('modal-inner').classList.remove('wide');
+  const e = ev();
+
+  document.getElementById('mtitle').textContent =
+    tab==='staff' ? 'Novo Item de Staff' :
+    tab==='estrutura' ? 'Novo Item de Estrutura' : 'Novo Grupo de Hospedagem';
+
+  // ── STAFF MODAL ──
+  if (tab === 'staff') {
+    const blocos = [...new Set([...(e.secoes||[]), ...e.staff.map(x=>x.secao)])];
+    let blocosOpts = blocos.map(function(s){
+      var sel = (s === preselectedBloco) ? ' selected' : '';
+      return '<option value="'+s+'"'+sel+'>'+s+'</option>';
+    }).join('') + '<option value="__new">+ Novo bloco...</option>';
+
+    var body = '<div class="fg">' +
+
+      // ── 1. ATA / CONTRATAÇÃO (topo) ──
+      '<div class="section-sep" style="grid-column:1/-1;margin-bottom:4px">1. ATA ou Contratação</div>' +
+      '<div class="field" style="grid-column:1/-1">' +
+        '<label>Tipo de Vínculo</label>' +
+        '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+          '<button type="button" id="btn-tipo-ata" onclick="setTipoVinculo(\'ata\')" ' +
+            'style="flex:1;padding:8px;border:2px solid var(--gm);border-radius:6px;background:var(--gm);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">📋 Com ATA</button>' +
+          '<button type="button" id="btn-tipo-contrato" onclick="setTipoVinculo(\'contrato\')" ' +
+            'style="flex:1;padding:8px;border:2px solid #e0e0e0;border-radius:6px;background:#fff;color:#666;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🤝 Contratação Direta</button>' +
+        '</div>' +
+      '</div>' +
+
+      // ── ATA fields (shown by default) ──
+      '<div id="wrap-ata" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div class="field" style="grid-column:1/-1;position:relative">' +
+          '<label>Nº ATA <span style="color:var(--gm);font-size:9px">(digite para buscar)</span></label>' +
+          '<input id="f-ata" placeholder="ex: 154/2025" data-ctx="staff" oninput="onAtaInput(this,this.dataset.ctx)" autocomplete="off" ' +
+            'style="font-size:13px;font-weight:600;letter-spacing:.5px">' +
+          '<div id="ata-autocomplete" style="display:none;position:absolute;z-index:500;background:#fff;border:1.5px solid var(--gm);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:320px;max-height:200px;overflow-y:auto;left:0;top:100%"></div>' +
+        '</div>' +
+        '<div id="ata-info-box" style="display:none;grid-column:1/-1;margin-top:0;background:var(--gp);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:11px"></div>' +
+        '<div class="field" id="f-item-wrap" style="display:none;grid-column:1/-1">' +
+          '<label>Item da ATA <span style="color:var(--gm);font-size:9px">(selecione para preencher valor/hora automaticamente)</span></label>' +
+          '<select id="f-item-ata" data-ctx="staff" onchange="onAtaItemSelect(this,this.dataset.ctx)" ' +
+            'style="font-size:12px;font-weight:600;border:2px solid var(--gm)"><option value="">— Selecione o item —</option></select>' +
+        '</div>' +
+        '<div class="field"><label>Fornecedor</label><input id="f-fornecedor" placeholder="Preenchido automaticamente"></div>' +
+        '<div class="field"><label>Contato</label><input id="f-contato" placeholder="Preenchido automaticamente"></div>' +
+      '</div>' +
+
+      // ── Contratação Direta fields (hidden by default) ──
+      '<div id="wrap-contrato" style="display:none;grid-column:1/-1;display:none;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div class="field"><label>Nome do Fornecedor / Prestador</label><input id="f-forn-cd" placeholder="ex: João da Silva ME"></div>' +
+        '<div class="field"><label>Contato / Telefone</label><input id="f-cont-cd" placeholder="ex: (16) 99999-0000"></div>' +
+        '<div class="field" style="grid-column:1/-1"><label>Referência (Processo, Dispensa, Nota...)</label><input id="f-ref-cd" placeholder="ex: Dispensa nº 12/2025 · Nota de empenho 0042"></div>' +
+      '</div>' +
+
+      // ── 2. BLOCO ──
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">2. Bloco de destino</div>' +
+      '<div class="field" style="grid-column:1/-1">' +
+        '<label>Bloco / Seção <span style="color:var(--or);font-size:9px;font-weight:700">★ IMPORTANTE — define onde o item aparecerá</span></label>' +
+        '<select id="f-secao" style="border:2px solid var(--gm);font-size:13px;font-weight:700" ' +
+          'onchange="if(this.value===\'__new\'){document.getElementById(\'new-secao-wrap\').style.display=\'block\'}else{document.getElementById(\'new-secao-wrap\').style.display=\'none\'}">' +
+          blocosOpts +
+        '</select>' +
+      '</div>' +
+      '<div class="field" id="new-secao-wrap" style="display:none;grid-column:1/-1">' +
+        '<label>Nome do Novo Bloco</label><input id="f-nova-secao" placeholder="ex: Vigilância Noturna">' +
+      '</div>' +
+
+      // ── 3. DADOS DO ITEM ──
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Dados do Item</div>' +
+      '<div class="field" style="grid-column:1/-1"><label>Descrição do Serviço / Função <span style="color:var(--gm);font-size:9px">(ex: Recepcionista, Mestre de Cerimônia, Vigia)</span></label><input id="f-descricao" placeholder="ex: Recepcionista" oninput="this.value=this.value.toUpperCase()"></div>' +
+      '<div class="field"><label>Tipo de Turno</label>' +
+        '<select id="f-turno"><option>Diurno</option><option>Noturno</option><option>Diurno/Noturno</option></select>' +
+      '</div>' +
+      '<div class="field"><label>Data Início</label><input id="f-dtInicio" placeholder="23/04/2026" maxlength="10" oninput="fmtDateInput(this)"></div>' +
+      '<div class="field"><label>Data Fim</label><input id="f-dtFim" placeholder="24/04/2026" maxlength="10" oninput="fmtDateInput(this)"></div>' +
+      '<div class="field"><label>Horário Início</label><input id="f-hrInicio" placeholder="20:00" maxlength="5" oninput="fmtTimeInput(this)"></div>' +
+      '<div class="field"><label>Horário Fim</label><input id="f-hrFim" placeholder="08:00" maxlength="5" oninput="fmtTimeInput(this)" onchange="fmtTimeInput(this)"></div>' +
+      '<div class="field"><label>Quantidade de Pessoas</label><input type="number" id="f-qtd" min="1" placeholder="ex: 4" oninput="calcStaffCusto()"></div>' +
+      '<div class="field"><label>C.H. Individual (h) <span style="color:var(--gm);font-size:9px">calculado automaticamente</span></label><input type="number" id="f-chInd" min="0.5" step="0.5" placeholder="auto" oninput="this._manuallyEdited=true;calcStaffCusto()"></div>' +
+      '<div class="field"><label>Valor por Hora (R$)</label><input type="number" id="f-vlrH" step="0.01" placeholder="ex: 30" oninput="calcStaffCusto()"></div>' +
+      '<div class="field" id="f-custo-preview" style="display:none;background:var(--gp);border-radius:6px;padding:8px 12px">' +
+        '<label style="color:var(--gm)">Custo Calculado</label>' +
+        '<div id="f-custo-val" style="font-size:18px;font-weight:800;color:var(--gd)">R$ 0,00</div>' +
+        '<div id="f-custo-det" style="font-size:10px;color:#888"></div>' +
+      '</div>' +
+
+      // ── 4. OBSERVAÇÕES ──
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">4. Observações</div>' +
+      '<div class="field" style="grid-column:1/-1">' +
+        '<label>Observações / Detalhes de Execução <span style="color:#aaa;font-size:9px">(uniforme, local de concentração, responsável...)</span></label>' +
+        '<textarea id="f-obs" rows="3" placeholder="Ex: Apresentar na portaria principal às 19h30 com uniforme social. Contato no evento: João (16) 99999-1234."></textarea>' +
+      '</div>' +
+    '</div>';
+
+    document.getElementById('mbody').innerHTML = body;
+    // Init tipo vínculo
+    window._tipoVinculo = 'ata';
+
+  } else if (tab === 'estrutura') {
+    const blocoEst = [...new Set([...(e.secoesEst||[]), ...e.estrutura.map(x=>x.secao||'Geral')])];
+    let blocosEstOpts = blocoEst.map(function(s){
+      var sel = (s === preselectedBloco) ? ' selected' : '';
+      return '<option value="'+s+'"'+sel+'>'+s+'</option>';
+    }).join('') + '<option value="__new">+ Novo bloco...</option>';
+
+    var body = '<div class="fg">' +
+
+      '<div class="section-sep" style="grid-column:1/-1;margin-bottom:4px">1. ATA ou Contratação</div>' +
+      '<div class="field" style="grid-column:1/-1">' +
+        '<label>Tipo de Vínculo</label>' +
+        '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+          '<button type="button" id="btn-tipo-ata" onclick="setTipoVinculo(\'ata\')" ' +
+            'style="flex:1;padding:8px;border:2px solid var(--gm);border-radius:6px;background:var(--gm);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">📋 Com ATA</button>' +
+          '<button type="button" id="btn-tipo-contrato" onclick="setTipoVinculo(\'contrato\')" ' +
+            'style="flex:1;padding:8px;border:2px solid #e0e0e0;border-radius:6px;background:#fff;color:#666;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🤝 Contratação Direta</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div id="wrap-ata" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div class="field" style="grid-column:1/-1;position:relative">' +
+          '<label>Nº ATA</label>' +
+          '<input id="f-ata" placeholder="ex: 113/2025" data-ctx="estrutura" oninput="onAtaInput(this,this.dataset.ctx)" autocomplete="off" style="font-size:13px;font-weight:600">' +
+          '<div id="ata-autocomplete" style="display:none;position:absolute;z-index:500;background:#fff;border:1.5px solid var(--gm);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:320px;max-height:200px;overflow-y:auto;left:0;top:100%"></div>' +
+        '</div>' +
+        '<div id="ata-info-box" style="display:none;grid-column:1/-1;background:var(--gp);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:11px"></div>' +
+        '<div class="field" id="f-item-wrap" style="display:none;grid-column:1/-1">' +
+          '<label>Item da ATA</label>' +
+          '<select id="f-item-ata" data-ctx="estrutura" onchange="onAtaItemSelect(this,this.dataset.ctx)" style="font-size:12px;font-weight:600;border:2px solid var(--gm)"><option value="">— Selecione o item —</option></select>' +
+        '</div>' +
+        '<div class="field"><label>Fornecedor</label><input id="f-fornecedor" placeholder="Preenchido automaticamente"></div>' +
+        '<div class="field"><label>Contato</label><input id="f-contato" placeholder="Preenchido automaticamente"></div>' +
+      '</div>' +
+
+      '<div id="wrap-contrato" style="display:none;grid-column:1/-1;display:none;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div class="field"><label>Fornecedor / Prestador</label><input id="f-forn-cd" placeholder="ex: Bonini Geradores ME"></div>' +
+        '<div class="field"><label>Contato</label><input id="f-cont-cd" placeholder="ex: (16) 99999-0000"></div>' +
+        '<div class="field" style="grid-column:1/-1"><label>Referência</label><input id="f-ref-cd" placeholder="ex: Dispensa nº 12/2025"></div>' +
+      '</div>' +
+
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">2. Bloco de destino</div>' +
+      '<div class="field" style="grid-column:1/-1">' +
+        '<label>Bloco / Seção <span style="color:var(--or);font-size:9px;font-weight:700">★ define onde o item aparecerá</span></label>' +
+        '<select id="f-secao-est" style="border:2px solid var(--gm);font-size:13px;font-weight:700" ' +
+          'onchange="if(this.value===\'__new\'){document.getElementById(\'new-secao-est-wrap\').style.display=\'block\'}else{document.getElementById(\'new-secao-est-wrap\').style.display=\'none\'}">' +
+          blocosEstOpts +
+        '</select>' +
+      '</div>' +
+      '<div class="field" id="new-secao-est-wrap" style="display:none;grid-column:1/-1">' +
+        '<label>Nome do Novo Bloco</label><input id="f-nova-secao-est" placeholder="ex: Tendas, Geradores...">' +
+      '</div>' +
+
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Dados do Item</div>' +
+      '<div class="field" style="grid-column:1/-1"><label>Descrição do Item / Serviço</label>' +
+        '<textarea id="f-item" rows="2" placeholder="ex: Tenda Galpão 20×25m com fechamento lateral"></textarea></div>' +
+      '<div class="field"><label>Quantidade</label><input type="number" id="f-qtd" placeholder="ex: 3" oninput="calcEstCusto()"></div>' +
+      '<div class="field"><label>Unidade</label><input id="f-unidade" placeholder="diária, unidade, metro..."></div>' +
+      '<div class="field"><label>Valor Unitário (R$)</label><input type="number" id="f-vlrUnit" step="0.01" placeholder="ex: 2900" oninput="calcEstCusto()"></div>' +
+      '<div class="field" id="f-custo-preview" style="display:none;background:var(--gp);border-radius:6px;padding:8px 12px">' +
+        '<label style="color:var(--gm)">Custo Calculado</label>' +
+        '<div id="f-custo-val" style="font-size:18px;font-weight:800;color:var(--gd)">R$ 0,00</div>' +
+      '</div>' +
+
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">4. Observações</div>' +
+      '<div class="field" style="grid-column:1/-1"><label>Observações de Montagem / Execução</label>' +
+        '<textarea id="f-obs" rows="3" placeholder="Ex: Montagem: 23/04 a partir das 08h. Desmontagem: 27/04 após 18h. Contato técnico: (16) 99999-0000."></textarea></div>' +
+    '</div>';
+
+    document.getElementById('mbody').innerHTML = body;
+    window._tipoVinculo = 'ata';
+
+  } else {
+    // hospedagem
+    const blocoHosp = [...new Set([...(e.secoesHosp||[]), ...e.hospedagem.map(x=>x.secao||'Hospedagem')])];
+    let blocosHospOpts = blocoHosp.map(function(s){
+      var sel = (s === preselectedBloco) ? ' selected' : '';
+      return '<option value="'+s+'"'+sel+'>'+s+'</option>';
+    }).join('') + '<option value="__new">+ Novo bloco...</option>';
+
+    var body = '<div class="fg">' +
+      '<div class="section-sep" style="grid-column:1/-1;margin-bottom:4px">1. Bloco de destino</div>' +
+      '<div class="field" style="grid-column:1/-1">' +
+        '<label>Bloco / Seção <span style="color:var(--or);font-size:9px;font-weight:700">★ define onde o item aparecerá</span></label>' +
+        '<select id="f-secao-hosp" style="border:2px solid var(--gm);font-size:13px;font-weight:700" ' +
+          'onchange="if(this.value===\'__new\'){document.getElementById(\'new-secao-hosp-wrap\').style.display=\'block\'}else{document.getElementById(\'new-secao-hosp-wrap\').style.display=\'none\'}">' +
+          blocosHospOpts +
+        '</select>' +
+      '</div>' +
+      '<div class="field" id="new-secao-hosp-wrap" style="display:none;grid-column:1/-1">' +
+        '<label>Nome do Novo Bloco</label><input id="f-nova-secao-hosp" placeholder="ex: Expositores A, Palestrantes...">' +
+      '</div>' +
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">2. Dados do Grupo</div>' +
+      '<div class="field" style="grid-column:1/-1"><label>Nome do Grupo</label><input id="f-grupo" placeholder="ex: Expositores A (3 Diárias)"></div>' +
+      '<div class="field"><label>Qtd. Cidades</label><input type="number" id="f-qtdCidades" placeholder="ex: 26"></div>' +
+      '<div class="field"><label>Pessoas</label><input type="number" id="f-pessoas" placeholder="ex: 52"></div>' +
+      '<div class="field"><label>Quartos</label><input type="number" id="f-quartos" placeholder="ex: 26" oninput="calcHospCusto()"></div>' +
+      '<div class="field"><label>Check-in</label><input id="f-checkin" placeholder="ex: 24/05/2026"></div>' +
+      '<div class="field"><label>Check-out</label><input id="f-checkout" placeholder="ex: 27/05/2026"></div>' +
+      '<div class="field"><label>Total Diárias</label><input type="number" id="f-totalDiarias" placeholder="ex: 3" oninput="calcHospCusto()"></div>' +
+      '<div class="field"><label>Cafés</label><input type="number" id="f-cafes" placeholder="ex: 156"></div>' +
+      '<div class="field"><label>Almoços</label><input type="number" id="f-almocos" placeholder="ex: 156"></div>' +
+      '<div class="field"><label>Jantares</label><input type="number" id="f-jantares" placeholder="ex: 156"></div>' +
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Cotação</div>' +'<div class="field"><label>Valor da Diária por Quarto (R$) <span style="color:var(--gm);font-size:9px">pensão completa inclusa</span></label>' +'<input type="number" id="f-vlrDiaria" step="0.01" placeholder="ex: 380.00" oninput="calcHospCusto()"></div>' +'<div class="field" id="f-hosp-custo-preview" style="display:none;background:var(--gp);border-radius:6px;padding:8px 12px">' +'<label style="color:var(--gm)">Custo Calculado</label>' +'<div id="f-hosp-custo-val" style="font-size:18px;font-weight:800;color:var(--gd)">R$ 0,00</div>' +'<div id="f-hosp-custo-det" style="font-size:10px;color:#888"></div>' +'</div>' +'<div class="field"><label>ATA / Processo</label><input id="f-ata" placeholder="ex: Proc. 29552/2025"></div>' +
+      '<div class="field"><label>Status</label>' +
+        '<select id="f-status"><option>Em licitação</option><option>Aprovado</option><option>Contratado</option><option>A definir</option></select></div>' +
+      '<div class="field" style="grid-column:1/-1"><label>Observações</label>' +
+        '<textarea id="f-obs" rows="2" placeholder="Informações adicionais..."></textarea></div>' +
+    '</div>';
+
+    document.getElementById('mbody').innerHTML = body;
+  }
+
+  document.getElementById('modal').style.display = 'flex';
+  setTimeout(updateModalButtons, 20);
+}
+
+// Toggle between ATA and Contratação Direta
+function setTipoVinculo(tipo) {
+  window._tipoVinculo = tipo;
+  var wAta = document.getElementById('wrap-ata');
+  var wCd  = document.getElementById('wrap-contrato');
+  var bAta = document.getElementById('btn-tipo-ata');
+  var bCd  = document.getElementById('btn-tipo-contrato');
+  if (tipo === 'ata') {
+    if (wAta) wAta.style.display = 'grid';
+    if (wCd)  wCd.style.display  = 'none';
+    if (bAta) { bAta.style.background='var(--gm)'; bAta.style.color='#fff'; bAta.style.borderColor='var(--gm)'; }
+    if (bCd)  { bCd.style.background='#fff'; bCd.style.color='#666'; bCd.style.borderColor='#e0e0e0'; }
+  } else {
+    if (wAta) wAta.style.display = 'none';
+    if (wCd)  { wCd.style.display='grid'; wCd.style.gridTemplateColumns='1fr 1fr'; wCd.style.gap='10px'; }
+    if (bAta) { bAta.style.background='#fff'; bAta.style.color='#666'; bAta.style.borderColor='#e0e0e0'; }
+    if (bCd)  { bCd.style.background='var(--or)'; bCd.style.color='#fff'; bCd.style.borderColor='var(--or)'; }
+  }
+}
+
+// Live custo calculation in modal
+function calcStaffCusto() {
+  var qtd   = parseFloat(document.getElementById('f-qtd')?.value)   || 0;
+  var chInd = parseFloat(document.getElementById('f-chInd')?.value) || 0;
+  var vlrH  = parseFloat(document.getElementById('f-vlrH')?.value)  || 0;
+  var prev  = document.getElementById('f-custo-preview');
+  var val   = document.getElementById('f-custo-val');
+  var det   = document.getElementById('f-custo-det');
+  if (!prev) return;
+  if (qtd && chInd && vlrH) {
+    var totalH = qtd * chInd;
+    var custo  = totalH * vlrH;
+    prev.style.display = 'block';
+    val.textContent = custo.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+    if (det) det.textContent = qtd + ' pessoas × ' + chInd + 'h = ' + totalH + 'h × R$ ' + vlrH + '/h';
+  } else {
+    prev.style.display = 'none';
+  }
+}
+
+function calcHospCusto() {
+  var quartos  = parseFloat(document.getElementById('f-quartos')?.value)   || 0;
+  var diarias  = parseFloat(document.getElementById('f-totalDiarias')?.value) || 0;
+  var vlrDiaria= parseBRL(document.getElementById('f-vlrDiaria')?.value)   || 0;
+  var prev = document.getElementById('f-hosp-custo-preview');
+  var val  = document.getElementById('f-hosp-custo-val');
+  var det  = document.getElementById('f-hosp-custo-det');
+  if (!prev) return;
+  if (quartos && diarias && vlrDiaria) {
+    var custo = quartos * diarias * vlrDiaria;
+    prev.style.display = 'block';
+    val.textContent = custo.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+    if (det) det.textContent = quartos + ' quartos × ' + diarias + ' diárias × ' + vlrDiaria.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) + '/quarto';
+  } else {
+    prev.style.display = 'none';
+  }
+}
+
+function calcEstCusto() {
+  var qtd    = parseFloat(document.getElementById('f-qtd')?.value)    || 0;
+  var vlrUnit= parseFloat(document.getElementById('f-vlrUnit')?.value) || 0;
+  var prev   = document.getElementById('f-custo-preview');
+  var val    = document.getElementById('f-custo-val');
+  if (!prev) return;
+  if (qtd && vlrUnit) {
+    prev.style.display = 'block';
+    val.textContent = (qtd * vlrUnit).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+  } else {
+    prev.style.display = 'none';
+  }
+}
+
+
+function gv(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function saveItem() {
+  const ctx = modalCtx;
+  if (!ctx) return;
+  const tab  = ctx.tab;
+  const type = ctx.type;
+  const e    = ev();
+
+  // ── Save ATA ──
+  if (type === 'ata') {
+    if (!gv('f-numero')) { alert('Informe o número da ATA.'); return; }
+    const itensFinais = (window._modalItens || []).filter(function(it){ return it.desc && it.desc.trim(); });
+    if (ctx.id) {
+      const ata = atasMestre.find(function(a){ return a.id===ctx.id; });
+      if (ata) {
+        ata.numero=gv('f-numero'); ata.ano=gv('f-ano');
+        ata.fornecedor=up(gv('f-fornecedor')); ata.cnpj=gv('f-cnpj');
+        ata.contato=up(gv('f-contato')); ata.email=gv('f-email');
+        ata.endereco=up(gv('f-endereco')); ata.representante=up(gv('f-representante'));
+        ata.vigencia=up(gv('f-vigencia')); ata.valorGlobal=gv('f-valorGlobal');
+        ata.objeto=up(gv('f-objeto')); ata.processo=up(gv('f-processo'));
+        ata.itens=itensFinais;
+      }
+      toast('ATA atualizada!');
+    } else {
+      atasMestre.push({ id:nextAtaMestre++, numero:gv('f-numero'), ano:gv('f-ano'),
+        fornecedor:up(gv('f-fornecedor')), cnpj:gv('f-cnpj'), contato:up(gv('f-contato')), email:gv('f-email'),
+        endereco:up(gv('f-endereco')), representante:up(gv('f-representante')), vigencia:up(gv('f-vigencia')),
+        valorGlobal:gv('f-valorGlobal'), objeto:up(gv('f-objeto')), processo:up(gv('f-processo')),
+        itens:itensFinais, arquivos:[] });
+      toast('ATA cadastrada!');
+    }
+    window._modalItens=null; closeModal(); render(); return;
+  }
+
+  // ── Save ATA Item ──
+  if (type === 'ata-item') {
+    if (!gv('f-desc')) { alert('Informe a descrição do item.'); return; }
+    const ataItemParentId = ctx.ataId;
+    const ata = atasMestre.find(function(a){ return a.id===ataItemParentId; });
+    if (!ata) return;
+    const nextId = ata.itens.length ? Math.max.apply(null, ata.itens.map(function(i){ return i.id; })) + 1 : 1;
+    ata.itens.push({ id:nextId, desc:gv('f-desc'), unidade:gv('f-unidade'), vlrUnit:gv('f-vlrUnit')?parseFloat(gv('f-vlrUnit')):null });
+    toast('Item adicionado à ATA!'); closeModal(); render(); return;
+  }
+
+  // ── Determine ATA or Contratação Direta ──
+  const tipoVinculo = window._tipoVinculo || 'ata';
+  let ataRef = '', fornecedor = '', contato = '';
+  if (tipoVinculo === 'ata') {
+    ataRef    = normalizeAta(gv('f-ata'));
+    fornecedor= gv('f-fornecedor');
+    contato   = gv('f-contato');
+  } else {
+    ataRef    = gv('f-ref-cd') || 'Contratação Direta';
+    fornecedor= gv('f-forn-cd');
+    contato   = gv('f-cont-cd');
+  }
+
+  // ── Save Staff ──
+  if (tab === 'staff') {
+    // Read secao from f-secao (highlighted prominently in modal)
+    let secao = gv('f-secao');
+    if (!secao) secao = (e.secoes && e.secoes[0]) || 'Geral';
+    if (secao === '__new') {
+      secao = gv('f-nova-secao');
+      if (!secao) { alert('Informe o nome do novo bloco.'); return; }
+    }
+    // Ensure secao exists in event.secoes
+    if (!(e.secoes||[]).includes(secao)) e.secoes = [...(e.secoes||[]), secao];
+
+    const qtd   = parseFloat(gv('f-qtd'))   || 0;
+    const chInd = parseFloat(gv('f-chInd')) || 0;
+    const vlrH  = parseFloat(gv('f-vlrH'))  || 0;
+    const totalH = qtd * chInd;
+    const custo  = totalH * vlrH || null;
+    e.staff.push({ id:e.nextStaff++, secao:up(secao), descricao:up(gv('f-descricao')), turno:up(gv('f-turno')),
+      dtInicio:gv('f-dtInicio'), dtFim:gv('f-dtFim'),
+      hrInicio:gv('f-hrInicio'), hrFim:gv('f-hrFim'),
+      qtd, chInd, totalH, vlrH: vlrH||null, custo,
+      ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:up(gv('f-obs')) });
+    toast('Item adicionado ao bloco "' + secao + '"!');
+    closeModal(); render(); return;
+  }
+
+  // ── Save Estrutura ──
+  if (tab === 'estrutura') {
+    let secao = gv('f-secao-est') || 'Geral';
+    if (secao === '__new') {
+      secao = gv('f-nova-secao-est');
+      if (!secao) { alert('Informe o nome do novo bloco.'); return; }
+    }
+    if (!(e.secoesEst||[]).includes(secao)) e.secoesEst = [...(e.secoesEst||[]), secao];
+    const qtd    = parseFloat(gv('f-qtd'))    || null;
+    const vlrUnit= parseBRL(gv('f-vlrUnit')) || null;
+    const custo  = qtd && vlrUnit ? qtd * vlrUnit : null;
+    e.estrutura.push({ id:e.nextEstrutura++, secao:up(secao), item:up(gv('f-item')),
+      qtd, unidade:up(gv('f-unidade')), vlrUnit, custo,
+      ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:up(gv('f-obs')) });
+    toast('Item adicionado ao bloco "' + secao + '"!');
+    closeModal(); render(); return;
+  }
+
+  // ── Save Hospedagem ──
+  if (tab === 'hospedagem') {
+    let secao = gv('f-secao-hosp') || 'Hospedagem';
+    if (secao === '__new') {
+      secao = gv('f-nova-secao-hosp');
+      if (!secao) { alert('Informe o nome do novo bloco.'); return; }
+    }
+    if (!(e.secoesHosp||[]).includes(secao)) e.secoesHosp = [...(e.secoesHosp||[]), secao];
+    e.hospedagem.push({ id:e.nextHospedagem++, secao:up(secao), grupo:up(gv('f-grupo')),
+      qtdCidades:parseFloat(gv('f-qtdCidades'))||null, pessoas:parseFloat(gv('f-pessoas'))||null,
+      quartos:parseFloat(gv('f-quartos'))||null, checkin:gv('f-checkin'), checkout:gv('f-checkout'),
+      totalDiarias:parseFloat(gv('f-totalDiarias'))||null,
+      cafes:parseFloat(gv('f-cafes'))||null, almocos:parseFloat(gv('f-almocos'))||null,
+      jantares:parseFloat(gv('f-jantares'))||null, ata:up(gv('f-ata')), status:gv('f-status'), obs:up(gv('f-obs')),
+      vlrDiaria: parseBRL(gv('f-vlrDiaria')),
+      custoHosp: (function(){ var q=parseFloat(gv('f-quartos'))||0, d=parseFloat(gv('f-totalDiarias'))||0, v=parseBRL(gv('f-vlrDiaria'))||0; return q&&d&&v ? q*d*v : null; })()
+    });
+    toast('Grupo adicionado ao bloco "' + secao + '"!');
+    closeModal(); render(); return;
+  }
+}
+
+// Show "Salvar e Adicionar Outro" only for staff/estrutura
+function updateModalButtons() {
+  const btn = document.getElementById('btn-salvar-mais');
+  if (!btn || !modalCtx) return;
+  btn.style.display = (modalCtx.tab === 'staff' || modalCtx.tab === 'estrutura') ? 'inline-block' : 'none';
+}
+
+// Save current item and reopen modal pre-filled with same ATA/bloco
+function saveItemAndAddMore() {
+  const tab = modalCtx?.tab;
+  if (!tab || (tab !== 'staff' && tab !== 'estrutura')) { saveItem(); return; }
+
+  // Capture ATA context before saving
+  const ataVal    = gv('f-ata') || '';
+  const tipoVinc  = window._tipoVinculo || 'ata';
+  const fornVal   = tipoVinc === 'ata' ? gv('f-fornecedor') : gv('f-forn-cd');
+  const contVal   = tipoVinc === 'ata' ? gv('f-contato')    : gv('f-cont-cd');
+  const refCdVal  = gv('f-ref-cd') || '';
+  const secaoVal  = tab === 'staff' ? gv('f-secao') : gv('f-secao-est');
+  const novaSec   = tab === 'staff' ? gv('f-nova-secao') : gv('f-nova-secao-est');
+
+  // Save the current item (without closing the modal flow)
+  saveItem(); // this calls closeModal() internally — we'll reopen
+
+  // Reopen modal with same context, pre-set ATA
+  setTimeout(function() {
+    openModal(tab, secaoVal === '__new' ? novaSec : secaoVal);
+    setTimeout(function() {
+      // Restore ATA info
+      if (tipoVinc === 'ata' && ataVal) {
+        const ataInput = document.getElementById('f-ata');
+        if (ataInput) { ataInput.value = ataVal; onAtaInput(ataInput, tab); }
+      } else if (tipoVinc === 'contrato') {
+        setTipoVinculo('contrato');
+        const fF = document.getElementById('f-forn-cd'), fC = document.getElementById('f-cont-cd'), fR = document.getElementById('f-ref-cd');
+        if (fF) fF.value = fornVal;
+        if (fC) fC.value = contVal;
+        if (fR) fR.value = refCdVal;
+      }
+      // Show "adding more" notice
+      const mh = document.querySelector('.mh p');
+      if (mh && ataVal) mh.innerHTML = '📋 Adicionando itens da ATA <strong style="color:var(--gold)">' + ataVal + '</strong> — preencha os dados do próximo item';
+      updateModalButtons();
+    }, 80);
+  }, 50);
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  modalCtx = null;
+}
+
+
+function delItem(tab, id) {
+  if (!confirm('Excluir este item?')) return;
+  if (tab==='staff')      ev().staff      = ev().staff.filter(x=>x.id!==id);
+  if (tab==='estrutura')  ev().estrutura  = ev().estrutura.filter(x=>x.id!==id);
+  if (tab==='hospedagem') ev().hospedagem = ev().hospedagem.filter(x=>x.id!==id);
+  render();
+}
+
+
+// ═══════════════════════════════════════════════
+//  API KEY MANAGEMENT
+// ═══════════════════════════════════════════════
+function saveApiKey(val) {
+  const key = (val || '').trim().replace(/\s+/g, '');
+  localStorage.setItem('anthropic_api_key', key);
+  const badge = document.getElementById('apikey-status-badge');
+  if (badge) {
+    if (key.length > 20) { badge.className='apikey-status ok'; badge.textContent='✓ Configurada'; }
+    else { badge.className='apikey-status missing'; badge.textContent=key?'Chave curta':'Não configurada'; }
+  }
+}
+function loadApiKeyIntoModal() {
+  const key = localStorage.getItem('anthropic_api_key') || '';
+  const input = document.getElementById('ai-apikey-input');
+  if (input && key) input.value = key;
+  saveApiKey(key);
+}
+async function testApiKey() {
+  const key = (localStorage.getItem('anthropic_api_key')||'').trim();
+  const resultEl = document.getElementById('apikey-test-result');
+  if (!resultEl) return;
+  if (!key || key.length < 20) {
+    resultEl.style.cssText='display:block;background:#ffebee;color:#b71c1c;font-size:10px;padding:6px 12px;border-radius:5px;margin-bottom:8px';
+    resultEl.textContent='⚠ Nenhuma chave configurada.'; return;
+  }
+  resultEl.style.cssText='display:block;background:#e8f4ea;color:#1a4731;font-size:10px;padding:6px 12px;border-radius:5px;margin-bottom:8px';
+  resultEl.textContent='⏳ Testando...';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'ok'}]})
+    });
+    const data = await resp.json();
+    if (resp.ok) { resultEl.style.background='#e8f5e9'; resultEl.style.color='#1b5e20'; resultEl.textContent='✅ Chave válida!'; }
+    else { resultEl.style.background='#ffebee'; resultEl.style.color='#b71c1c'; resultEl.textContent='❌ Erro '+resp.status+': '+(data.error?.message||'').substring(0,80); }
+  } catch(e) { resultEl.style.background='#fff3e0'; resultEl.style.color='#e65100'; resultEl.textContent='⚠ '+e.message; }
+}
+
+// ═══════════════════════════════════════════════
+//  AI PDF EXTRACTION
+// ═══════════════════════════════════════════════
+function handleAiDrop(event) { event.preventDefault(); document.getElementById('ai-drop-zone')?.classList.remove('dragover'); const file=event.dataTransfer.files[0]; if(file) extractAtaFromPdf(file); }
+
+async function extractAtaFromPdf(file) {
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.pdf')) { alert('Selecione um arquivo PDF.'); return; }
+  const apiKey = (localStorage.getItem('anthropic_api_key')||'').trim();
+  if (!apiKey || apiKey.length < 20) { setAiStatus('error','⚠ Configure sua chave API acima.'); return; }
+  const dropZone=document.getElementById('ai-drop-zone'), previewEl=document.getElementById('ai-preview');
+  if(previewEl) previewEl.style.display='none';
+  if(dropZone)  dropZone.style.opacity='0.6';
+  try {
+    setAiStatus('loading','📄 Lendo o PDF...');
+    const arrayBuffer = await file.arrayBuffer();
+    if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js não carregou. Verifique sua conexão.');
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+    let fullText = '';
+    setAiStatus('loading','Extraindo texto de '+pdf.numPages+' página(s)...');
+    for (let p=1;p<=pdf.numPages;p++) {
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      fullText+='\n--- Página '+p+' ---\n'+tc.items.map(function(i){return i.str;}).join(' ');
+    }
+    if (!fullText.trim()||fullText.trim().length<100) throw new Error('Não foi possível extrair texto. O PDF pode ser uma imagem escaneada.');
+    setAiStatus('loading','🤖 Analisando com IA ('+Math.round(fullText.length/1000)+'k caracteres)...');
+    const prompt = 'Você é especialista em licitações públicas brasileiras. Analise o texto de uma ATA de Registro de Preços e retorne SOMENTE um JSON válido sem markdown:\n{"numero":"","ano":"","vigencia":"","valorGlobal":"","processo":"","objeto":"","fornecedor":{"razaoSocial":"","cnpj":"","endereco":"","telefone":"","email":"","representante":""},"itens":[{"numero":"","descricao":"","unidade":"","quantidade":"","valorUnitario":""}],"orgaoGerenciador":""}\nUse null para campos não encontrados. Extraia TODOS os itens.\n\nTEXTO:\n'+fullText.substring(0,28000);
+    const response = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:prompt}]})
+    });
+    if (!response.ok) {
+      const err=await response.json().catch(function(){return{};});
+      const msg = response.status===401?'Chave inválida ou expirada.':response.status===400?'Erro 400: '+(err.error?.message||'verifique sua conta'):('Erro '+response.status+': '+(err.error?.message||''));
+      throw new Error(msg);
+    }
+    const data=await response.json();
+    const rawText=(data.content||[]).map(function(c){return c.text||'';}).join('').trim();
+    const clean=rawText.replace(/```json|```/g,'').trim();
+    let extracted;
+    try { const m=clean.match(/\{[\s\S]*\}/); extracted=JSON.parse(m?m[0]:clean); }
+    catch(e) { throw new Error('Formato inesperado da IA. Tente novamente.'); }
+    window._aiExtracted=extracted;
+    const nItens=(extracted.itens||[]).length;
+    setAiStatus('success','✅ '+nItens+' item(s) extraído(s)! Revise e clique em "Aplicar".');
+    if(dropZone) dropZone.style.opacity='1';
+    renderAiPreview(extracted);
+  } catch(err) {
+    setAiStatus('error','⚠ '+(err.message||'Erro ao processar o PDF.'));
+    if(dropZone) dropZone.style.opacity='1';
+    console.error('Extraction error:',err);
+  }
+}
+
+function setAiStatus(type,msg) {
+  const el=document.getElementById('ai-status'), msgEl=document.getElementById('ai-status-msg');
+  if (!el) return;
+  if (!type) { el.style.display='none'; return; }
+  el.className='ai-status '+type; el.style.display='';
+  if(msgEl) msgEl.textContent=msg;
+}
+
+function renderAiPreview(data) {
+  const previewEl=document.getElementById('ai-preview'), contentEl=document.getElementById('ai-preview-content');
+  if(!previewEl||!contentEl) return;
+  const forn=data.fornecedor||{}, itens=data.itens||[];
+  let itensHtml='';
+  if(itens.length) {
+    itensHtml='<div style="margin-top:8px"><div class="ai-preview-row"><label>Itens</label><div style="display:flex;flex-wrap:wrap;gap:4px">';
+    itens.forEach(function(it,i){
+      const vlr=it.valorUnitario?'R$ '+parseFloat(it.valorUnitario).toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';
+      itensHtml+='<span class="ai-item-chip">'+(i+1)+'. '+(it.descricao||'').substring(0,35)+(it.descricao&&it.descricao.length>35?'…':'')+' · '+(it.unidade||'—')+' · '+vlr+'</span>';
+    });
+    itensHtml+='</div></div></div>';
+  }
+  contentEl.innerHTML=
+    '<div class="ai-preview-row"><label>Nº ATA</label><span>'+(data.numero||'—')+'/'+(data.ano||'—')+'</span></div>'+
+    '<div class="ai-preview-row"><label>Vigência</label><span>'+(data.vigencia||'—')+'</span></div>'+
+    '<div class="ai-preview-row"><label>Fornecedor</label><span style="font-weight:700;color:var(--gd)">'+(forn.razaoSocial||'—')+'</span></div>'+
+    '<div class="ai-preview-row"><label>CNPJ</label><span>'+(forn.cnpj||'—')+'</span></div>'+
+    '<div class="ai-preview-row"><label>Objeto</label><span style="font-size:10px">'+((data.objeto||'—').substring(0,150))+'</span></div>'+
+    itensHtml;
+  previewEl.style.display='block';
+}
+
+function applyAiExtraction() {
+  const data=window._aiExtracted; if(!data) return;
+  const forn=data.fornecedor||{};
+  function set(id,val){ const el=document.getElementById(id); if(el&&val!=null) el.value=val; }
+  set('f-numero',data.numero); set('f-ano',data.ano); set('f-vigencia',data.vigencia);
+  set('f-objeto',data.objeto); set('f-processo',data.processo); set('f-valorGlobal',data.valorGlobal);
+  set('f-fornecedor',forn.razaoSocial); set('f-cnpj',forn.cnpj); set('f-contato',forn.telefone);
+  set('f-email',forn.email); set('f-endereco',forn.endereco); set('f-representante',forn.representante);
+  if(data.itens&&data.itens.length) {
+    window._modalItens=data.itens.map(function(it,i){ return {id:i+1,desc:it.descricao||'',unidade:it.unidade||'',vlrUnit:it.valorUnitario?parseBRL(it.valorUnitario):null}; });
+    renderModalItens();
+  }
+  const btn=document.querySelector('.btn-ai-apply');
+  if(btn){btn.textContent='✅ Aplicado!';btn.style.background='var(--gm)';}
+  document.getElementById('f-numero')?.scrollIntoView({behavior:'smooth',block:'center'});
+  toast('Dados extraídos e aplicados!');
+}
+
+function renderModalItens() {
+  const container=document.getElementById('f-itens-list'); if(!container) return;
+  const itens=window._modalItens||[];
+  container.innerHTML=itens.map(function(it,i){
+    var desc=(it.desc||'').replace(/"/g,'&quot;');
+    return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px" id="ai-item-row-'+i+'">' +
+      '<input style="flex:2;padding:5px 8px;border:1.5px solid #e8e8e8;border-radius:5px;font-size:11px;font-family:Sora,sans-serif" value="'+desc+'" placeholder="Descrição" data-field="desc" oninput="updateInlineItem('+i+',this)">' +
+      '<input style="flex:1;padding:5px 8px;border:1.5px solid #e8e8e8;border-radius:5px;font-size:11px;font-family:Sora,sans-serif" value="'+(it.unidade||'')+'" placeholder="unidade" data-field="unidade" oninput="updateInlineItem('+i+',this)">' +
+      '<input type="number" style="flex:1;padding:5px 8px;border:1.5px solid #e8e8e8;border-radius:5px;font-size:11px;text-align:right" value="'+(it.vlrUnit!=null?it.vlrUnit:'')+'" placeholder="R$" data-field="vlrUnit" oninput="updateInlineItem('+i+',this)">' +
+      '<button class="bdel" onclick="removeInlineItem('+i+')" style="flex-shrink:0">✕</button></div>';
+  }).join('');
+}
+function updateInlineItem(i,input){ if(!window._modalItens) return; const f=input.dataset.field; window._modalItens[i][f]=f==='vlrUnit'?(input.value===''?null:parseBRL(input.value)):input.value; }
+function removeInlineItem(i){ if(!window._modalItens) return; window._modalItens.splice(i,1); renderModalItens(); }
+function addInlineItem(){ if(!window._modalItens) window._modalItens=[]; window._modalItens.push({id:window._modalItens.length+1,desc:'',unidade:'',vlrUnit:null}); renderModalItens(); setTimeout(function(){const rows=document.querySelectorAll('#f-itens-list > div');if(rows.length)rows[rows.length-1].querySelector('input')?.focus();},50); }
+function buildItensHtml(itens){ if(!itens||!itens.length) return ''; return itens.map(function(it,i){ var desc=(it.desc||'').replace(/"/g,'&quot;'),unidade=it.unidade||'',vlr=it.vlrUnit!=null?it.vlrUnit:''; return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px" id="ai-item-row-'+i+'"><input style="flex:2;padding:5px 8px;border:1.5px solid #e8e8e8;border-radius:5px;font-size:11px;font-family:Sora,sans-serif" value="'+desc+'" placeholder="Descrição" data-field="desc" oninput="updateInlineItem('+i+',this)"><input style="flex:1;padding:5px 8px;border:1.5px solid #e8e8e8;border-radius:5px;font-size:11px;font-family:Sora,sans-serif" value="'+unidade+'" placeholder="unidade" data-field="unidade" oninput="updateInlineItem('+i+',this)"><input type="number" style="flex:1;padding:5px 8px;border:1.5px solid #e8e8e8;border-radius:5px;font-size:11px;text-align:right" value="'+vlr+'" placeholder="R$" data-field="vlrUnit" oninput="updateInlineItem('+i+',this)"><button class="bdel" onclick="removeInlineItem('+i+')" style="flex-shrink:0">✕</button></div>'; }).join(''); }
+
+// ═══════════════════════════════════════════════
+//  ATA AUTOCOMPLETE
+// ═══════════════════════════════════════════════
+function findAtaMestre(refStr) {
+  if (!refStr) return null;
+  const clean=String(refStr).trim();
+  return atasMestre.find(function(a){ const full=a.numero+'/'+a.ano; return full===clean||a.numero===clean; })||null;
+}
+
+function onAtaInput(input, context) {
+  const val=input.value.trim();
+  const box=document.getElementById('ata-autocomplete');
+  const info=document.getElementById('ata-info-box');
+  const itemWrap=document.getElementById('f-item-wrap');
+  if (!box) return;
+  const exact=findAtaMestre(val);
+  if (exact) { applyAtaToModal(exact,context); box.style.display='none'; return; }
+  const matches=val.length>=1?atasMestre.filter(function(a){ return (a.numero+'/'+a.ano).includes(val)||a.numero.includes(val)||(a.fornecedor||'').toLowerCase().includes(val.toLowerCase()); }):[];
+  if (!matches.length) {
+    box.style.display='none';
+    if(info) info.style.display='none';
+    if(itemWrap) itemWrap.style.display='none';
+    if(!val){ const fF=document.getElementById('f-fornecedor'),fC=document.getElementById('f-contato'); if(fF)fF.value=''; if(fC)fC.value=''; }
+    return;
+  }
+  box.innerHTML=matches.map(function(a){
+    return '<div onclick="selectAtaSuggestion(\''+a.numero+'/'+a.ano+'\',\''+context+'\')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f5f5f5" onmouseenter="this.style.background=\'#f0f7f1\'" onmouseleave="this.style.background=\'\'">'+
+      '<div style="font-weight:700;font-size:12px;color:var(--gd)">ATA '+a.numero+'/'+a.ano+'</div>'+
+      '<div style="font-size:10px;color:#666">'+a.fornecedor+'</div>'+
+      '<div style="font-size:9px;color:#aaa">'+a.itens.length+' item(s) · '+(a.vigencia||'—')+'</div></div>';
+  }).join('');
+  box.style.display='block';
+  setTimeout(function(){
+    document.addEventListener('click',function closeSuggest(e){ if(!box.contains(e.target)&&e.target!==input){box.style.display='none';document.removeEventListener('click',closeSuggest);} });
+  },10);
+}
+
+function selectAtaSuggestion(ataRef,context) {
+  const input=document.getElementById('f-ata'); if(input) input.value=ataRef;
+  const box=document.getElementById('ata-autocomplete'); if(box) box.style.display='none';
+  const ata=findAtaMestre(ataRef); if(ata) applyAtaToModal(ata,context);
+}
+
+function applyAtaToModal(ata,context) {
+  const fF=document.getElementById('f-fornecedor'),fC=document.getElementById('f-contato');
+  const info=document.getElementById('ata-info-box'),itemWrap=document.getElementById('f-item-wrap'),itemSel=document.getElementById('f-item-ata');
+  if(fF) fF.value=ata.fornecedor;
+  if(fC) fC.value=ata.contato||'';
+  if(info){ info.style.display='block'; info.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:var(--gd);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px">ATA '+ata.numero+'/'+ata.ano+'</span><span style="font-weight:600;color:var(--gd)">'+ata.fornecedor+'</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;color:#666"><span>📋 '+(ata.cnpj||'—')+'</span><span>📞 '+(ata.contato||'—')+'</span><span>📅 '+(ata.vigencia||'—')+'</span></div>'; }
+  if(itemSel&&ata.itens&&ata.itens.length){
+    itemSel.innerHTML='<option value="">— Selecione um item (opcional) —</option>'+ata.itens.map(function(it){ var vlrLabel=it.vlrUnit!=null?'R$ '+(+it.vlrUnit).toLocaleString('pt-BR',{minimumFractionDigits:2}):'a definir'; return '<option value="'+it.id+'" data-desc="'+(it.desc||'').replace(/"/g,'&quot;')+'" data-unidade="'+(it.unidade||'')+'" data-vlr="'+(it.vlrUnit||0)+'">'+it.desc+' — '+it.unidade+' — '+vlrLabel+'</option>'; }).join('');
+    if(itemWrap) itemWrap.style.display='block';
+  } else { if(itemWrap) itemWrap.style.display='none'; }
+}
+
+function onAtaItemSelect(sel,context) {
+  const opt=sel.options[sel.selectedIndex]; if(!opt||!opt.value) return;
+  const vlrRaw=opt.dataset.vlr||'0', vlr=parseFloat(vlrRaw)||0, unidade=opt.dataset.unidade||'', desc=opt.dataset.desc||'';
+  if(context==='staff'){
+    const fV=document.getElementById('f-vlrH');
+    const fD=document.getElementById('f-descricao');
+    if(fV&&vlr){ fV.value=vlrRaw; calcStaffCusto(); }
+    if(fD&&desc) fD.value=desc.toUpperCase();
+  }
+  else if(context==='estrutura'){ const fI=document.getElementById('f-item'),fV=document.getElementById('f-vlrUnit'),fU=document.getElementById('f-unidade'); if(fI&&!fI.value) fI.value=desc; if(fV&&vlr) { fV.value=vlrRaw; calcEstCusto(); } if(fU&&unidade) fU.value=unidade; }
+}
+
+// ═══════════════════════════════════════════════
+//  EXPORT EXCEL
+// ═══════════════════════════════════════════════
+function exportExcel() {
+  const e=ev();
+  const wb=XLSX.utils.book_new();
+  const hStyle={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A4731'}},alignment:{horizontal:'center'}};
+  function addSheet(name,headers,rows,widths){
+    const data=[headers,...rows];
+    const ws=XLSX.utils.aoa_to_sheet(data);
+    ws['!cols']=widths.map(function(w){return{wch:w};});
+    XLSX.utils.book_append_sheet(wb,ws,name);
+  }
+  const secoes=[...new Set([...(e.secoes||[]),...e.staff.map(function(x){return x.secao;})])];
+  const staffRows=[];
+  secoes.forEach(function(sec){ e.staff.filter(function(x){return x.secao===sec;}).forEach(function(it){ staffRows.push([sec,it.turno,it.dtInicio,it.dtFim,it.hrInicio+'-'+it.hrFim,it.qtd,it.chInd,it.totalH,it.vlrH,it.custo,it.ata,it.fornecedor,it.contato,it.obs]); }); });
+  addSheet('Staff',['Seção','Turno','Dt.Início','Dt.Fim','Horário','Qtd','CH Ind','Total H','Vlr/H','Custo','ATA','Fornecedor','Contato','Observações'],staffRows,[20,12,12,12,14,8,8,10,10,12,14,30,16,40]);
+  const secoesEst=[...new Set([...(e.secoesEst||[]),...e.estrutura.map(function(x){return x.secao||'Geral';}) ])];
+  const estRows=[];
+  secoesEst.forEach(function(sec){ e.estrutura.filter(function(x){return (x.secao||'Geral')===sec;}).forEach(function(it){ estRows.push([sec,it.item,it.qtd,it.unidade,it.vlrUnit,it.custo,it.ata,it.fornecedor,it.obs]); }); });
+  addSheet('Estrutura',['Bloco','Item','Qtd','Unidade','Vlr.Unit.','Custo','ATA','Fornecedor','Observações'],estRows,[18,40,8,12,12,14,14,30,45]);
+  const secoesH=[...new Set([...(e.secoesHosp||[]),...e.hospedagem.map(function(x){return x.secao||'Hospedagem';}) ])];
+  const hospRows=[];
+  secoesH.forEach(function(sec){ e.hospedagem.filter(function(x){return (x.secao||'Hospedagem')===sec;}).forEach(function(it){ hospRows.push([sec,it.grupo,it.qtdCidades,it.pessoas,it.quartos,it.checkin,it.checkout,it.totalDiarias,it.cafes,it.almocos,it.jantares,it.ata,it.status]); }); });
+  addSheet('Hospedagem',['Bloco','Grupo','Cidades','Pessoas','Quartos','Check-in','Check-out','Diárias','Cafés','Almoços','Jantares','ATA','Status'],hospRows,[18,30,10,10,10,12,12,10,8,8,8,14,14]);
+  XLSX.writeFile(wb, (e.name||'evento')+'.xlsx');
+}
+
+// ═══════════════════════════════════════════════
+//  EXPORT PDF
+// ═══════════════════════════════════════════════
+function exportPDF() {
+  const e = ev();
+  const fmtR = function(v){ return v!=null && v!=='' ? 'R$\u00a0'+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'; };
+  const fmtN = function(v){ return v!=null && v!=='' ? parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'; };
+  const totalStaffVal = e.staff.reduce(function(s,x){return s+(x.custo||0);},0);
+  const totalEstVal   = e.estrutura.reduce(function(s,x){return s+(x.custo||0);},0);
+  const totalHospVal  = e.hospedagem.reduce(function(s,x){return s+(x.custoHosp||0);},0);
+  const totalGeral    = totalStaffVal + totalEstVal + totalHospVal;
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+e.name+'</title><style>' +
+    'body{font-family:Arial,sans-serif;font-size:10px;color:#222;margin:0;padding:16px}' +
+    'h1{color:#1a4731;font-size:16px;border-bottom:3px solid #f9a825;padding-bottom:6px;margin-bottom:4px}' +
+    'h2{color:#1a4731;font-size:11px;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.5px}' +
+    'h3{color:#2e7d4f;font-size:10px;margin:8px 0 2px;font-weight:700}' +
+    'table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:9.5px}' +
+    'th{background:#1a4731;color:#fff;padding:4px 6px;text-align:left;font-size:9px}' +
+    'td{padding:3px 6px;border-bottom:1px solid #eee}' +
+    'tr:nth-child(even) td{background:#f7faf8}' +
+    '.sub td{background:#ddeee5!important;font-weight:700;font-size:9px}' +
+    '.grp-hdr td{background:#e8f4ea!important;font-weight:800;color:#1a4731;font-size:10px;padding:5px 8px;border-top:2px solid #2e7d4f}' +
+    '.tot{background:#1a4731!important;color:#fff!important;font-weight:700;font-size:10px}' +
+    '.val{text-align:right;font-family:monospace}' +
+    '.cards{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}' +
+    '.card{flex:1;min-width:120px;border:1px solid #ddd;border-radius:6px;padding:8px 12px;background:#f9f9f9}' +
+    '.card-lbl{font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
+    '.card-val{font-size:14px;font-weight:800;color:#1a4731;margin:2px 0}' +
+    '.card-sub{font-size:8px;color:#aaa}' +
+    '.gold{background:linear-gradient(135deg,#1a4731,#2e7d4f);color:#fff;border:none}' +
+    '.gold .card-lbl,.gold .card-val,.gold .card-sub{color:#fff}' +
+    '.gold .card-val{color:#f9a825}' +
+    '@media print{@page{margin:1.2cm;size:A4 landscape}body{padding:0}}' +
+    '</style></head><body>';
+
+  html += '<h1>'+e.name+'</h1>';
+  html += '<p style="font-size:10px;color:#666;margin-bottom:10px"><strong>Local:</strong> '+(e.local||'—')+' &nbsp;|&nbsp; <strong>Data:</strong> '+(e.dataEvento||'—')+'</p>';
+
+  // ── CARDS TOTAIS ──
+  html += '<div class="cards">';
+  html += '<div class="card gold"><div class="card-lbl">Total Geral</div><div class="card-val">'+fmtR(totalGeral)+'</div><div class="card-sub">Staff + Estrutura + Hospedagem</div></div>';
+  if (e.modules.staff)      html += '<div class="card"><div class="card-lbl">Staff</div><div class="card-val">'+fmtR(totalStaffVal)+'</div></div>';
+  if (e.modules.estrutura)  html += '<div class="card"><div class="card-lbl">Estrutura</div><div class="card-val">'+fmtR(totalEstVal)+'</div></div>';
+  if (e.modules.hospedagem) html += '<div class="card"><div class="card-lbl">Hospedagem</div><div class="card-val">'+fmtR(totalHospVal)+'</div></div>';
+  html += '</div>';
+
+  // ── STAFF ──
+  if (e.modules.staff && e.staff.length) {
+    html += '<h2>👥 Staff</h2>';
+    const secoes = [...new Set([...(e.secoes||[]),...e.staff.map(function(x){return x.secao;})])];
+    secoes.forEach(function(sec) {
+      const items = e.staff.filter(function(x){return x.secao===sec;});
+      if (!items.length) return;
+      const secTotal = items.reduce(function(s,x){return s+(x.custo||0);},0);
+      html += '<h3>'+sec+' — '+fmtR(secTotal)+'</h3>';
+      html += '<table><tr><th>Descrição</th><th>Turno</th><th>Data</th><th>Horário</th><th>Qtd</th><th>CH</th><th>Total H</th><th>Vlr/H</th><th>Custo Total</th><th>Nº ATA</th><th>Fornecedor</th></tr>';
+      // Group by descrição
+      var descOrder = [], descGroups = {};
+      items.forEach(function(it){
+        var k = (it.descricao||'(sem descrição)').toUpperCase();
+        if (!descGroups[k]) { descGroups[k]=[]; descOrder.push(k); }
+        descGroups[k].push(it);
+      });
+      descOrder.forEach(function(desc){
+        var grp = descGroups[desc];
+        var grpTotal = grp.reduce(function(s,x){return s+(x.custo||0);},0);
+        html += '<tr class="grp-hdr"><td colspan="11">▸ '+desc+' &nbsp;·&nbsp; '+grp.length+' item(s) &nbsp;·&nbsp; '+fmtR(grpTotal)+'</td></tr>';
+        grp.forEach(function(it){
+          html += '<tr>' +
+            '<td>'+desc+'</td>' +
+            '<td>'+(it.turno||'—')+'</td>' +
+            '<td style="white-space:nowrap">'+(it.dtInicio||'—')+(it.dtFim&&it.dtFim!==it.dtInicio?' a '+it.dtFim:'')+'</td>' +
+            '<td>'+(it.hrInicio||'—')+'-'+(it.hrFim||'—')+'</td>' +
+            '<td style="text-align:center">'+(it.qtd||'—')+'</td>' +
+            '<td style="text-align:center">'+(it.chInd||'—')+'h</td>' +
+            '<td style="text-align:center;font-weight:700">'+(it.totalH||0)+'h</td>' +
+            '<td class="val">'+(it.vlrH!=null?fmtN(it.vlrH):'—')+'</td>' +
+            '<td class="val" style="font-weight:700">'+fmtR(it.custo)+'</td>' +
+            '<td>'+fmtAta(it.ata)+'</td>' +
+            '<td style="font-size:9px">'+(it.fornecedor||'—')+'</td>' +
+          '</tr>';
+        });
+        html += '<tr class="sub"><td colspan="8" style="text-align:right">Subtotal — '+desc+'</td><td class="val">'+fmtR(grpTotal)+'</td><td colspan="2"></td></tr>';
+      });
+      html += '<tr class="sub"><td colspan="8" style="text-align:right">Subtotal — '+sec+'</td><td class="val">'+fmtR(secTotal)+'</td><td colspan="2"></td></tr>';
+      html += '</table>';
+    });
+    html += '<table><tr class="tot"><td colspan="8" style="text-align:right;padding:5px 8px">TOTAL STAFF</td><td class="val" style="color:#f9a825;font-size:11px">'+fmtR(totalStaffVal)+'</td><td colspan="2"></td></tr></table>';
+  }
+
+  // ── ESTRUTURA ──
+  if (e.modules.estrutura && e.estrutura.length) {
+    html += '<h2>🏗️ Estrutura</h2>';
+    const secoesEst = [...new Set([...(e.secoesEst||[]),...e.estrutura.map(function(x){return x.secao||'Geral';}) ])];
+    secoesEst.forEach(function(sec){
+      const items = e.estrutura.filter(function(x){return (x.secao||'Geral')===sec;});
+      if (!items.length) return;
+      const secTotal = items.reduce(function(s,x){return s+(x.custo||0);},0);
+      html += '<h3>'+sec+' — '+fmtR(secTotal)+'</h3>';
+      html += '<table><tr><th>Item / Serviço</th><th>Qtd</th><th>Unid.</th><th>Vlr. Unit.</th><th>Custo Total</th><th>Nº ATA</th><th>Fornecedor</th><th>Observações</th></tr>';
+      items.forEach(function(it){
+        html += '<tr>' +
+          '<td>'+(it.item||'—')+'</td>' +
+          '<td style="text-align:center">'+(it.qtd!=null?it.qtd:'—')+'</td>' +
+          '<td>'+(it.unidade||'—')+'</td>' +
+          '<td class="val">'+(it.vlrUnit!=null?fmtN(it.vlrUnit):'—')+'</td>' +
+          '<td class="val" style="font-weight:700">'+fmtR(it.custo)+'</td>' +
+          '<td>'+fmtAta(it.ata)+'</td>' +
+          '<td style="font-size:9px">'+(it.fornecedor||'—')+'</td>' +
+          '<td style="font-size:8px;color:#777">'+(it.obs||'—')+'</td>' +
+        '</tr>';
+      });
+      html += '<tr class="sub"><td colspan="4" style="text-align:right">Subtotal — '+sec+'</td><td class="val">'+fmtR(secTotal)+'</td><td colspan="3"></td></tr>';
+      html += '</table>';
+    });
+    html += '<table><tr class="tot"><td colspan="4" style="text-align:right;padding:5px 8px">TOTAL ESTRUTURA</td><td class="val" style="color:#f9a825;font-size:11px">'+fmtR(totalEstVal)+'</td><td colspan="3"></td></tr></table>';
+  }
+
+  // ── TOTAL GERAL FINAL ──
+  html += '<table style="margin-top:12px"><tr class="tot" style="font-size:12px"><td colspan="8" style="text-align:right;padding:8px 12px;font-size:13px;letter-spacing:.5px">💰 TOTAL GERAL DO EVENTO</td><td class="val" style="color:#f9a825;font-size:15px;font-weight:900">'+fmtR(totalGeral)+'</td></tr></table>';
+
+  html += '<p style="font-size:9px;color:#aaa;text-align:right;margin-top:8px">Gerado em '+new Date().toLocaleDateString('pt-BR')+' · Sistema de Gerenciamento de Eventos</p>';
+  html += '</body></html>';
+
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 800);
+}
+
+// ═══════════════════════════════════════════════
+//  PERSISTENCE — Supabase (tempo real)
+// ═══════════════════════════════════════════════
+const STORAGE_KEY = 'gerenciador_eventos_v2';
+const SUPABASE_URL = window.SMCT_SUPABASE_URL || 'https://uhalxchwpspupvfmpixq.supabase.co';
+const SUPABASE_KEY = window.SMCT_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYWx4Y2h3cHNwdXB2Zm1waXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODcwOTIsImV4cCI6MjA4OTI2MzA5Mn0.kVlk3z8__heq3bRbAMmra_LiNDmRs0wuMFkLtokSL6M';
+let _sb=null;
+function getSB(){if(!_sb&&window.supabase)_sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);return _sb;}
+function showSync(ok){var e=document.getElementById('_sync');if(!e){e=document.createElement('div');e.id='_sync';e.style.cssText='position:fixed;bottom:52px;right:20px;background:#1a4731;color:#4cd98a;font-size:11px;font-family:monospace;padding:7px 16px;border-radius:20px;box-shadow:0 3px 12px rgba(0,0,0,.25);opacity:0;transition:opacity .5s;pointer-events:none;z-index:9999;font-weight:700';document.body.appendChild(e);}e.textContent=ok?'✓ Sincronizado com a equipe':'↻ Sincronizando...';e.style.opacity='1';if(ok)setTimeout(function(){e.style.opacity='0';},2000);}
+
+function saveData() {
+  try {
+    var payload = { events, curEventId, atasMestre, nextAtaMestre };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    var ind = document.getElementById('save-indicator');
+    if(ind){ind.style.opacity='1';clearTimeout(window._saveTimer);window._saveTimer=setTimeout(function(){ind.style.opacity='0';},1500);}
+    var sb=getSB();
+    if(sb){showSync(false);sb.from('modulos').upsert({nome:STORAGE_KEY,dados:JSON.stringify(payload),atualizado_em:new Date().toISOString()},{onConflict:'nome'}).then(function(r){if(!r.error)showSync(true);});}
+  } catch(e) { console.warn('Erro ao salvar:', e); }
+}
+
+function _applyData(d) {
+  if (!d || !d.events || !d.events.length) return false;
+  events       = d.events;
+  curEventId   = d.curEventId || d.events[0].id;
+  atasMestre   = d.atasMestre  || [];
+  nextAtaMestre= d.nextAtaMestre || (atasMestre.length ? Math.max.apply(null,atasMestre.map(function(a){return a.id;}))+1 : 1);
+  events.forEach(function(e) {
+    if (!e.secoes)     e.secoes     = [];
+    if (!e.secoesEst)  e.secoesEst  = [];
+    if (!e.secoesHosp) e.secoesHosp = [];
+    e.staff      = e.staff      || [];
+    e.estrutura  = e.estrutura  || [];
+    e.hospedagem = e.hospedagem || [];
+    e.staff.forEach(function(it){ if(!it.secao) it.secao='Geral'; if(it.ata) it.ata=normalizeAta(it.ata); });
+    e.estrutura.forEach(function(it){ if(!it.secao) it.secao='Geral'; if(it.ata) it.ata=normalizeAta(it.ata); });
+    e.hospedagem.forEach(function(it){ if(!it.secao) it.secao='Hospedagem'; if(it.ata) it.ata=normalizeAta(it.ata); });
+    if (!e.consolidado) e.consolidado = [];
+  });
+  return true;
+}
+
+function loadData() {
+  try { var d=JSON.parse(localStorage.getItem(STORAGE_KEY)); return _applyData(d); } catch(e) {}
+  return false;
+}
+
+async function loadDataRemote() {
+  var sb=getSB();
+  if(sb){try{var r=await sb.from('modulos').select('dados').eq('nome',STORAGE_KEY).single();if(r.data){return _applyData(JSON.parse(r.data.dados));}}catch(e){}}
+  return loadData();
+}
+
+function listenRealtime(){
+  var sb=getSB();if(!sb)return;
+  sb.channel('gv-realtime').on('postgres_changes',{event:'UPDATE',schema:'public',table:'modulos',filter:'nome=eq.'+STORAGE_KEY},function(payload){
+    try{if(_applyData(JSON.parse(payload.new.dados))){render();showSync(true);}}catch(e){}
+  }).subscribe();
+}
+
+function clearData() {
+  if (!confirm('Apagar TODOS os dados salvos e começar do zero? Esta ação não pode ser desfeita.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+function exportBackup() {
+  const data = { events, curEventId, atasMestre, nextAtaMestre, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'backup_eventos_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  toast('Backup exportado com sucesso!');
+}
+
+function importBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!d.events || !d.events.length) { alert('Arquivo de backup inválido.'); return; }
+      if (!confirm('Importar backup? Os dados atuais serão substituídos.')) return;
+      events        = d.events;
+      curEventId    = d.curEventId || d.events[0].id;
+      atasMestre    = d.atasMestre  || [];
+      nextAtaMestre = d.nextAtaMestre || (atasMestre.length ? Math.max(...atasMestre.map(function(a){return a.id;}))+1 : 1);
+      saveData();
+      render();
+      toast('Backup importado! ' + events.length + ' evento(s) restaurado(s).');
+    } catch(err) { alert('Erro ao importar: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+
+// Auto-save after every render
+const _origRender = render;
+render = function() { _origRender(); saveData(); };
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+(async function init() {
+  const loaded = await loadDataRemote();
+  if (!loaded) { events = [seed]; curEventId = seed.id; }
+  listenRealtime();
+  render();
+})();
+</script>
+<div id="save-indicator" style="position:fixed;bottom:20px;right:20px;background:#1a4731;color:#fff;font-size:11px;font-family:monospace;padding:7px 16px;border-radius:20px;box-shadow:0 3px 12px rgba(0,0,0,.25);opacity:0;transition:opacity .5s;pointer-events:none;z-index:9999">&#x2713; Salvo automaticamente</div>
+</body>
+</html>
+  <a class="nav-btn" style="background:#0a1a3a;border-color:#1a3a6a;color:#7ab3f0" href="emendas_parlamentares.html" onmouseover="this.style.background='#1a3a6a'" onmouseout="this.style.background='#0a1a3a'">💰 Emendas Parlamentares</a>
+

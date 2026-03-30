@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💰 Emendas Parlamentares — São Carlos 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{--ink:#0f1923;--ink2:#1a2535;--ink3:#253347;--border:#2a3a50;--muted:#8a9bb0;--sub:#6a8a9a;--text:#e8f0f8;--gold:#c9a84c;--gold-l:#2a1e06;--gold-m:#3d2e0a;--teal:#2e7d4f;--teal-l:#0e2418;--teal-m:#1e4d30;--rose:#c0392b;--rose-l:#2a0a0a;--blue:#3a7bd5;--blue-l:#0a1a3a;--blue-m:#1a3a6a;--sans:'DM Sans',sans-serif;--serif:'DM Serif Display',serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--ink);color:var(--text);min-height:100vh}
+.nav-bar{background:#0a1118;padding:7px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.nav-btn{display:flex;align-items:center;gap:6px;text-decoration:none;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;border:1px solid var(--border);color:var(--muted);background:var(--ink2);transition:.15s;cursor:pointer;white-space:nowrap}
+.nav-btn:hover{color:#fff;border-color:#3a5a70}
+.nav-btn.green{background:var(--teal-l);border-color:var(--teal-m);color:#4cd98a}
+.nav-btn.gold{background:var(--gold-l);border-color:var(--gold-m);color:var(--gold)}
+.nav-sep{width:1px;height:18px;background:var(--border);flex-shrink:0}
+.topbar{background:var(--ink2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar-logo{font-family:var(--serif);font-size:19px;color:#fff}
+.topbar-sep{flex:1}
+.pill{border-radius:8px;padding:5px 14px;font-size:11px;font-weight:700;white-space:nowrap;border:1px solid}
+.pill-gold{background:var(--gold-l);border-color:var(--gold-m);color:var(--gold)}
+.pill-teal{background:var(--teal-l);border-color:var(--teal-m);color:#4cd98a}
+.pill-rose{background:var(--rose-l);border-color:#4a1a1a;color:#f07a7a}
+.layout{display:flex;height:calc(100vh - 88px);overflow:hidden}
+.sidebar{width:220px;min-width:220px;background:var(--ink2);border-right:1px solid var(--border);overflow-y:auto;padding:14px 0}
+.sb-label{font-size:9px;font-weight:800;letter-spacing:1.2px;color:var(--sub);padding:8px 14px 4px;text-transform:uppercase}
+.nav-item{padding:9px 14px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:8px;transition:.12s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--ink3);color:#fff}
+.nav-item.active{background:var(--ink3);color:#fff;border-left-color:var(--gold)}
+.nav-cnt{margin-left:auto;background:var(--ink3);border-radius:10px;font-size:9px;font-weight:700;padding:2px 7px;color:var(--muted)}
+.sb-div{border-top:1px solid var(--border);margin:6px 0}
+.main{flex:1;overflow-y:auto;padding:20px}
+.stat-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.sc{flex:1;min-width:130px;border:1px solid var(--border);border-radius:12px;padding:12px 16px}
+.sc.gold{background:var(--gold-l);border-color:var(--gold-m)}
+.sc.teal{background:var(--teal-l);border-color:var(--teal-m)}
+.sc.blue{background:var(--blue-l);border-color:var(--blue-m)}
+.sc.rose{background:var(--rose-l);border-color:#4a1a1a}
+.sc-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--sub);margin-bottom:4px}
+.sc-val{font-family:var(--serif);font-size:20px}
+.sc.gold .sc-val{color:var(--gold)}.sc.teal .sc-val{color:#4cd98a}.sc.blue .sc-val{color:#7ab3f0}.sc.rose .sc-val{color:#f07a7a}
+.sc-sub{font-size:10px;color:var(--sub);margin-top:3px}
+.sec-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.sec-title{font-family:var(--serif);font-size:21px;color:#fff}
+.sec-sub{font-size:12px;color:var(--sub)}
+.tbl-wrap{background:var(--ink2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.tbl-wrap table{width:100%;border-collapse:collapse}
+.tbl-wrap th{background:var(--ink);padding:9px 12px;font-size:9px;font-weight:800;letter-spacing:.7px;color:var(--sub);text-transform:uppercase;text-align:left;white-space:nowrap}
+.tbl-wrap td{padding:10px 12px;font-size:12px;color:var(--text);border-top:1px solid var(--border);vertical-align:middle}
+.tbl-wrap tr:hover td{background:var(--ink3)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.3px;white-space:nowrap}
+.bg{background:var(--gold-m);color:var(--gold)}.bt{background:var(--teal-m);color:#4cd98a}.bb{background:var(--blue-m);color:#7ab3f0}.br{background:var(--rose-l);color:#f07a7a}.bx{background:var(--ink3);color:var(--muted)}.bp{background:#1a0e3a;color:#b08af0}
+.ver-card{background:var(--ink2);border:1px solid var(--border);border-radius:14px;padding:16px 18px;cursor:pointer;transition:.2s;margin-bottom:12px}
+.ver-card:hover{border-color:var(--gold-m);background:var(--ink3)}
+.ver-card.open{border-color:var(--gold);background:var(--gold-l)}
+.saldo-bar{background:var(--ink);border-radius:4px;height:8px;overflow:hidden;margin-bottom:4px}
+.saldo-bar-fill{height:100%;border-radius:4px;transition:.6s}
+.emenda-item{background:var(--ink);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:10px}
+.vinc-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--border)}
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input{background:var(--ink2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;font-family:var(--sans);font-size:12px;outline:none}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--gold)}
+.btn{padding:7px 14px;border-radius:8px;border:none;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn-gold{background:var(--gold);color:#1a1a0a}.btn-gold:hover{background:#dbb85a}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{background:#3a9e65}
+.btn-ghost{background:var(--ink3);color:var(--muted);border:1px solid var(--border)}.btn-ghost:hover{color:#fff}
+.btn-rose{background:var(--rose-l);color:#f07a7a;border:1px solid #4a1a1a}.btn-rose:hover{background:#3a0a0a}
+.btn-sm{padding:4px 10px;font-size:10px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--ink2);border:1px solid var(--border);border-radius:16px;padding:24px 28px;width:580px;max-width:96vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--serif);font-size:19px;color:#fff;margin-bottom:3px}
+.modal-sub{font-size:11px;color:var(--sub);margin-bottom:16px}
+.modal-info{background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--sub)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--sub)}
+.field input,.field select,.field textarea{background:var(--ink);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-family:var(--sans);font-size:12px;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
+.field-full{grid-column:1/-1}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.saldo-preview{border-radius:8px;padding:8px 12px;font-size:11px;font-weight:700;margin-bottom:10px;display:none;border:1px solid}
+.resumo-sec{background:var(--ink2);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:16px}
+.resumo-sec-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--sub);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.empty-state{text-align:center;padding:48px 20px;color:var(--sub);font-size:13px}
+.empty-state .ei{font-size:36px;margin-bottom:10px}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--teal);color:#fff;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:700;opacity:0;transition:.4s;pointer-events:none;z-index:999}
+/* MODAL RELATÓRIO */
+.modal-lg{width:780px}
+.ver-check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:14px;max-height:200px;overflow-y:auto;padding:2px}
+.ver-check-item{display:flex;align-items:center;gap:8px;background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:.15s}
+.ver-check-item:hover{border-color:var(--gold-m)}
+.ver-check-item.checked{background:var(--gold-l);border-color:var(--gold-m)}
+.ver-check-item input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer}
+.ver-check-item label{font-size:11px;font-weight:600;color:var(--text);cursor:pointer;flex:1}
+.ver-check-item .ver-val-sm{font-size:10px;color:var(--gold);font-weight:700;white-space:nowrap}
+/* RELATÓRIO IMPRESSO */
+.relatorio-body{padding:0}
+.rel-header{background:linear-gradient(135deg,var(--gold-l),#1a1200);border:1px solid var(--gold-m);border-radius:12px;padding:20px 24px;margin-bottom:20px}
+.rel-header h1{font-family:var(--serif);font-size:22px;color:var(--gold);margin-bottom:4px}
+.rel-header p{font-size:11px;color:var(--sub)}
+.rel-stats{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.rel-stat{flex:1;min-width:120px;background:var(--ink2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;text-align:center}
+.rel-stat-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--sub);margin-bottom:4px}
+.rel-stat-val{font-family:var(--serif);font-size:17px}
+.rel-ver-block{background:var(--ink2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px;page-break-inside:avoid}
+.rel-ver-name{font-family:var(--serif);font-size:17px;color:#fff;margin-bottom:2px}
+.rel-ver-meta{font-size:10px;color:var(--sub);margin-bottom:12px}
+.rel-em-block{background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.rel-em-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start}
+.rel-vinc-item{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-top:1px solid var(--border)}
+.rel-vinc-arrow{color:var(--sub);font-size:14px;margin-top:1px;flex-shrink:0}
+.rel-vinc-body{flex:1}
+.rel-vinc-evento{font-size:11px;font-weight:700;color:#fff}
+.rel-vinc-obj{font-size:11px;color:var(--text);margin-top:2px}
+.rel-vinc-tags{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;align-items:center}
+.rel-vinc-val{font-size:13px;font-weight:800;color:var(--gold);white-space:nowrap;margin-top:1px}
+.rel-footer{background:linear-gradient(135deg,var(--gold-l),#1a1000);border:1px solid var(--gold-m);border-radius:10px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+@media print{
+  .modal-bg{display:none!important}
+  #relatorio-print-area{display:block!important}
+  .relatorio-overlay{display:none!important}
+}
+#relatorio-print-area{display:none}
+@media print{
+  @page{margin:1.5cm 1.5cm;size:A4 portrait}
+  /* Fundo branco em tudo */
+  html,body{background:#fff!important;color:#111!important}
+  /* Ocultar toda a interface */
+  body > *{display:none!important}
+  /* Mostrar apenas o wrapper de impressão */
+  #print-wrapper{
+    display:block!important;
+    position:static!important;
+    background:#fff!important;
+    color:#111!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  /* Forçar cores legíveis nos elementos do relatório */
+  #print-wrapper *{
+    background:#fff!important;
+    color:#111!important;
+    border-color:#ccc!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  /* Manter cores de destaque importantes */
+  #print-wrapper .badge{background:#eee!important;color:#111!important;border:1px solid #aaa!important}
+  #print-wrapper [style*="color:var(--gold)"],
+  #print-wrapper [style*="color:#c9a84c"]{color:#8B6914!important}
+  #print-wrapper [style*="color:#4cd98a"],
+  #print-wrapper [style*="color:var(--teal)"]{color:#1a6b3a!important}
+  #print-wrapper [style*="color:#f07a7a"],
+  #print-wrapper [style*="color:var(--rose)"]{color:#c0392b!important}
+  #print-wrapper [style*="color:#6ab0d0"]{color:#1a5c8a!important}
+  #print-wrapper table{border-collapse:collapse!important}
+  #print-wrapper th,#print-wrapper td{border:1px solid #ccc!important;padding:5px 8px!important;color:#111!important}
+  #print-wrapper th{background:#f0f0f0!important}
+  .rel-ver-block,.rel-em-block,.resumo-sec{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="nav-bar">
+  <a class="nav-btn" href="index.html">← Início</a>
+  <div class="nav-sep"></div>
+  <span style="font-size:11px;color:#3a4a5a">Abrir:</span>
+  <a class="nav-btn green" href="gerenciador_eventos_v2.html">📁 Gerenciador</a>
+  <a class="nav-btn gold"  href="artistas_chamamento.html">🎭 Chamamento</a>
+</div>
+<div class="topbar">
+  <span style="font-size:26px">💰</span>
+  <div class="topbar-logo">Emendas Parlamentares 2026</div>
+  <div class="topbar-sep"></div>
+  <div class="pill pill-gold" id="pill-total">Total: —</div>
+  <div class="pill pill-rose" id="pill-usado">Utilizado: —</div>
+  <div class="pill pill-teal" id="pill-livre">Livre: —</div>
+  <button class="btn btn-ghost" style="font-size:11px" onclick="openNovaEmenda()">＋ Nova Emenda</button>
+  <button class="btn btn-teal"  style="font-size:11px" onclick="openRelatorio()">📊 Relatório</button>
+  <button class="btn btn-gold"  style="font-size:11px" onclick="gerarPDF()">📄 PDF</button>
+  <button class="btn btn-ghost" style="font-size:11px;border-color:#4cd98a;color:#4cd98a" onclick="setTab('loas')">📅 LOAs</button>
+</div>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-label">Visualização</div>
+    <div class="nav-item active" id="nav-painel"     onclick="setTab('painel')">📊 Painel Geral</div>
+    <div class="nav-item"        id="nav-vereadores" onclick="setTab('vereadores')">👤 Por Vereador <span class="nav-cnt" id="cnt-ver">0</span></div>
+    <div class="nav-item"        id="nav-emendas"    onclick="setTab('emendas')">📋 Emendas <span class="nav-cnt" id="cnt-em">0</span></div>
+    <div class="sb-div"></div>
+    <div class="sb-label">Análise</div>
+    <div class="nav-item"        id="nav-cad-eventos" onclick="setTab('cad-eventos')">🎪 Eventos <span class="nav-cnt" id="cnt-ev">0</span></div>
+    <div class="nav-item"        id="nav-eventos"    onclick="setTab('eventos')">📎 Por Evento</div>
+    <div class="nav-item"        id="nav-resumo"     onclick="setTab('resumo')">📄 Resumo Executivo</div>
+    <div class="sb-div"></div>
+    <div class="sb-label">Histórico</div>
+    <div class="nav-item"        id="nav-loas"       onclick="setTab('loas')">📅 Edições / LOAs</div>
+    <div class="sb-div"></div>
+    <div class="sb-label">Referência</div>
+    <div class="nav-item"        id="nav-contas"     onclick="setTab('contas')">🏦 Contas Bancárias</div>
+    <div class="sb-div"></div>
+    <div class="sb-label">Relatórios</div>
+    <div class="nav-item" onclick="openRelatorio()">📊 Gerar Relatório</div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<!-- MODAL EMENDA -->
+<div class="modal-bg" id="modal-emenda-bg">
+  <div class="modal">
+    <div class="modal-title" id="me-title">Nova Emenda</div>
+    <div class="modal-sub">Dados principais da emenda parlamentar</div>
+    <div class="field-row">
+      <div class="field"><label>Vereador</label><select id="me-vereador"><option value="">— selecione —</option></select></div>
+      <div class="field"><label>Nº Emenda</label><input id="me-num" type="number" placeholder="ex: 32"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Nº Protocolo</label><input id="me-protocolo" type="number" placeholder="ex: 9324"></div>
+      <div class="field"><label>Valor Total (R$)</label><input id="me-valor" type="number" step="0.01" placeholder="ex: 170000"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Status</label>
+        <select id="me-status"><option>Previsto</option><option>Aprovado</option><option>Empenhado</option><option>Pago</option><option>Cancelado</option></select>
+      </div>
+      <div class="field"><label>Observações</label><input id="me-obs" placeholder="Notas gerais..."></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button class="btn btn-gold"  onclick="salvarEmenda()">✓ Salvar Emenda</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VINCULAÇÃO -->
+<div class="modal-bg" id="modal-vinc-bg">
+  <div class="modal">
+    <div class="modal-title">💸 Registrar Vinculação</div>
+    <div class="modal-sub" id="mv-sub">Destinar valor desta emenda a um evento</div>
+    <div class="modal-info" id="mv-info"></div>
+    <div class="field-row">
+      <div class="field field-full"><label>Evento</label>
+        <select id="mv-evento" onchange="onMvEventoChange()" style="background:var(--ink);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-family:var(--sans);font-size:12px;outline:none;width:100%">
+          <option value="">— selecione o evento —</option>
+        </select>
+        <input id="mv-evento-custom" placeholder="Digite o nome do evento..." style="display:none;margin-top:6px;background:var(--ink);border:1px solid var(--gold-m);border-radius:8px;color:var(--text);padding:8px 10px;font-family:var(--sans);font-size:12px;outline:none;width:100%" oninput="previewSaldoVinc()">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Valor Destinado (R$)</label>
+        <input id="mv-valor" type="number" step="0.01" placeholder="ex: 50000" oninput="previewSaldoVinc()">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field field-full">
+        <label>Tipo de Uso <span style="font-size:9px;color:var(--sub)">(selecione um ou mais)</span></label>
+        <div id="mv-tipo-checks" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+          <label id="lbl-tipo-Cache" style="display:flex;align-items:center;gap:6px;background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text);transition:.15s">
+            <input type="checkbox" value="Cachê Artístico" onchange="updateTipoLabel(this)" style="accent-color:var(--gold);width:13px;height:13px;cursor:pointer"> Cachê Artístico
+          </label>
+          <label id="lbl-tipo-Estrutura" style="display:flex;align-items:center;gap:6px;background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text);transition:.15s">
+            <input type="checkbox" value="Estrutura" onchange="updateTipoLabel(this)" style="accent-color:var(--gold);width:13px;height:13px;cursor:pointer"> Estrutura
+          </label>
+          <label id="lbl-tipo-Staff" style="display:flex;align-items:center;gap:6px;background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text);transition:.15s">
+            <input type="checkbox" value="Staff" onchange="updateTipoLabel(this)" style="accent-color:var(--gold);width:13px;height:13px;cursor:pointer"> Staff
+          </label>
+          <label id="lbl-tipo-Hospedagem" style="display:flex;align-items:center;gap:6px;background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text);transition:.15s">
+            <input type="checkbox" value="Hospedagem" onchange="updateTipoLabel(this)" style="accent-color:var(--gold);width:13px;height:13px;cursor:pointer"> Hospedagem
+          </label>
+          <label id="lbl-tipo-Divulgacao" style="display:flex;align-items:center;gap:6px;background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text);transition:.15s">
+            <input type="checkbox" value="Divulgação" onchange="updateTipoLabel(this)" style="accent-color:var(--gold);width:13px;height:13px;cursor:pointer"> Divulgação
+          </label>
+          <label id="lbl-tipo-Outros" style="display:flex;align-items:center;gap:6px;background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text);transition:.15s">
+            <input type="checkbox" value="Outros" onchange="updateTipoLabel(this)" style="accent-color:var(--gold);width:13px;height:13px;cursor:pointer"> Outros
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field field-full"><label>O que será contratado / beneficiário</label>
+        <input id="mv-objeto" placeholder="ex: Cachê artista Tocaya (DJ) · Palco + Som 10kW · 6 seguranças">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Status</label>
+        <select id="mv-status"><option>Previsto</option><option>Aprovado</option><option>Empenhado</option><option>Pago</option><option>Cancelado</option></select>
+      </div>
+      <div class="field"><label>Data</label>
+        <input id="mv-data" type="date" style="font-family:var(--sans)">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field field-full"><label>Nº do Processo Administrativo</label>
+        <input id="mv-processo" placeholder="ex: 29552/2025" oninput="formatarProcesso(this)" maxlength="12">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field field-full"><label>Observações</label>
+        <textarea id="mv-obs" rows="2" placeholder="Detalhes adicionais..."></textarea>
+      </div>
+    </div>
+    <div class="saldo-preview" id="mv-saldo-preview"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button class="btn btn-gold"  onclick="salvarVinculacao()">✓ Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVA LOA -->
+<div class="modal-bg" id="modal-loa-bg">
+  <div class="modal" style="width:560px">
+    <div class="modal-title">📅 Nova Edição / LOA</div>
+    <div class="modal-sub">Crie um novo exercício fiscal. Os dados da LOA atual ficam preservados no histórico.</div>
+    <div class="field-row">
+      <div class="field"><label>Ano da LOA</label><input id="nloa-ano" type="number" placeholder="ex: 2027" min="2020" max="2040" style="font-family:var(--sans)"></div>
+      <div class="field"><label>Descrição</label><input id="nloa-desc" placeholder="ex: LOA 2027 — São Carlos"></div>
+    </div>
+    <div style="background:var(--gold-l);border:1px solid var(--gold-m);border-radius:10px;padding:14px 16px;margin:10px 0;font-size:11px;color:var(--muted);line-height:1.7">
+      ⚠️ Ao criar nova edição:<br>
+      ● Os dados atuais ficam <strong style="color:#fff">salvos no histórico</strong><br>
+      ● A nova edição começa <strong style="color:#fff">vazia</strong> — adicione emendas manualmente<br>
+      ● Você pode <strong style="color:#fff">alternar entre edições</strong> a qualquer momento
+    </div>
+    <div class="field-full field">
+      <label>Seed de Emendas (opcional)</label>
+      <div style="font-size:10px;color:var(--sub);margin-bottom:6px">Cole uma emenda por linha no formato: <code style="color:var(--gold)">VEREADOR;Nº_EMENDA;PROTOCOLO;VALOR</code></div>
+      <textarea id="nloa-csv" rows="5" placeholder="ANDRE REBELLO;45;10523;180000&#10;BIRA;60;10601;270000" oninput="previewLoaSeed()" style="font-family:monospace;font-size:11px"></textarea>
+      <div id="nloa-preview" style="display:none;margin-top:6px;font-size:11px;color:#4cd98a;font-weight:700"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button class="btn btn-gold" onclick="salvarNovaLoa()">📅 Criar e Ativar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MODAL EVENTO -->
+<div class="modal-bg" id="modal-evento-bg">
+  <div class="modal">
+    <div class="modal-title" id="mev-title">Novo Evento</div>
+    <div class="modal-sub">Dados do evento para vinculação de emendas</div>
+    <div class="field-row">
+      <div class="field field-full"><label>Nome do Evento</label>
+        <input id="mev-nome" placeholder="ex: 57ª Festa do Clima de São Carlos">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Data de Início</label>
+        <input id="mev-data-ini" type="date" style="font-family:var(--sans)">
+      </div>
+      <div class="field"><label>Data de Fim</label>
+        <input id="mev-data-fim" type="date" style="font-family:var(--sans)">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field field-full"><label>Local / Endereço</label>
+        <input id="mev-local" placeholder="ex: Parque do Kartódromo, São Carlos - SP">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Tipo de Evento</label>
+        <select id="mev-tipo" onchange="onMevTipoChange()">
+          <option value="">— selecione —</option>
+          <option>Festival</option><option>Show</option><option>Festa Municipal</option>
+          <option>Cultural</option><option>Esportivo</option><option>Religioso</option><option>Outro</option>
+        </select>
+        <input id="mev-tipo-outro" placeholder="Descreva o tipo de evento..." style="display:none;margin-top:6px;width:100%;background:var(--ink);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:12px;font-family:var(--sans)">
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="mev-status">
+          <option>Planejado</option><option>Confirmado</option>
+          <option>Em andamento</option><option>Realizado</option><option>Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field field-full"><label>Observações</label>
+        <textarea id="mev-obs" rows="2" placeholder="Informações adicionais..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button class="btn btn-gold"  onclick="salvarEvento()">✓ Salvar Evento</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-bg" id="modal-relatorio-bg">
+  <div class="modal modal-lg">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title">📊 Gerar Relatório</div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-relatorio-bg').classList.remove('open')">✕</button>
+    </div>
+    <!-- TABS -->
+    <div style="display:flex;gap:0;margin-bottom:18px;background:var(--ink);border-radius:10px;padding:4px">
+      <button id="rel-tab-ver" onclick="setRelTab('vereador')" style="flex:1;padding:9px;border-radius:7px;border:none;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;background:var(--gold);color:#1a1a0a;transition:.15s">👤 Por Vereador</button>
+      <button id="rel-tab-ev"  onclick="setRelTab('evento')"   style="flex:1;padding:9px;border-radius:7px;border:none;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);transition:.15s">🎪 Por Evento</button>
+    </div>
+    <!-- PAINEL VEREADOR -->
+    <div id="rel-panel-vereador">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px">Selecionar Vereadores</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="toggleAllVer(true)">Todos</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleAllVer(false)">Nenhum</button>
+        </div>
+      </div>
+      <div class="ver-check-grid" id="ver-check-grid"></div>
+    </div>
+    <!-- PAINEL EVENTO -->
+    <div id="rel-panel-evento" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px">Selecionar Eventos</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="toggleAllEv(true)">Todos</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleAllEv(false)">Nenhum</button>
+        </div>
+      </div>
+      <div class="ver-check-grid" id="ev-check-grid"></div>
+      <div style="font-size:10px;color:var(--sub);margin-top:6px">Apenas eventos cadastrados na aba 🎪 Eventos aparecem aqui.</div>
+    </div>
+    <!-- FILTROS -->
+    <div style="display:flex;gap:10px;margin:14px 0;flex-wrap:wrap">
+      <div class="field" style="flex:1;min-width:150px">
+        <label style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--sub)">Filtrar por Status</label>
+        <select id="rel-status" onchange="updateRelPreview()" style="background:var(--ink);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;font-family:var(--sans);font-size:12px;outline:none">
+          <option value="">Todos os status</option>
+          <option>Previsto</option><option>Aprovado</option><option>Empenhado</option><option>Pago</option><option>Cancelado</option>
+        </select>
+      </div>
+      <div class="field" style="flex:1;min-width:150px">
+        <label style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--sub)">Emendas sem vinculação</label>
+        <select id="rel-semvinc" style="background:var(--ink);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;font-family:var(--sans);font-size:12px;outline:none">
+          <option value="sim">Mostrar</option><option value="nao">Ocultar</option>
+        </select>
+      </div>
+    </div>
+    <div id="rel-preview" style="background:var(--ink);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--sub);margin-bottom:14px;min-height:36px">
+      Selecione acima para ver o resumo.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('modal-relatorio-bg').classList.remove('open')">Fechar</button>
+      <button class="btn btn-teal"  onclick="visualizarRelatorio()">👁 Visualizar</button>
+      <button class="btn btn-gold"  onclick="imprimirRelatorio()">📄 Imprimir / PDF</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ÁREA DE IMPRESSÃO DO RELATÓRIO (tela cheia) -->
+<div id="relatorio-overlay" class="relatorio-overlay" style="display:none;position:fixed;inset:0;background:var(--ink);z-index:400;overflow-y:auto;padding:24px">
+  <div style="max-width:900px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-family:var(--serif);font-size:20px;color:#fff">Relatório de Vinculações</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-gold" onclick="imprimirRelatorio()">📄 Imprimir / PDF</button>
+        <button class="btn btn-ghost" onclick="fecharRelatorio()">✕ Fechar</button>
+      </div>
+    </div>
+    <div id="relatorio-print-area" style="display:block"></div>
+  </div>
+</div>
+<script>
+const CONTAS=[{vereador:'ANDRE REBELLO',conta:'114.840-0',codigo:507},{vereador:'BIRA',conta:'114.841-9',codigo:508},{vereador:'BRUNO ZANCHETA',conta:'114.842-7',codigo:509},{vereador:'CIDINHA',conta:'114.845-1',codigo:510},{vereador:'DE ALVIM',conta:'114.846-X',codigo:511},{vereador:'DJALMA NERY',conta:'114.848-6',codigo:512},{vereador:'EDSON FERRAZ',conta:'114.850-8',codigo:513},{vereador:'ELTON CARVALHO',conta:'114.852-4',codigo:514},{vereador:'FABIO ZANCHIN',conta:'114.853-2',codigo:515},{vereador:'FERNANDA CASTELANO',conta:'114.856-7',codigo:516},{vereador:'GUSTAVO POZZI',conta:'114.857-5',codigo:517},{vereador:'JULIO CESAR',conta:'114.860-5',codigo:518},{vereador:'LARISSA CAMARGO',conta:'114.863-X',codigo:519},{vereador:'LINEU',conta:'114.870-2',codigo:520},{vereador:'LUCAO FERNANDES',conta:'114.875-3',codigo:521},{vereador:'MALABIM',conta:'114.878-8',codigo:522},{vereador:'MOISES',conta:'114.881-8',codigo:523},{vereador:'PARANÁ',conta:'114.885-0',codigo:524},{vereador:'RAQUEL',conta:'114.888-5',codigo:525},{vereador:'SERGIO ROCHA',conta:'114.899-0',codigo:526},{vereador:'THIAGO',conta:'114.900-8',codigo:527}];
+const SEED=[{vereador:'ANDRE REBELLO',num:32,protocolo:9324,valor:170000},{vereador:'BIRA',num:44,protocolo:9347,valor:250000},{vereador:'BRUNO ZANCHETA',num:175,protocolo:9627,valor:117000},{vereador:'CIDINHA',num:14,protocolo:9293,valor:195000},{vereador:'DJALMA NERY',num:193,protocolo:9877,valor:211879.61},{vereador:'EDSON FERRAZ',num:119,protocolo:9494,valor:50000},{vereador:'ELTON CARVALHO',num:128,protocolo:9532,valor:8000},{vereador:'ELTON CARVALHO',num:81,protocolo:9401,valor:26000},{vereador:'FERNANDA CASTELANO',num:166,protocolo:9609,valor:38979.61},{vereador:'FERNANDA CASTELANO',num:165,protocolo:9608,valor:100000},{vereador:'FERNANDA CASTELANO',num:null,protocolo:null,valor:20000},{vereador:'FERNANDA CASTELANO',num:163,protocolo:9606,valor:5000},{vereador:'GUSTAVO POZZI',num:48,protocolo:9351,valor:315000},{vereador:'LARISSA CAMARGO',num:143,protocolo:9586,valor:198000},{vereador:'LINEU',num:90,protocolo:9454,valor:100000},{vereador:'LUCAO FERNANDES',num:170,protocolo:9613,valor:117879.62},{vereador:'MALABIM',num:122,protocolo:9498,valor:10000},{vereador:'MALABIM',num:183,protocolo:9719,valor:92879.61},{vereador:'MOISES',num:76,protocolo:9388,valor:255879.61},{vereador:'PARANÁ',num:217,protocolo:10053,valor:20000},{vereador:'RAQUEL',num:49,protocolo:9352,valor:492879.61},{vereador:'SERGIO ROCHA',num:206,protocolo:9988,valor:247102.45},{vereador:'THIAGO',num:60,protocolo:9988,valor:50000}];
+
+const KEY='emendas_v2';
+const SUPABASE_URL = window.SMCT_SUPABASE_URL || 'https://uhalxchwpspupvfmpixq.supabase.co';
+const SUPABASE_KEY = window.SMCT_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYWx4Y2h3cHNwdXB2Zm1waXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODcwOTIsImV4cCI6MjA4OTI2MzA5Mn0.kVlk3z8__heq3bRbAMmra_LiNDmRs0wuMFkLtokSL6M';
+let _sb=null;
+function getSB(){if(!_sb&&window.supabase)_sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);return _sb;}
+function showSync(ok){let e=document.getElementById('_sync');if(!e){e=document.createElement('div');e.id='_sync';e.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0d1a2e;color:#7ab3f0;font-size:11px;padding:5px 14px;border-radius:20px;border:1px solid #1a3a6a;z-index:9999;transition:opacity .5s;pointer-events:none;font-weight:700';document.body.appendChild(e);}e.textContent=ok?'✓ Sincronizado':'↻ Salvando...';e.style.opacity='1';if(ok)setTimeout(()=>e.style.opacity='0',2000);}
+
+// ── Sistema de LOAs ───────────────────────────────────────────────────────────
+let edicoes_loa=[], loaAtiva=null, nextLoaId=1;
+let emendas=[],vincs=[],eventos_cad=[],nextEm=1,nextVi=1,nextEvC=1;
+let curTab='painel',editEmId=null,editViId=null,modalEmendaId=null,editEvCId=null;
+
+function _buildPayload(){
+  if(loaAtiva!==null){const idx=edicoes_loa.findIndex(e=>e.id===loaAtiva);if(idx>=0){edicoes_loa[idx].emendas=emendas;edicoes_loa[idx].vincs=vincs;edicoes_loa[idx].eventos_cad=eventos_cad;edicoes_loa[idx].nextEm=nextEm;edicoes_loa[idx].nextVi=nextVi;edicoes_loa[idx].nextEvC=nextEvC;}}
+  return {edicoes_loa,loaAtiva,nextLoaId};
+}
+function save(){
+  const payload=_buildPayload();
+  localStorage.setItem(KEY,JSON.stringify(payload));
+  const sb=getSB();
+  if(sb){showSync(false);sb.from('modulos').upsert({nome:KEY,dados:JSON.stringify(payload),atualizado_em:new Date().toISOString()},{onConflict:'nome'}).then(({error})=>{if(!error)showSync(true);});}
+}
+function _applyData(d){
+  if(!d)return false;
+  if(d.edicoes_loa&&d.edicoes_loa.length){
+    edicoes_loa=d.edicoes_loa;nextLoaId=d.nextLoaId||edicoes_loa.length+1;
+    loaAtiva=d.loaAtiva||edicoes_loa[edicoes_loa.length-1].id;
+    ativarLoa(loaAtiva,false);return true;
+  }else if(d.emendas&&d.emendas.length){
+    const loa={id:nextLoaId++,ano:'2026',descricao:'LOA 2026 — migrada',criadaEm:new Date().toISOString(),
+      emendas:d.emendas,vincs:d.vincs||[],eventos_cad:d.eventos_cad||[],
+      nextEm:d.nextEm||d.emendas.length+1,nextVi:d.nextVi||1,nextEvC:d.nextEvC||1};
+    edicoes_loa=[loa];loaAtiva=loa.id;ativarLoa(loaAtiva,false);return true;
+  }
+  return false;
+}
+async function loadRemote(){
+  const sb=getSB();
+  if(sb){try{const{data}=await sb.from('modulos').select('dados').eq('nome',KEY).single();if(data){return _applyData(JSON.parse(data.dados));}}catch(e){}}
+  try{const d=JSON.parse(localStorage.getItem(KEY));return _applyData(d);}catch(e){}
+  return false;
+}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));return _applyData(d);}catch(e){}return false;}
+function listenRealtime(){
+  const sb=getSB();if(!sb)return;
+  sb.channel('em-realtime').on('postgres_changes',{event:'UPDATE',schema:'public',table:'modulos',filter:`nome=eq.${KEY}`},payload=>{
+    try{_applyData(JSON.parse(payload.new.dados));render();showSync(true);}catch(e){}
+  }).subscribe();
+}
+function ativarLoa(id,salvar){
+  const loa=edicoes_loa.find(e=>e.id===id);if(!loa)return;
+  loaAtiva=id;emendas=loa.emendas||[];vincs=loa.vincs||[];eventos_cad=loa.eventos_cad||[];
+  nextEm=loa.nextEm||1;nextVi=loa.nextVi||1;nextEvC=loa.nextEvC||1;
+  if(salvar)save();
+}
+function R(v){return(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function formatarProcesso(input){
+  // Remove tudo que não é número ou barra
+  let v=input.value.replace(/[^\d\/]/g,'');
+  // Insere barra automaticamente após 5 dígitos se não tiver ainda
+  if(!v.includes('/')&&v.length>5) v=v.slice(0,5)+'/'+v.slice(5);
+  // Limita ano a 4 dígitos
+  const parts=v.split('/');
+  if(parts.length>1) v=parts[0].slice(0,5)+'/'+parts[1].slice(0,4);
+  input.value=v;
+}
+function pct(u,t){return t>0?Math.min(100,Math.round(u/t*100)):0;}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.opacity=1;setTimeout(()=>t.style.opacity=0,2500);}
+function closeAllModals(){document.querySelectorAll('.modal-bg').forEach(m=>m.classList.remove('open'));editEmId=null;editViId=null;modalEmendaId=null;editEvCId=null;}
+function usado(id){return vincs.filter(v=>v.emendaId===id&&v.status!=='Cancelado').reduce((s,v)=>s+v.valor,0);}
+function livre(id){const em=emendas.find(e=>e.id===id);return em?Math.max(0,em.valor-usado(id)):0;}
+function sBadge(s){return s==='Pago'?'bt':s==='Aprovado'?'bb':s==='Empenhado'?'bg':s==='Cancelado'?'br':'bx';}
+function tBadge(t){return{' Cachê Artístico':'bt','Estrutura':'bb','Staff':'bp','Hospedagem':'bg'}[t]||'bx';}
+function getEventos(){
+  const fromVincs=[...new Set(vincs.filter(v=>v.evento).map(v=>v.evento))];
+  const fromCad=eventos_cad.map(e=>e.nome);
+  return [...new Set([...fromCad,...fromVincs])].sort();
+}
+function getEventoInfo(nome){return eventos_cad.find(e=>e.nome===nome)||null;}
+function fmtDate(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('pt-BR');}catch(e){return d;}}
+function fmtHora(h){return h||''}
+function evStatusBadge(s){return s==='Realizado'?'bt':s==='Cancelado'?'br':s==='Em andamento'?'bg':s==='Confirmado'?'bb':'bx';}
+function totais(){const a=emendas.filter(e=>e.status!=='Cancelado');const total=a.reduce((s,e)=>s+e.valor,0);const ut=a.reduce((s,e)=>s+usado(e.id),0);return{total,ut,livre:total-ut};}
+
+function setTab(tab){curTab=tab;document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));const el=document.getElementById('nav-'+tab);if(el)el.classList.add('active');render();}
+function updateTopbar(){
+  const t=totais();
+  document.getElementById('pill-total').textContent='Total: '+R(t.total);
+  document.getElementById('pill-usado').textContent='Utilizado: '+R(t.ut);
+  document.getElementById('pill-livre').textContent='Livre: '+R(t.livre);
+  document.getElementById('cnt-ver').textContent=[...new Set(emendas.map(e=>e.vereador))].length;
+  document.getElementById('cnt-em').textContent=emendas.length;
+  document.getElementById('cnt-ev').textContent=eventos_cad.length;
+  // Badge de LOA ativa no título
+  const loaEl=document.querySelector('.topbar-logo');
+  if(loaEl){const loa=edicoes_loa.find(e=>e.id===loaAtiva);loaEl.innerHTML='Emendas Parlamentares'+(loa?` <span style="font-size:11px;background:var(--gold-l);border:1px solid var(--gold-m);color:var(--gold);border-radius:10px;padding:2px 8px;margin-left:6px">LOA ${loa.ano}</span>`:'');}
+}
+function render(){updateTopbar();const m=document.getElementById('main');if(curTab==='painel')m.innerHTML=renderPainel();else if(curTab==='vereadores')m.innerHTML=renderVereadores();else if(curTab==='emendas')m.innerHTML=renderEmendas();else if(curTab==='cad-eventos')m.innerHTML=renderCadEventos();else if(curTab==='eventos')m.innerHTML=renderEventos();else if(curTab==='resumo')m.innerHTML=renderResumo();else if(curTab==='contas')m.innerHTML=renderContas();else if(curTab==='loas')m.innerHTML=renderLoas();if(curTab==='emendas')setTimeout(filtrarEmendas,0);if(curTab==='eventos')setTimeout(filtrarEventos,0);}
+
+function renderPainel(){
+  const t=totais();
+  const byV={};emendas.forEach(e=>{if(!byV[e.vereador])byV[e.vereador]={total:0,ut:0};byV[e.vereador].total+=e.valor;byV[e.vereador].ut+=usado(e.id);});
+  const top=Object.entries(byV).sort((a,b)=>b[1].total-a[1].total).slice(0,6);
+  const byEv={};vincs.filter(v=>v.status!=='Cancelado').forEach(v=>{const ev=v.evento||'Sem evento';if(!byEv[ev])byEv[ev]=0;byEv[ev]+=v.valor;});
+  const bySt={};vincs.forEach(v=>{if(!bySt[v.status])bySt[v.status]=0;bySt[v.status]+=v.valor;});
+  const vincsAtivas=vincs.filter(v=>v.status!=='Cancelado');
+  const qtdEventos=[...new Set(vincsAtivas.filter(v=>v.evento).map(v=>v.evento))].length;
+  const qtdProcessos=vincsAtivas.filter(v=>v.processo&&v.processo.trim()).length;
+  const loaAtual=null;
+  const loaLabel='LOA 2026';
+  return`<div class="sec-head"><span style="font-size:26px">📊</span><div><div class="sec-title">Painel Geral</div><div class="sec-sub">${loaLabel} · ${emendas.length} emendas · ${vincsAtivas.length} vinculações · ${qtdProcessos} processo(s)</div></div></div>
+  <div class="stat-row">
+    <div class="sc gold"><div class="sc-lbl">Total ${loaLabel}</div><div class="sc-val">${R(t.total)}</div><div class="sc-sub">${emendas.length} emendas</div></div>
+    <div class="sc rose"><div class="sc-lbl">Utilizado</div><div class="sc-val">${R(t.ut)}</div><div class="sc-sub">${pct(t.ut,t.total)}% do total</div></div>
+    <div class="sc teal"><div class="sc-lbl">Saldo Livre</div><div class="sc-val">${R(t.livre)}</div><div class="sc-sub">${100-pct(t.ut,t.total)}% disponível</div></div>
+    <div class="sc blue"><div class="sc-lbl">Vinculações</div><div class="sc-val">${vincsAtivas.length}</div><div class="sc-sub">${qtdEventos} evento(s) · ${qtdProcessos} processo(s)</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="resumo-sec" style="margin:0"><div class="resumo-sec-title">Vereadores — Total × Utilizado</div>
+      ${top.map(([v,d])=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;font-weight:600;color:#fff">${v}</span><span style="font-size:11px;color:var(--gold);font-weight:700">${R(d.total)}</span></div><div class="saldo-bar"><div class="saldo-bar-fill" style="width:${pct(d.ut,d.total)}%;background:${pct(d.ut,d.total)>80?'#c0392b':'linear-gradient(90deg,var(--teal),#4cd98a)'}"></div></div><div style="font-size:9px;color:var(--sub);margin-top:2px">Usado: ${R(d.ut)} · Livre: ${R(d.total-d.ut)}</div></div>`).join('')}
+    </div>
+    <div class="resumo-sec" style="margin:0">
+      <div class="resumo-sec-title">Por Evento</div>
+      ${Object.keys(byEv).length===0?'<div class="empty-state" style="padding:20px"><div class="ei">🎪</div>Sem vinculações</div>':Object.entries(byEv).sort((a,b)=>b[1]-a[1]).map(([ev,val])=>{
+        const procs=vincsAtivas.filter(v=>v.evento===ev&&v.processo&&v.processo.trim()).length;
+        return`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px">
+          <span>🎪 ${ev}${procs?`<span style="font-size:9px;color:#6ab0d0;margin-left:6px">📋 ${procs} proc.</span>`:''}  </span>
+          <span style="color:var(--gold);font-weight:700">${R(val)}</span>
+        </div>`}).join('')}
+      <div class="resumo-sec-title" style="margin-top:14px">Por Status</div>
+      ${Object.entries(bySt).map(([s,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)"><span class="badge ${sBadge(s)}">${s}</span><span style="font-size:11px;font-weight:700;color:#fff">${R(v)}</span></div>`).join('')||'<div style="color:var(--sub);font-size:11px;padding:8px 0">—</div>'}
+    </div>
+  </div>`;
+}
+
+function renderVereadores(){
+  const byV={};emendas.forEach(e=>{if(!byV[e.vereador])byV[e.vereador]=[];byV[e.vereador].push(e);});
+  const vList=Object.entries(byV).sort((a,b)=>b[1].reduce((s,e)=>s+e.valor,0)-a[1].reduce((s,e)=>s+e.valor,0));
+  return`<div class="sec-head"><span style="font-size:26px">👤</span><div><div class="sec-title">Por Vereador</div><div class="sec-sub">Clique para expandir · registre vinculações diretamente aqui</div></div></div>
+  <div id="ver-list">${vList.map(([ver,eList])=>{
+    const tv=eList.reduce((s,e)=>s+e.valor,0),uv=eList.reduce((s,e)=>s+usado(e.id),0),lv=tv-uv,p=pct(uv,tv);
+    const conta=CONTAS.find(c=>c.vereador===ver);
+    const barC=p>90?'#c0392b':p>60?'var(--gold)':'linear-gradient(90deg,var(--teal),#4cd98a)';
+    const k=ver.replace(/\s/g,'_');
+    return`<div class="ver-card" id="vc-${k}" onclick="toggleVer('${ver.replace(/'/g,"\\'")}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div><div style="font-family:var(--serif);font-size:16px;color:#fff">${ver}</div>
+          <div style="font-size:10px;color:var(--sub);margin-top:2px">${eList.length} emenda${eList.length>1?'s':''}${conta?' · Cód.'+conta.codigo:''}</div>
+        </div>
+        <div style="text-align:right"><div style="font-size:17px;font-weight:800;color:var(--gold)">${R(tv)}</div><div style="font-size:10px;color:#4cd98a">Livre: ${R(lv)}</div></div>
+      </div>
+      <div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--sub);margin-bottom:3px"><span>Utilizado ${p}%</span><span>${R(uv)} de ${R(tv)}</span></div>
+        <div class="saldo-bar"><div class="saldo-bar-fill" style="width:${p}%;background:${barC}"></div></div>
+      </div>
+      <div id="vd-${k}" style="display:none;margin-top:14px" onclick="event.stopPropagation()">
+        ${eList.map(em=>renderEmendaDetalhe(em)).join('')}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function toggleVer(ver){const k=ver.replace(/\s/g,'_');const card=document.getElementById('vc-'+k);const detail=document.getElementById('vd-'+k);if(!detail)return;const open=detail.style.display==='block';detail.style.display=open?'none':'block';if(card)card.classList.toggle('open',!open);}
+
+function renderEmendaDetalhe(em){
+  const vList=vincs.filter(v=>v.emendaId===em.id);
+  const u=vList.filter(v=>v.status!=='Cancelado').reduce((s,v)=>s+v.valor,0);
+  const l=Math.max(0,em.valor-u),p=pct(u,em.valor);
+  const barC=p>90?'#c0392b':p>60?'var(--gold)':'linear-gradient(90deg,var(--teal),#4cd98a)';
+  return`<div class="emenda-item">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
+      <div><div style="font-size:13px;font-weight:700;color:#fff">Emenda ${em.num?'Nº '+em.num:'s/nº'}${em.protocolo?`<span style="font-size:10px;color:var(--sub);font-weight:400"> · Protocolo ${em.protocolo}</span>`:''} <span class="badge ${sBadge(em.status)}" style="margin-left:4px">${em.status}</span></div>
+        ${em.obs?`<div style="font-size:10px;color:var(--sub);margin-top:3px">${em.obs}</div>`:''}
+      </div>
+      <div style="text-align:right"><div style="font-size:16px;font-weight:800;color:var(--gold)">${R(em.valor)}</div><div style="font-size:10px;color:#4cd98a">Livre: ${R(l)}</div><div style="font-size:10px;color:#f07a7a">Usado: ${R(u)}</div></div>
+    </div>
+    <div class="saldo-bar" style="margin-bottom:12px"><div class="saldo-bar-fill" style="width:${p}%;background:${barC}"></div></div>
+    ${vList.length===0?`<div style="font-size:11px;color:var(--sub);padding:6px 0">Nenhuma vinculação ainda.</div>`:vList.map(v=>{
+      const data=v.data?new Date(v.data).toLocaleDateString('pt-BR'):'';
+      return`<div class="vinc-row">
+        <div style="font-size:18px;width:28px;text-align:center;flex-shrink:0;margin-top:2px">💸</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div><div style="font-size:12px;font-weight:700;color:#fff">${v.evento||'Evento não informado'}</div>
+              ${v.objeto?`<div style="font-size:11px;color:var(--text);margin-top:2px">📌 ${v.objeto}</div>`:''}
+              ${v.processo?`<div style="font-size:10px;color:#6ab0d0;font-weight:700;margin-top:3px">📋 Proc. ${v.processo}</div>`:''}
+            </div>
+            <div style="font-size:14px;font-weight:800;color:var(--gold);white-space:nowrap">${R(v.valor)}</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;align-items:center">
+            <span class="badge ${sBadge(v.status)}">${v.status}</span>
+            ${v.tipo?`<span class="badge ${tBadge(v.tipo)}">${v.tipo}</span>`:''}
+            ${data?`<span style="font-size:10px;color:var(--sub)">📅 ${data}</span>`:''}
+            ${v.obs?`<span style="font-size:10px;color:var(--sub)">· ${v.obs}</span>`:''}
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="btn btn-ghost btn-sm" onclick="editVinc(${v.id})">✏ Editar</button>
+            <button class="btn btn-rose btn-sm"  onclick="deletarVinc(${v.id})">✕ Remover</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn btn-gold btn-sm" onclick="openNovaVinc(${em.id})">＋ Nova Vinculação</button>
+      <button class="btn btn-ghost btn-sm" onclick="editEmenda(${em.id})">✏ Editar Emenda</button>
+    </div>
+  </div>`;
+}
+
+function renderEmendas(){
+  const vereadores=[...new Set(emendas.map(e=>e.vereador))].sort();
+  return`<div class="sec-head"><span style="font-size:26px">📋</span><div><div class="sec-title">Todas as Emendas</div><div class="sec-sub">${emendas.length} emendas LOA 2026</div></div><button class="btn btn-gold" style="margin-left:auto" onclick="openNovaEmenda()">＋ Nova Emenda</button></div>
+  <div class="filter-bar">
+    <select id="f-ver" onchange="filtrarEmendas()"><option value="">Todos os vereadores</option>${vereadores.map(v=>`<option>${v}</option>`).join('')}</select>
+    <select id="f-status" onchange="filtrarEmendas()"><option value="">Todos os status</option>${['Previsto','Aprovado','Empenhado','Pago','Cancelado'].map(s=>`<option>${s}</option>`).join('')}</select>
+    <input id="f-search" placeholder="Buscar..." oninput="filtrarEmendas()" style="width:160px">
+  </div><div id="em-table"></div>`;
+}
+function filtrarEmendas(){
+  const fV=(document.getElementById('f-ver')?.value||'').toUpperCase();
+  const fS=document.getElementById('f-status')?.value||'';
+  const fQ=(document.getElementById('f-search')?.value||'').toUpperCase();
+  let list=emendas.filter(e=>(!fV||e.vereador.includes(fV))&&(!fS||e.status===fS)&&(!fQ||JSON.stringify(e).toUpperCase().includes(fQ)));
+  const total=list.reduce((s,e)=>s+e.valor,0);
+  const w=document.getElementById('em-table');if(!w)return;
+  w.innerHTML=`<div style="font-size:11px;color:var(--sub);margin-bottom:10px">${list.length} resultado(s) · Total: <span style="color:var(--gold);font-weight:700">${R(total)}</span></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Vereador</th><th>Emenda</th><th>Protocolo</th><th>Valor Total</th><th>Utilizado</th><th>Saldo Livre</th><th>Status</th><th>Vinc.</th><th></th></tr></thead><tbody>
+  ${list.length===0?`<tr><td colspan="9"><div class="empty-state"><div class="ei">🔍</div>Nenhuma encontrada</div></td></tr>`:list.map(e=>{
+    const u=usado(e.id),l=livre(e.id),vc=vincs.filter(v=>v.emendaId===e.id).length;
+    return`<tr><td style="font-weight:700">${e.vereador}</td><td>${e.num?'Nº '+e.num:'—'}</td><td style="color:var(--sub)">${e.protocolo||'—'}</td><td style="color:var(--gold);font-weight:700">${R(e.valor)}</td><td style="color:#f07a7a;font-weight:600">${u?R(u):'—'}</td><td style="color:#4cd98a;font-weight:600">${R(l)}</td><td><span class="badge ${sBadge(e.status)}">${e.status}</span></td><td>${vc?`<span class="badge bb">${vc}</span>`:'—'}</td>
+    <td style="white-space:nowrap"><button class="btn btn-gold btn-sm" onclick="openNovaVinc(${e.id})" title="Nova vinculação">＋</button> <button class="btn btn-ghost btn-sm" onclick="editEmenda(${e.id})">✏</button></td></tr>`;
+  }).join('')}
+  </tbody></table></div>`;
+}
+
+function renderEventos(){
+  // Combina eventos cadastrados + eventos que já têm vinculações
+  const evDeVincs=[...new Set(vincs.filter(v=>v.status!=='Cancelado'&&v.evento).map(v=>v.evento))];
+  const evDeCad=eventos_cad.map(e=>e.nome);
+  const allEvNomes=[...new Set([...evDeCad,...evDeVincs])].sort();
+  const byEv={};vincs.filter(v=>v.status!=='Cancelado').forEach(v=>{const ev=v.evento||'Sem evento';if(!byEv[ev])byEv[ev]=[];byEv[ev].push(v);});
+  // Adiciona eventos cadastrados mesmo sem vinculação ainda
+  evDeCad.forEach(nome=>{if(!byEv[nome])byEv[nome]=[];});
+  const total=Object.keys(byEv).length;
+  const comVinc=Object.values(byEv).filter(v=>v.length>0).length;
+  const sem=emendas.filter(e=>vincs.filter(v=>v.emendaId===e.id).length===0);
+  return`<div class="sec-head"><span style="font-size:26px">📎</span><div><div class="sec-title">Por Evento</div><div class="sec-sub">${total} evento(s) · ${comVinc} com recursos vinculados</div></div></div>
+  <div class="filter-bar" style="margin-bottom:16px">
+    <select id="f-ev-sel" onchange="filtrarEventos()" style="min-width:220px">
+      <option value="">Todos os eventos</option>
+      ${allEvNomes.map(e=>`<option value="${e}">${e}</option>`).join('')}
+    </select>
+    <select id="f-ev-tipo" onchange="filtrarEventos()">
+      <option value="">Todos os tipos</option>
+      ${['Cachê Artístico','Estrutura','Staff','Hospedagem','Divulgação','Outros'].map(t=>`<option>${t}</option>`).join('')}
+    </select>
+    <select id="f-ev-status" onchange="filtrarEventos()">
+      <option value="">Todos os status</option>
+      ${['Previsto','Aprovado','Empenhado','Pago','Cancelado'].map(s=>`<option>${s}</option>`).join('')}
+    </select>
+  </div>
+  <div id="ev-blocks"></div>
+  ${sem.length?`<div class="resumo-sec"><div class="resumo-sec-title">⚠️ Emendas sem Vinculação (${sem.length})</div><div class="tbl-wrap" style="border:none"><table><thead><tr><th>Vereador</th><th>Emenda</th><th>Saldo Livre</th><th></th></tr></thead><tbody>${sem.map(e=>`<tr><td style="font-weight:700">${e.vereador}</td><td>${e.num?'Nº '+e.num:'s/nº'}</td><td style="color:#4cd98a;font-weight:700">${R(livre(e.id))}</td><td><button class="btn btn-gold btn-sm" onclick="openNovaVinc(${e.id})">＋ Vincular</button></td></tr>`).join('')}</tbody></table></div></div>`:''}`;
+}
+
+function filtrarEventos(){
+  const fEv=(document.getElementById('f-ev-sel')?.value||'').trim();
+  const fTipo=document.getElementById('f-ev-tipo')?.value||'';
+  const fSt=document.getElementById('f-ev-status')?.value||'';
+  const container=document.getElementById('ev-blocks');if(!container)return;
+
+  const byEv={};
+  // Eventos cadastrados entram APENAS no dropdown (não no bloco)
+  // Aqui só processa vinculações
+  vincs.forEach(v=>{
+    if(fSt&&v.status!==fSt)return;
+    if(fTipo&&v.tipo!==fTipo)return;
+    if(v.status==='Cancelado'&&!fSt)return;
+    const ev=v.evento||'Sem evento';
+    if(fEv&&ev!==fEv)return;
+    if(!byEv[ev])byEv[ev]=[];
+    byEv[ev].push(v);
+  });
+
+  if(Object.keys(byEv).length===0){
+    container.innerHTML=`<div class="empty-state"><div class="ei">🎪</div>${fEv?'Nenhuma vinculação registrada para "'+fEv+'".<br><small>Selecione o evento e clique em + Vincular Emenda.</small>':'Selecione um evento no filtro acima ou registre vinculações na aba Emendas.'}</div>`;
+    return;
+  }
+
+  container.innerHTML=Object.entries(byEv)
+    .sort((a,b)=>b[1].reduce((s,v)=>s+v.valor,0)-a[1].reduce((s,v)=>s+v.valor,0))
+    .map(([ev,vList])=>{
+      const te=vList.reduce((s,v)=>s+v.valor,0);
+      const byT={};vList.forEach(v=>{const t=v.tipo||'Outros';if(!byT[t])byT[t]=0;byT[t]+=v.valor;});
+      const evInfo=getEventoInfo(ev);
+      return`<div class="resumo-sec">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:${evInfo?14:10}px">
+          <div>
+            <div style="font-family:var(--serif);font-size:17px;color:#fff;margin-bottom:4px">🎪 ${ev}</div>
+            ${evInfo?`<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--sub)">
+              ${evInfo.dataIni?`<span>📅 ${fmtDate(evInfo.dataIni)}${evInfo.horaIni?' às '+evInfo.horaIni:''}</span>`:''}
+              ${evInfo.dataFim&&evInfo.dataFim!==evInfo.dataIni?`<span>até ${fmtDate(evInfo.dataFim)}</span>`:''}
+              ${evInfo.local?`<span>📍 ${evInfo.local}</span>`:''}
+              ${evInfo.tipo?`<span class="badge bb">${evInfo.tipo}</span>`:''}
+              <span class="badge ${evStatusBadge(evInfo.status||'Planejado')}">${evInfo.status}</span>
+            </div>`:''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:19px;font-weight:800;color:var(--gold)">${R(te)}</div>
+            <div style="font-size:10px;color:var(--sub)">${vList.length} vinculação(ões) · ${vList.filter(v=>v.processo&&v.processo.trim()).length} processo(s)</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          ${Object.entries(byT).map(([t,v])=>`<div style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:10px"><span class="badge ${tBadge(t)}">${t}</span><span style="color:var(--gold);font-weight:700;margin-left:6px">${R(v)}</span></div>`).join('')}
+        </div>
+        <div class="tbl-wrap" style="border:none"><table><thead><tr><th>Vereador</th><th>Emenda</th><th>Tipo</th><th>Objeto / Beneficiário</th><th style="color:#6ab0d0">📋 Processo</th><th>Valor</th><th>Status</th><th>Data</th><th></th></tr></thead><tbody>
+          ${vList.map(v=>{const em=emendas.find(e=>e.id===v.emendaId)||{};return`<tr>
+            <td style="font-weight:700">${em.vereador||'—'}</td>
+            <td>${em.num?'Nº '+em.num:'—'}</td>
+            <td>${v.tipo?`<span class="badge ${tBadge(v.tipo)}">${v.tipo}</span>`:'—'}</td>
+            <td style="font-size:11px">${v.objeto||'—'}</td>
+            <td style="font-size:10px;color:#6ab0d0;font-weight:700;font-family:monospace">${v.processo||'—'}</td>
+            <td style="color:var(--gold);font-weight:700;white-space:nowrap">${R(v.valor)}</td>
+            <td><span class="badge ${sBadge(v.status)}">${v.status}</span></td>
+            <td style="color:var(--sub);font-size:10px">${v.data?fmtDate(v.data):'—'}</td>
+            <td><button class="btn btn-ghost btn-sm" onclick="editVinc(${v.id})">✏</button></td>
+          </tr>`;}).join('')}
+        </tbody></table></div>
+      </div>`;
+    }).join('');
+}
+
+
+function renderResumo(){
+  const t=totais();const hoje=new Date().toLocaleDateString('pt-BR');
+  const byV={};emendas.forEach(e=>{if(!byV[e.vereador])byV[e.vereador]=[];byV[e.vereador].push(e);});
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div class="sec-head" style="margin:0"><span style="font-size:26px">📄</span><div><div class="sec-title">Resumo Executivo</div><div class="sec-sub">Emitido em ${hoje} · LOA 2026 · São Carlos</div></div></div>
+    <button class="btn btn-gold" onclick="gerarPDF()">📄 Gerar PDF</button>
+  </div>
+  <div class="stat-row">
+    <div class="sc gold"><div class="sc-lbl">Total LOA 2026</div><div class="sc-val">${R(t.total)}</div><div class="sc-sub">${emendas.length} emendas</div></div>
+    <div class="sc rose"><div class="sc-lbl">Destinado</div><div class="sc-val">${R(t.ut)}</div><div class="sc-sub">${pct(t.ut,t.total)}%</div></div>
+    <div class="sc teal"><div class="sc-lbl">Saldo Livre</div><div class="sc-val">${R(t.livre)}</div><div class="sc-sub">disponível</div></div>
+  </div>
+  ${Object.entries(byV).sort((a,b)=>b[1].reduce((s,e)=>s+e.valor,0)-a[1].reduce((s,e)=>s+e.valor,0)).map(([ver,eList])=>{
+    const tv=eList.reduce((s,e)=>s+e.valor,0),uv=eList.reduce((s,e)=>s+usado(e.id),0);
+    const conta=CONTAS.find(c=>c.vereador===ver);
+    return`<div class="resumo-sec">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div><div style="font-family:var(--serif);font-size:17px;color:#fff">👤 ${ver}</div>
+          ${conta?`<div style="font-size:10px;color:var(--sub);margin-top:2px">Conta: ${conta.conta} · Código: ${conta.codigo}</div>`:''}
+        </div>
+        <div style="text-align:right"><div style="font-size:17px;font-weight:800;color:var(--gold)">${R(tv)}</div><div style="font-size:10px;color:#4cd98a">Livre: ${R(tv-uv)}</div></div>
+      </div>
+      ${eList.map(em=>{
+        const vList=vincs.filter(v=>v.emendaId===em.id);
+        const ue=vList.filter(v=>v.status!=='Cancelado').reduce((s,v)=>s+v.valor,0);
+        return`<div style="background:var(--ink);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700;color:#fff">💰 Emenda ${em.num?'Nº '+em.num:'s/nº'}${em.protocolo?`<span style="color:var(--sub);font-weight:400;font-size:10px"> · Protocolo ${em.protocolo}</span>`:''} <span class="badge ${sBadge(em.status)}" style="margin-left:4px">${em.status}</span></div>
+            <div style="text-align:right"><span style="font-size:14px;font-weight:800;color:var(--gold)">${R(em.valor)}</span><span style="font-size:10px;color:var(--sub);margin-left:8px">livre: <span style="color:#4cd98a">${R(livre(em.id))}</span></span></div>
+          </div>
+          ${vList.length===0?`<div style="font-size:10px;color:var(--sub);padding:4px 0">Sem vinculações registradas.</div>`:vList.map(v=>`
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-top:1px solid var(--border)">
+            <span style="font-size:15px;color:var(--sub)">↳</span>
+            <div style="flex:1">
+              <div style="font-size:11px;font-weight:700;color:#fff">${v.evento?'🎪 '+v.evento:'Evento não informado'} ${v.tipo?`<span class="badge ${tBadge(v.tipo)}" style="margin-left:4px">${v.tipo}</span>`:''} <span class="badge ${sBadge(v.status)}" style="margin-left:2px">${v.status}</span></div>
+              ${v.objeto?`<div style="font-size:11px;color:var(--text);margin-top:3px">📌 ${v.objeto}</div>`:''}
+              ${v.processo?`<div style="font-size:10px;color:#6ab0d0;margin-top:3px;font-weight:700">📋 Proc. ${v.processo}</div>`:''}
+              ${v.obs?`<div style="font-size:10px;color:var(--sub);margin-top:2px">${v.obs}</div>`:''}
+              ${v.data?`<div style="font-size:10px;color:var(--sub);margin-top:2px">📅 ${new Date(v.data).toLocaleDateString('pt-BR')}</div>`:''}
+            </div>
+            <div style="font-size:13px;font-weight:800;color:var(--gold);white-space:nowrap">${R(v.valor)}</div>
+          </div>`).join('')}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('')}
+  <div style="background:linear-gradient(135deg,var(--gold-l),#1a1000);border:1px solid var(--gold-m);border-radius:14px;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+    <div style="font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.8px">💰 Total Geral — Emendas LOA 2026</div>
+    <div style="font-size:26px;font-weight:800;color:var(--gold)">${R(t.total)}</div>
+  </div>`;
+}
+
+function renderContas(){
+  return`<div class="sec-head"><span style="font-size:26px">🏦</span><div><div class="sec-title">Contas Bancárias</div><div class="sec-sub">Contas vinculadas às emendas dos vereadores</div></div></div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Vereador</th><th>Nome da Conta</th><th>Nº Conta</th><th>Código</th><th>Total Emendas</th><th>Saldo Livre</th></tr></thead><tbody>
+  ${CONTAS.map((c,i)=>{const eList=emendas.filter(e=>e.vereador===c.vereador);const tv=eList.reduce((s,e)=>s+e.valor,0);const lv=eList.reduce((s,e)=>s+livre(e.id),0);return`<tr><td style="color:var(--sub)">${i+1}</td><td style="font-weight:700">${c.vereador}</td><td style="color:var(--sub)">EMENDA DE ${c.vereador}</td><td style="font-family:monospace">${c.conta}</td><td><span class="badge bb">${c.codigo}</span></td><td style="color:var(--gold);font-weight:700">${tv?R(tv):'—'}</td><td style="color:#4cd98a;font-weight:700">${tv?R(lv):'—'}</td></tr>`;}).join('')}
+  </tbody></table></div>`;
+}
+
+function openNovaEmenda(){editEmId=null;document.getElementById('me-title').textContent='Nova Emenda';['me-num','me-protocolo','me-valor','me-obs'].forEach(id=>document.getElementById(id).value='');document.getElementById('me-status').value='Previsto';populateVereadorSel();document.getElementById('me-vereador').value='';document.getElementById('modal-emenda-bg').classList.add('open');}
+function editEmenda(id){const em=emendas.find(e=>e.id===id);if(!em)return;editEmId=id;document.getElementById('me-title').textContent='Editar Emenda';populateVereadorSel();document.getElementById('me-vereador').value=em.vereador;document.getElementById('me-num').value=em.num||'';document.getElementById('me-protocolo').value=em.protocolo||'';document.getElementById('me-valor').value=em.valor;document.getElementById('me-status').value=em.status;document.getElementById('me-obs').value=em.obs||'';document.getElementById('modal-emenda-bg').classList.add('open');}
+function populateVereadorSel(){const sel=document.getElementById('me-vereador');const vs=[...new Set([...CONTAS.map(c=>c.vereador),...emendas.map(e=>e.vereador)])].sort();sel.innerHTML='<option value="">— selecione —</option>'+vs.map(v=>`<option>${v}</option>`).join('');}
+function salvarEmenda(){const ver=document.getElementById('me-vereador').value.trim();const val=parseFloat(document.getElementById('me-valor').value);if(!ver){alert('Selecione o vereador.');return;}if(!val||val<=0){alert('Informe um valor válido.');return;}const data={vereador:ver,num:parseInt(document.getElementById('me-num').value)||null,protocolo:parseInt(document.getElementById('me-protocolo').value)||null,valor:val,status:document.getElementById('me-status').value,obs:document.getElementById('me-obs').value.trim()};if(editEmId!==null){const idx=emendas.findIndex(e=>e.id===editEmId);if(idx>=0)emendas[idx]={...emendas[idx],...data};toast('✅ Emenda atualizada!');}else{emendas.push({id:nextEm++,...data});toast('✅ Emenda adicionada!');}save();closeAllModals();render();}
+function deletarEmenda(id){const em=emendas.find(e=>e.id===id);if(!em)return;const hv=vincs.some(v=>v.emendaId===id);if(!confirm(`Excluir emenda de ${em.vereador}?${hv?'\n\n⚠️ As vinculações também serão removidas!':''}`))return;emendas=emendas.filter(e=>e.id!==id);vincs=vincs.filter(v=>v.emendaId!==id);save();toast('🗑 Emenda excluída.');render();}
+
+function getMvTipos(){return [...document.querySelectorAll('#mv-tipo-checks input[type=checkbox]:checked')].map(cb=>cb.value);}
+function setMvTipos(tipos){
+  const arr=Array.isArray(tipos)?tipos:(tipos?tipos.split(',').map(t=>t.trim()):[]);
+  document.querySelectorAll('#mv-tipo-checks input[type=checkbox]').forEach(cb=>{
+    cb.checked=arr.includes(cb.value);
+    updateTipoLabel(cb);
+  });
+}
+function updateTipoLabel(cb){
+  const lbl=cb.closest('label');
+  if(!lbl)return;
+  lbl.style.borderColor=cb.checked?'var(--gold)':'var(--border)';
+  lbl.style.background=cb.checked?'var(--gold-l)':'var(--ink)';
+  lbl.style.color=cb.checked?'var(--gold-d)':'var(--text)';
+}
+function onMevTipoChange(){
+  const v=document.getElementById('mev-tipo').value;
+  const outro=document.getElementById('mev-tipo-outro');
+  outro.style.display=v==='Outro'?'block':'none';
+  if(v!=='Outro')outro.value='';
+}
+function getMevTipo(){
+  const sel=document.getElementById('mev-tipo').value;
+  if(sel==='Outro'){const o=document.getElementById('mev-tipo-outro').value.trim();return o||'Outro';}
+  return sel;
+}
+function setMevTipo(val){
+  const sel=document.getElementById('mev-tipo');
+  const opts=[...sel.options].map(o=>o.value);
+  if(opts.includes(val)){sel.value=val;document.getElementById('mev-tipo-outro').style.display='none';}
+  else if(val){sel.value='Outro';document.getElementById('mev-tipo-outro').style.display='block';document.getElementById('mev-tipo-outro').value=val;}
+  else{sel.value='';document.getElementById('mev-tipo-outro').style.display='none';}
+}
+
+function openNovaVinc(emId){
+  editViId=null;modalEmendaId=emId;
+  const em=emendas.find(e=>e.id===emId);if(!em)return;
+  const l=livre(emId);
+  document.getElementById('mv-sub').textContent=`Emenda ${em.num?'Nº '+em.num:'s/nº'} · ${em.vereador}`;
+  document.getElementById('mv-info').innerHTML=`<strong>Total:</strong> ${R(em.valor)} &nbsp;·&nbsp; <strong>Utilizado:</strong> <span style="color:#f07a7a">${R(usado(emId))}</span> &nbsp;·&nbsp; <strong>Saldo livre:</strong> <span style="color:#4cd98a">${R(l)}</span>`;
+  ['mv-valor','mv-objeto','mv-obs','mv-processo'].forEach(id=>document.getElementById(id).value='');
+  populateMvEventoSelect('');
+  setMvTipos([]);document.getElementById('mv-status').value='Previsto';document.getElementById('mv-data').value='';
+  document.getElementById('mv-saldo-preview').style.display='none';
+  document.getElementById('modal-vinc-bg').classList.add('open');
+}
+function editVinc(id){
+  const v=vincs.find(x=>x.id===id);if(!v)return;
+  editViId=id;modalEmendaId=v.emendaId;
+  const em=emendas.find(e=>e.id===v.emendaId)||{};
+  const la=livre(v.emendaId)+v.valor;
+  document.getElementById('mv-sub').textContent=`Editando · Emenda ${em.num?'Nº '+em.num:'s/nº'} · ${em.vereador}`;
+  document.getElementById('mv-info').innerHTML=`<strong>Total:</strong> ${R(em.valor)} &nbsp;·&nbsp; <strong>Saldo disponível (incl. este):</strong> <span style="color:#4cd98a">${R(la)}</span>`;
+  populateMvEventoSelect(v.evento||'');document.getElementById('mv-valor').value=v.valor;
+  setMvTipos(v.tipo||'');
+  document.getElementById('mv-objeto').value=v.objeto||'';document.getElementById('mv-status').value=v.status;document.getElementById('mv-data').value=v.data||'';document.getElementById('mv-obs').value=v.obs||'';document.getElementById('mv-processo').value=v.processo||'';
+  previewSaldoVinc();
+  document.getElementById('modal-vinc-bg').classList.add('open');
+}
+function populateMvEventoSelect(currentVal){
+  const sel=document.getElementById('mv-evento');
+  const custom=document.getElementById('mv-evento-custom');
+  if(!sel)return;
+  const evs=eventos_cad.map(e=>e.nome);
+  // Also include events already used in vincs but not in cadastro
+  const fromVincs=[...new Set(vincs.filter(v=>v.evento).map(v=>v.evento))];
+  const all=[...new Set([...evs,...fromVincs])].sort();
+  sel.innerHTML='<option value="">— selecione o evento —</option>'
+    +all.map(e=>`<option value="${e}">${e}</option>`).join('')
+    +'<option value="__outro__">✏ Digitar outro nome...</option>';
+  // Check if currentVal matches a known event
+  if(currentVal&&all.includes(currentVal)){
+    sel.value=currentVal;
+    custom.style.display='none';
+    custom.value='';
+  } else if(currentVal){
+    sel.value='__outro__';
+    custom.style.display='block';
+    custom.value=currentVal;
+  } else {
+    sel.value='';
+    custom.style.display='none';
+    custom.value='';
+  }
+}
+
+function onMvEventoChange(){
+  const sel=document.getElementById('mv-evento');
+  const custom=document.getElementById('mv-evento-custom');
+  if(sel.value==='__outro__'){
+    custom.style.display='block';
+    custom.value='';
+    custom.focus();
+  } else {
+    custom.style.display='none';
+    custom.value='';
+  }
+  previewSaldoVinc();
+}
+
+function getMvEventoValue(){
+  const sel=document.getElementById('mv-evento');
+  if(sel.value==='__outro__'){
+    return(document.getElementById('mv-evento-custom').value||'').trim();
+  }
+  return(sel.value||'').trim();
+}
+
+function previewSaldoVinc(){
+  const val=parseFloat(document.getElementById('mv-valor').value)||0;
+  if(!val||!modalEmendaId){document.getElementById('mv-saldo-preview').style.display='none';return;}
+  const la=editViId!==null?livre(modalEmendaId)+(vincs.find(v=>v.id===editViId)?.valor||0):livre(modalEmendaId);
+  const nl=la-val;
+  const p=document.getElementById('mv-saldo-preview');
+  p.style.display='block';
+  p.style.background=nl<0?'var(--rose-l)':'var(--teal-l)';
+  p.style.borderColor=nl<0?'#4a1a1a':'var(--teal-m)';
+  p.style.color=nl<0?'#f07a7a':'#4cd98a';
+  p.textContent=nl<0?`⚠️ Excede o saldo! Disponível: ${R(la)} · Excesso: ${R(Math.abs(nl))}`:`✓ Saldo após vinculação: ${R(nl)}`;
+}
+function salvarVinculacao(){
+  const emId=modalEmendaId;const val=parseFloat(document.getElementById('mv-valor').value);const evento=getMvEventoValue();
+  if(!val||val<=0){alert('Informe um valor válido.');return;}if(!evento){alert('Informe o evento.');return;}
+  const la=editViId!==null?livre(emId)+(vincs.find(v=>v.id===editViId)?.valor||0):livre(emId);
+  if(val>la+0.01){if(!confirm(`⚠️ Valor (${R(val)}) excede o saldo (${R(la)}).\nDeseja registrar mesmo assim?`))return;}
+  const tipos=getMvTipos();
+  const data={emendaId:emId,evento,valor:val,tipo:tipos.join(', '),objeto:document.getElementById('mv-objeto').value.trim(),processo:document.getElementById('mv-processo').value.trim(),status:document.getElementById('mv-status').value,data:document.getElementById('mv-data').value,obs:document.getElementById('mv-obs').value.trim()};
+  if(editViId!==null){const idx=vincs.findIndex(v=>v.id===editViId);if(idx>=0)vincs[idx]={...vincs[idx],...data};toast('✅ Vinculação atualizada!');}
+  else{vincs.push({id:nextVi++,...data});toast('✅ Vinculação registrada!');}
+  save();closeAllModals();render();
+  const em=emendas.find(e=>e.id===emId);
+  if(curTab==='vereadores'&&em)setTimeout(()=>toggleVer(em.vereador),80);
+}
+function deletarVinc(id){
+  const v=vincs.find(x=>x.id===id);if(!v)return;
+  const em=emendas.find(e=>e.id===v.emendaId)||{};
+  if(!confirm(`Remover vinculação "${v.evento||'sem evento'}" (${R(v.valor)}) da emenda de ${em.vereador}?`))return;
+  vincs=vincs.filter(x=>x.id!==id);save();toast('🗑 Vinculação removida. Saldo restaurado.');render();
+  if(curTab==='vereadores'&&em.vereador)setTimeout(()=>toggleVer(em.vereador),80);
+}
+
+function gerarPDF(){
+  const s=document.createElement('style');
+  s.id='pdf-ov';
+  s.textContent=`
+    @page{margin:1.5cm 1.5cm;size:A4 portrait}
+    html,body{background:#fff!important;color:#111!important}
+    .nav-bar,.topbar,.sidebar,.layout>aside,button,.filter-bar,.vinc-actions,.modal-bg{display:none!important}
+    .layout{display:block!important;height:auto!important;overflow:visible!important}
+    .main{overflow:visible!important;padding:0!important;background:#fff!important}
+    *{background:#fff!important;color:#111!important;border-color:#ccc!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    .badge{background:#eee!important;color:#111!important;border:1px solid #aaa!important}
+    .saldo-bar{background:#ddd!important} .saldo-bar-fill{background:#555!important}
+    table{border-collapse:collapse!important}
+    th,td{border:1px solid #ccc!important;padding:5px 8px!important;color:#111!important}
+    th{background:#f0f0f0!important}
+    .ver-card,.resumo-sec,.emenda-item{page-break-inside:avoid}
+  `;
+  document.head.appendChild(s);
+  window.print();
+  setTimeout(()=>{const el=document.getElementById('pdf-ov');if(el)el.remove();},2000);
+}
+
+
+
+// ══════════════════════════════════════════════
+//  CADASTRO DE EVENTOS
+// ══════════════════════════════════════════════
+function renderCadEventos(){
+  return`<div class="sec-head">
+    <span style="font-size:26px">🎪</span>
+    <div><div class="sec-title">Eventos</div><div class="sec-sub">${eventos_cad.length} evento(s) cadastrado(s)</div></div>
+    <button class="btn btn-gold" style="margin-left:auto" onclick="openNovoEvento()">＋ Novo Evento</button>
+  </div>
+  ${eventos_cad.length===0?`<div class="empty-state"><div class="ei">🎪</div>Nenhum evento cadastrado ainda.<br><small>Cadastre os eventos para vincular emendas e gerar relatórios por evento.</small></div>`:''}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+    ${eventos_cad.map(ev=>{
+      const vList=vincs.filter(v=>v.evento===ev.nome&&v.status!=='Cancelado');
+      const total=vList.reduce((s,v)=>s+v.valor,0);
+      const vereadores=[...new Set(vList.map(v=>{const em=emendas.find(e=>e.id===v.emendaId);return em?em.vereador:'?';}))];
+      return`<div class="ver-card" style="cursor:default">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">
+          <div>
+            <div style="font-family:var(--serif);font-size:16px;color:#fff;margin-bottom:3px">${ev.nome}</div>
+            ${ev.tipo?`<span class="badge bb" style="margin-bottom:6px">${ev.tipo}</span>`:''}
+          </div>
+          <span class="badge ${evStatusBadge(ev.status)}">${ev.status}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          ${ev.dataIni?`<div style="background:var(--ink);border-radius:7px;padding:7px 10px"><div style="font-size:9px;color:var(--sub);font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Início</div><div style="font-size:11px;font-weight:600;color:#fff">${fmtDate(ev.dataIni)}${ev.horaIni?' · '+fmtHora(ev.horaIni):''}</div></div>`:''}
+          ${ev.dataFim?`<div style="background:var(--ink);border-radius:7px;padding:7px 10px"><div style="font-size:9px;color:var(--sub);font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Fim</div><div style="font-size:11px;font-weight:600;color:#fff">${fmtDate(ev.dataFim)}${ev.horaFim?' · '+fmtHora(ev.horaFim):''}</div></div>`:''}
+          ${ev.local?`<div style="background:var(--ink);border-radius:7px;padding:7px 10px;grid-column:1/-1"><div style="font-size:9px;color:var(--sub);font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">📍 Local</div><div style="font-size:11px;color:#fff">${ev.local}</div></div>`:''}
+        </div>
+        ${total>0?`<div style="background:var(--gold-l);border:1px solid var(--gold-m);border-radius:8px;padding:8px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-size:9px;color:var(--sub);font-weight:800;text-transform:uppercase;letter-spacing:.5px">Emendas vinculadas</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${vereadores.join(' · ')}</div>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:var(--gold)">${R(total)}</div>
+        </div>`:`<div style="font-size:10px;color:var(--sub);padding:4px 0;margin-bottom:6px">Sem emendas vinculadas ainda.</div>`}
+        ${ev.obs?`<div style="font-size:10px;color:var(--sub);margin-bottom:8px;font-style:italic">${ev.obs}</div>`:''}
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="editEvento(${ev.id})">✏ Editar</button>
+          <button class="btn btn-rose  btn-sm" onclick="deletarEvento(${ev.id})">✕ Excluir</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function openNovoEvento(){
+  editEvCId=null;
+  document.getElementById('mev-title').textContent='Novo Evento';
+  ['mev-nome','mev-local','mev-obs'].forEach(id=>document.getElementById(id).value='');
+  ['mev-data-ini','mev-data-fim'].forEach(id=>document.getElementById(id).value='');
+  setMevTipo('');
+  document.getElementById('mev-status').value='Planejado';
+  document.getElementById('modal-evento-bg').classList.add('open');
+}
+function editEvento(id){
+  const ev=eventos_cad.find(e=>e.id===id);if(!ev)return;
+  editEvCId=id;
+  document.getElementById('mev-title').textContent='Editar Evento';
+  document.getElementById('mev-nome').value=ev.nome||'';
+  document.getElementById('mev-data-ini').value=ev.dataIni||'';
+  document.getElementById('mev-data-fim').value=ev.dataFim||'';
+  document.getElementById('mev-local').value=ev.local||'';
+  setMevTipo(ev.tipo||'');
+  document.getElementById('mev-status').value=ev.status||'Planejado';
+  document.getElementById('mev-obs').value=ev.obs||'';
+  document.getElementById('modal-evento-bg').classList.add('open');
+}
+function salvarEvento(){
+  const nome=document.getElementById('mev-nome').value.trim();
+  if(!nome){alert('Informe o nome do evento.');return;}
+  const data={nome,dataIni:document.getElementById('mev-data-ini').value,dataFim:document.getElementById('mev-data-fim').value,horaIni:'',horaFim:'',local:document.getElementById('mev-local').value.trim(),tipo:getMevTipo(),status:document.getElementById('mev-status').value,obs:document.getElementById('mev-obs').value.trim()};
+  if(editEvCId!==null){
+    const idx=eventos_cad.findIndex(e=>e.id===editEvCId);
+    if(idx>=0)eventos_cad[idx]={...eventos_cad[idx],...data};
+    toast('✅ Evento atualizado!');
+  } else {
+    eventos_cad.push({id:nextEvC++,...data});
+    toast('✅ Evento cadastrado!');
+  }
+  save();closeAllModals();render();
+}
+function deletarEvento(id){
+  const ev=eventos_cad.find(e=>e.id===id);if(!ev)return;
+  if(!confirm(`Excluir evento "${ev.nome}"?\nAs vinculações de emendas que usam este nome serão mantidas, mas o evento sairá da lista.`))return;
+  eventos_cad=eventos_cad.filter(e=>e.id!==id);
+  save();toast('🗑 Evento excluído.');render();
+}
+
+// ══════════════════════════════════════════════
+//  RELATÓRIO — TABS + LÓGICA POR EVENTO
+// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  RELATÓRIO — ABERTURA E HELPERS
+// ══════════════════════════════════════════════
+function openRelatorio(){
+  relatorioVereadores.clear();
+  relatorioEventos.clear();
+  buildVerCheckGrid();
+  setRelTab('vereador');
+  document.getElementById('modal-relatorio-bg').classList.add('open');
+}
+
+function buildVerCheckGrid(){
+  const byV={};
+  emendas.forEach(e=>{if(!byV[e.vereador])byV[e.vereador]={total:0,ut:0};byV[e.vereador].total+=e.valor;byV[e.vereador].ut+=usado(e.id);});
+  const vList=Object.entries(byV).sort((a,b)=>a[0].localeCompare(b[0]));
+  const grid=document.getElementById('ver-check-grid');
+  if(!grid)return;
+  grid.innerHTML=vList.map(([ver,d],i)=>{
+    const id='vchk_'+i;
+    return`<div class="ver-check-item" id="vci_${i}">
+      <input type="checkbox" id="${id}" data-ver="${ver.replace(/"/g,'&quot;')}" onchange="onVerChkChange(this)">
+      <label for="${id}" style="flex:1;cursor:pointer;font-size:11px;font-weight:600;margin:0">${ver}</label>
+      <span class="ver-val-sm" style="pointer-events:none">${R(d.total)}</span>
+    </div>`;}).join('');
+}
+
+function onVerChkChange(chk){
+  const ver=chk.dataset.ver;
+  const item=chk.closest('.ver-check-item');
+  if(chk.checked){relatorioVereadores.add(ver);item.classList.add('checked');}
+  else{relatorioVereadores.delete(ver);item.classList.remove('checked');}
+  updateRelPreview();
+}
+
+function toggleVerItem(el){
+  const chk=el.querySelector('input[type=checkbox]');
+  if(!chk)return;
+  chk.checked=!chk.checked;
+  onVerChkChange(chk);
+}
+
+function toggleAllVer(sel){
+  document.querySelectorAll('#ver-check-grid input[type=checkbox]').forEach(chk=>{
+    chk.checked=sel;
+    onVerChkChange(chk);
+  });
+}
+
+let relatorioVereadores=new Set();
+let relatorioEventos=new Set();
+
+function setRelTab(tab){
+  relTab=tab;
+  const bv=document.getElementById('rel-tab-ver');
+  const be=document.getElementById('rel-tab-ev');
+  const pv=document.getElementById('rel-panel-vereador');
+  const pe=document.getElementById('rel-panel-evento');
+  if(tab==='vereador'){
+    bv.style.background='var(--gold)';bv.style.color='#1a1a0a';
+    be.style.background='transparent';be.style.color='var(--muted)';
+    pv.style.display='';pe.style.display='none';
+  } else {
+    be.style.background='var(--gold)';be.style.color='#1a1a0a';
+    bv.style.background='transparent';bv.style.color='var(--muted)';
+    pv.style.display='none';pe.style.display='';
+    buildEvCheckGrid();
+  }
+  updateRelPreview();
+}
+
+function buildEvCheckGrid(){
+  const grid=document.getElementById('ev-check-grid');
+  if(!grid)return;
+  if(eventos_cad.length===0){grid.innerHTML='<div style="font-size:11px;color:var(--sub);padding:10px">Nenhum evento cadastrado. Vá até a aba 🎪 Eventos para cadastrar.</div>';return;}
+  grid.innerHTML=eventos_cad.map((ev,i)=>{
+    const vList=vincs.filter(v=>v.evento===ev.nome&&v.status!=='Cancelado');
+    const total=vList.reduce((s,v)=>s+v.valor,0);
+    const id='echk_'+i;
+    return`<div class="ver-check-item" id="eci_${i}">
+      <input type="checkbox" id="${id}" data-ev="${ev.nome.replace(/"/g,'&quot;')}" onchange="onEvChkChange(this)">
+      <label for="${id}" style="flex:1;cursor:pointer;font-size:11px;font-weight:600;margin:0">${ev.nome}${ev.dataIni?`<br><span style="font-size:9px;color:var(--sub)">${fmtDate(ev.dataIni)}</span>`:''}</label>
+      ${total?`<span class="ver-val-sm" style="pointer-events:none">${R(total)}</span>`:''}
+    </div>`;}).join('');
+}
+
+function onEvChkChange(chk){
+  const nome=chk.dataset.ev;
+  const item=chk.closest('.ver-check-item');
+  if(chk.checked){relatorioEventos.add(nome);item.classList.add('checked');}
+  else{relatorioEventos.delete(nome);item.classList.remove('checked');}
+  updateRelPreview();
+}
+
+function toggleEvItem(el){
+  const chk=el.querySelector('input[type=checkbox]');
+  if(!chk)return;
+  chk.checked=!chk.checked;
+  onEvChkChange(chk);
+}
+
+function toggleAllEv(sel){
+  document.querySelectorAll('#ev-check-grid input[type=checkbox]').forEach(chk=>{
+    chk.checked=sel;
+    onEvChkChange(chk);
+  });
+}
+
+function updateRelPreview(){
+  const prev=document.getElementById('rel-preview');if(!prev)return;
+  const fS=document.getElementById('rel-status')?.value||'';
+  if(relTab==='vereador'){
+    const selVers=[...relatorioVereadores];
+    if(!selVers.length){prev.textContent='Selecione os vereadores acima.';return;}
+    let tot=0,ut=0,vc=0;
+    selVers.forEach(ver=>{emendas.filter(e=>e.vereador===ver).forEach(em=>{tot+=em.valor;vincs.filter(v=>v.emendaId===em.id&&(!fS||v.status===fS)).forEach(v=>{ut+=v.valor;vc++;});});});
+    prev.innerHTML=`<span style="color:#fff;font-weight:700">${selVers.length}</span> vereador(es) · <span style="color:var(--gold);font-weight:700">${R(tot)}</span> em emendas · <span style="color:#f07a7a;font-weight:700">${R(ut)}</span> vinculado · <span style="color:#4cd98a;font-weight:700">${R(tot-ut)}</span> livre · <span style="color:#7ab3f0;font-weight:700">${vc}</span> vinculação(ões)`;
+  } else {
+    const selEvs=[...relatorioEventos];
+    if(!selEvs.length){prev.textContent='Selecione os eventos acima.';return;}
+    let tot=0,vc=0,vers=new Set();
+    selEvs.forEach(evNome=>{vincs.filter(v=>v.evento===evNome&&(!fS||v.status===fS)).forEach(v=>{tot+=v.valor;vc++;const em=emendas.find(e=>e.id===v.emendaId);if(em)vers.add(em.vereador);});});
+    prev.innerHTML=`<span style="color:#fff;font-weight:700">${selEvs.length}</span> evento(s) · <span style="color:var(--gold);font-weight:700">${R(tot)}</span> vinculado · <span style="color:#7ab3f0;font-weight:700">${vc}</span> vinculação(ões) · <span style="color:#4cd98a;font-weight:700">${vers.size}</span> vereador(es)`;
+  }
+}
+
+function buildRelVincItem(v){
+  const data=v.data?fmtDate(v.data):'';
+  const sBg={Pago:'#1e4d30',Cancelado:'#2a0a0a',Empenhado:'#3d2e0a',Aprovado:'#1a3a6a'}[v.status]||'#253347';
+  const sFg={Pago:'#4cd98a',Cancelado:'#f07a7a',Empenhado:'#c9a84c',Aprovado:'#7ab3f0'}[v.status]||'#8a9bb0';
+  const tBg={'Cachê Artístico':'#1e4d30','Estrutura':'#1a3a6a','Staff':'#1a0e3a','Hospedagem':'#3d2e0a'}[v.tipo]||'#253347';
+  const tFg={'Cachê Artístico':'#4cd98a','Estrutura':'#7ab3f0','Staff':'#b08af0','Hospedagem':'#c9a84c'}[v.tipo]||'#8a9bb0';
+  return`<div style="display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-top:1px solid #2a3a50">
+    <div style="color:#6a8a9a;font-size:14px;margin-top:1px">↳</div>
+    <div style="flex:1">
+      <div style="font-size:11px;font-weight:700;color:#fff">${v.tipo?`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:800;background:${tBg};color:${tFg};margin-right:4px">${v.tipo}</span>`:''}<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:800;background:${sBg};color:${sFg}">${v.status}</span></div>
+      ${v.objeto?`<div style="font-size:11px;color:#e8f0f8;margin-top:3px">📌 ${v.objeto}</div>`:''}
+      ${v.processo?`<div style="font-size:10px;color:#6ab0d0;font-weight:700;margin-top:3px">📋 Proc. ${v.processo}</div>`:''}
+      ${v.obs?`<div style="font-size:10px;color:#6a8a9a;margin-top:2px">${v.obs}</div>`:''}
+      ${data?`<div style="font-size:10px;color:#6a8a9a;margin-top:2px">📅 ${data}</div>`:''}
+    </div>
+    <div style="font-size:13px;font-weight:800;color:#c9a84c;white-space:nowrap">${R(v.valor)}</div>
+  </div>`;
+}
+
+function buildRelatorioHTML(forPrint){
+  const fS=document.getElementById('rel-status')?.value||'';
+  const mostrarSemVinc=(document.getElementById('rel-semvinc')?.value||'sim')==='sim';
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const hora=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+
+  if(relTab==='vereador'){
+    return buildRelVereadorHTML(fS,mostrarSemVinc,hoje,hora,forPrint);
+  } else {
+    return buildRelEventoHTML(fS,hoje,hora,forPrint);
+  }
+}
+
+function buildRelVereadorHTML(fS,mostrarSemVinc,hoje,hora,forPrint){
+  const selVers=[...relatorioVereadores].sort();
+  if(!selVers.length){toast('⚠️ Selecione ao menos um vereador.');return null;}
+  let gTot=0,gUt=0,gVc=0;
+  selVers.forEach(ver=>emendas.filter(e=>e.vereador===ver).forEach(em=>{gTot+=em.valor;vincs.filter(v=>v.emendaId===em.id&&(!fS||v.status===fS)).forEach(v=>{gUt+=v.valor;gVc++;});}));
+
+  const verBlocks=selVers.map(ver=>{
+    const eList=emendas.filter(e=>e.vereador===ver);
+    const conta=CONTAS.find(c=>c.vereador===ver);
+    const tvVer=eList.reduce((s,e)=>s+e.valor,0);
+    const tuVer=eList.reduce((s,e)=>s+vincs.filter(v=>v.emendaId===e.id&&(!fS||v.status===fS)).reduce((x,v)=>x+v.valor,0),0);
+    const emBlocks=eList.map(em=>{
+      const vList=vincs.filter(v=>v.emendaId===em.id&&(!fS||v.status===fS));
+      if(!mostrarSemVinc&&!vList.length)return'';
+      const ue=vList.reduce((s,v)=>s+v.valor,0);
+      const p=pct(usado(em.id),em.valor);
+      return`<div style="background:#0f1923;border:1px solid #2a3a50;border-radius:8px;padding:12px 14px;margin-bottom:8px;page-break-inside:avoid">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700;color:#fff">💰 Emenda ${em.num?'Nº '+em.num:'s/nº'}${em.protocolo?`<span style="color:#6a8a9a;font-weight:400;font-size:10px"> · Protocolo ${em.protocolo}</span>`:''}</div>
+          <div style="text-align:right"><span style="font-size:14px;font-weight:800;color:#c9a84c">${R(em.valor)}</span><span style="font-size:10px;color:#6a8a9a;margin-left:8px">livre: <span style="color:#4cd98a">${R(livre(em.id))}</span></span></div>
+        </div>
+        <div style="background:#1a2535;border-radius:4px;height:6px;overflow:hidden;margin-bottom:10px"><div style="background:${p>90?'#c0392b':p>60?'#c9a84c':'#2e7d4f'};height:100%;width:${p}%;border-radius:4px"></div></div>
+        ${vList.length?vList.map(v=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-top:1px solid #2a3a50">
+            <div style="color:#6a8a9a;font-size:14px">↳</div>
+            <div style="flex:1">
+              <div style="font-size:11px;font-weight:700;color:#fff">🎪 ${v.evento||'Evento não informado'}</div>
+              ${v.objeto?`<div style="font-size:11px;color:#e8f0f8;margin-top:2px">📌 ${v.objeto}</div>`:''}
+              ${v.processo?`<div style="font-size:10px;color:#6ab0d0;font-weight:700;margin-top:3px">📋 Proc. ${v.processo}</div>`:''}
+              <div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap">
+                ${v.status?`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:800;background:${{Pago:'#1e4d30',Cancelado:'#2a0a0a',Empenhado:'#3d2e0a',Aprovado:'#1a3a6a'}[v.status]||'#253347'};color:${{Pago:'#4cd98a',Cancelado:'#f07a7a',Empenhado:'#c9a84c',Aprovado:'#7ab3f0'}[v.status]||'#8a9bb0'}">${v.status}</span>`:''}
+                ${v.tipo?`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:800;background:#1a3a6a;color:#7ab3f0">${v.tipo}</span>`:''}
+                ${v.data?`<span style="font-size:10px;color:#6a8a9a">📅 ${fmtDate(v.data)}</span>`:''}
+              </div>
+            </div>
+            <div style="font-size:13px;font-weight:800;color:#c9a84c;white-space:nowrap">${R(v.valor)}</div>
+          </div>`).join(''):`<div style="font-size:10px;color:#6a8a9a;padding:4px 0;font-style:italic">Sem vinculações${fS?' com status '+fS:''}.</div>`}
+      </div>`;
+    }).join('');
+    if(!emBlocks.trim()&&!mostrarSemVinc)return'';
+    return`<div style="background:#1a2535;border:1px solid #2a3a50;border-radius:12px;padding:16px 20px;margin-bottom:14px;page-break-inside:avoid">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div><div style="font-family:'DM Serif Display',serif;font-size:16px;color:#fff">👤 ${ver}</div>
+          <div style="font-size:10px;color:#6a8a9a;margin-top:2px">${eList.length} emenda${eList.length>1?'s':''}${conta?` · Conta: ${conta.conta} · Cód. ${conta.codigo}`:''}</div>
+        </div>
+        <div style="text-align:right"><div style="font-size:16px;font-weight:800;color:#c9a84c">${R(tvVer)}</div><div style="font-size:10px;color:#f07a7a">Utilizado: ${R(tuVer)}</div><div style="font-size:10px;color:#4cd98a">Livre: ${R(tvVer-tuVer)}</div></div>
+      </div>${emBlocks}</div>`;
+  }).join('');
+
+  return`<div style="background:linear-gradient(135deg,#2a1e06,#1a1200);border:1px solid #3d2e0a;border-radius:12px;padding:18px 22px;margin-bottom:18px">
+    <div style="font-family:'DM Serif Display',serif;font-size:20px;color:#c9a84c;margin-bottom:4px">📊 Relatório de Emendas Parlamentares — Por Vereador</div>
+    <div style="font-size:11px;color:#6a8a9a">Emitido em ${hoje} às ${hora} · LOA 2026 · São Carlos${fS?' · Status: '+fS:''} · ${selVers.length} vereador(es)</div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+    ${[['Total Emendas',R(gTot),'#c9a84c'],['Vinculado',R(gUt),'#f07a7a'],['Saldo Livre',R(gTot-gUt),'#4cd98a'],['Vinculações',gVc,'#7ab3f0']].map(([l,v,c])=>`<div style="flex:1;min-width:110px;background:#1a2535;border:1px solid #2a3a50;border-radius:10px;padding:10px 14px;text-align:center"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#6a8a9a;margin-bottom:4px">${l}</div><div style="font-size:17px;font-weight:800;color:${c}">${v}</div></div>`).join('')}
+  </div>
+  ${verBlocks||'<div style="text-align:center;padding:40px;color:#6a8a9a">Nenhum dado encontrado.</div>'}
+  <div style="background:linear-gradient(135deg,#2a1e06,#1a1000);border:1px solid #3d2e0a;border-radius:10px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+    <div style="font-size:10px;font-weight:800;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px">Total Geral</div>
+    <div style="font-size:22px;font-weight:800;color:#c9a84c">${R(gTot)}</div>
+  </div>`;
+}
+
+function buildRelEventoHTML(fS,hoje,hora,forPrint){
+  const selEvs=[...relatorioEventos].sort();
+  if(!selEvs.length){toast('⚠️ Selecione ao menos um evento.');return null;}
+  let gTot=0,gVc=0,gVers=new Set();
+
+  const evBlocks=selEvs.map(evNome=>{
+    const evInfo=getEventoInfo(evNome);
+    const vList=vincs.filter(v=>v.evento===evNome&&(!fS||v.status===fS));
+    const totalEv=vList.reduce((s,v)=>s+v.valor,0);
+    gTot+=totalEv;gVc+=vList.length;
+    // Group by vereador
+    const byVer={};
+    vList.forEach(v=>{const em=emendas.find(e=>e.id===v.emendaId)||{};const ver=em.vereador||'?';gVers.add(ver);if(!byVer[ver])byVer[ver]=[];byVer[ver].push({v,em});});
+
+    return`<div style="background:#1a2535;border:1px solid #2a3a50;border-radius:12px;padding:16px 20px;margin-bottom:14px;page-break-inside:avoid">
+      <!-- CABEÇALHO EVENTO -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <div style="font-family:'DM Serif Display',serif;font-size:17px;color:#fff;margin-bottom:4px">🎪 ${evNome}</div>
+          ${evInfo?`<div style="display:flex;gap:12px;flex-wrap:wrap">
+            ${evInfo.dataIni?`<span style="font-size:10px;color:#6a8a9a">📅 ${fmtDate(evInfo.dataIni)}${evInfo.horaIni?' às '+evInfo.horaIni:''}</span>`:''}
+            ${evInfo.dataFim&&evInfo.dataFim!==evInfo.dataIni?`<span style="font-size:10px;color:#6a8a9a">até ${fmtDate(evInfo.dataFim)}${evInfo.horaFim?' às '+evInfo.horaFim:''}</span>`:''}
+            ${evInfo.local?`<span style="font-size:10px;color:#6a8a9a">📍 ${evInfo.local}</span>`:''}
+            ${evInfo.tipo?`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:800;background:#1a3a6a;color:#7ab3f0">${evInfo.tipo}</span>`:''}
+            ${evInfo.status?`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:800;background:#1e4d30;color:#4cd98a">${evInfo.status}</span>`:''}
+          </div>`:'<div style="font-size:10px;color:#6a8a9a;font-style:italic">Evento sem ficha cadastrada.</div>'}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:800;color:#c9a84c">${R(totalEv)}</div>
+          <div style="font-size:10px;color:#6a8a9a">${vList.length} vinculação(ões)</div>
+        </div>
+      </div>
+      <!-- POR VEREADOR -->
+      ${Object.keys(byVer).length===0?`<div style="font-size:11px;color:#6a8a9a;font-style:italic;padding:8px 0">Nenhuma emenda vinculada${fS?' com status '+fS:''}.</div>`:
+        Object.entries(byVer).map(([ver,items])=>{
+          const conta=CONTAS.find(c=>c.vereador===ver);
+          const totalVer=items.reduce((s,{v})=>s+v.valor,0);
+          return`<div style="background:#0f1923;border:1px solid #2a3a50;border-radius:8px;padding:10px 14px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#fff">👤 ${ver}</div>
+                ${conta?`<div style="font-size:10px;color:#6a8a9a">Conta: ${conta.conta} · Cód. ${conta.codigo}</div>`:''}
+              </div>
+              <div style="font-size:14px;font-weight:800;color:#c9a84c">${R(totalVer)}</div>
+            </div>
+            ${items.map(({v,em})=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-top:1px solid #2a3a50">
+              <div style="color:#6a8a9a;font-size:13px">↳</div>
+              <div style="flex:1">
+                <div style="font-size:11px;color:#8a9bb0">Emenda ${em.num?'Nº '+em.num:'s/nº'}${em.protocolo?' · Protocolo '+em.protocolo:''}</div>
+                ${v.objeto?`<div style="font-size:11px;color:#e8f0f8;margin-top:2px">📌 ${v.objeto}</div>`:''}
+                ${v.processo?`<div style="font-size:10px;color:#6ab0d0;font-weight:700;margin-top:3px">📋 Proc. ${v.processo}</div>`:''}
+                <div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap">
+                  ${v.tipo?`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:800;background:#1a3a6a;color:#7ab3f0">${v.tipo}</span>`:''}
+                  <span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:800;background:${{Pago:'#1e4d30',Cancelado:'#2a0a0a',Empenhado:'#3d2e0a',Aprovado:'#1a3a6a'}[v.status]||'#253347'};color:${{Pago:'#4cd98a',Cancelado:'#f07a7a',Empenhado:'#c9a84c',Aprovado:'#7ab3f0'}[v.status]||'#8a9bb0'}">${v.status}</span>
+                  ${v.data?`<span style="font-size:10px;color:#6a8a9a">📅 ${fmtDate(v.data)}</span>`:''}
+                </div>
+              </div>
+              <div style="font-size:12px;font-weight:800;color:#c9a84c;white-space:nowrap">${R(v.valor)}</div>
+            </div>`).join('')}
+          </div>`;
+        }).join('')}
+    </div>`;
+  }).join('');
+
+  return`<div style="background:linear-gradient(135deg,#0e2418,#0a1800);border:1px solid #1e4d30;border-radius:12px;padding:18px 22px;margin-bottom:18px">
+    <div style="font-family:'DM Serif Display',serif;font-size:20px;color:#4cd98a;margin-bottom:4px">📊 Relatório de Emendas Parlamentares — Por Evento</div>
+    <div style="font-size:11px;color:#6a8a9a">Emitido em ${hoje} às ${hora} · LOA 2026 · São Carlos${fS?' · Status: '+fS:''} · ${selEvs.length} evento(s)</div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+    ${[['Total Vinculado',R(gTot),'#c9a84c'],['Vinculações',gVc,'#7ab3f0'],['Vereadores',gVers.size,'#4cd98a'],['Eventos',selEvs.length,'#b08af0']].map(([l,v,c])=>`<div style="flex:1;min-width:110px;background:#1a2535;border:1px solid #2a3a50;border-radius:10px;padding:10px 14px;text-align:center"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#6a8a9a;margin-bottom:4px">${l}</div><div style="font-size:17px;font-weight:800;color:${c}">${v}</div></div>`).join('')}
+  </div>
+  ${evBlocks||'<div style="text-align:center;padding:40px;color:#6a8a9a">Nenhum dado encontrado.</div>'}
+  <div style="background:linear-gradient(135deg,#0e2418,#0a1800);border:1px solid #1e4d30;border-radius:10px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+    <div style="font-size:10px;font-weight:800;color:#4cd98a;text-transform:uppercase;letter-spacing:.8px">Total Geral Vinculado</div>
+    <div style="font-size:22px;font-weight:800;color:#4cd98a">${R(gTot)}</div>
+  </div>`;
+}
+
+function visualizarRelatorio(){
+  const html=buildRelatorioHTML(false);
+  if(!html)return;
+  document.getElementById('relatorio-print-area').innerHTML=html;
+  document.getElementById('relatorio-overlay').style.display='block';
+  document.getElementById('modal-relatorio-bg').classList.remove('open');
+}
+function fecharRelatorio(){
+  document.getElementById('relatorio-overlay').style.display='none';
+}
+function imprimirRelatorio(){
+  const html=buildRelatorioHTML(true);
+  if(!html)return;
+  // Cria wrapper limpo fora do overlay para impressão
+  let pw=document.getElementById('print-wrapper');
+  if(!pw){pw=document.createElement('div');pw.id='print-wrapper';document.body.appendChild(pw);}
+  pw.innerHTML=html;
+  pw.style.cssText='display:none;position:static;background:#fff;padding:0;';
+  document.getElementById('modal-relatorio-bg').classList.remove('open');
+  // Mostra wrapper só durante impressão via CSS
+  const s=document.createElement('style');
+  s.id='print-rel-ov';
+  s.textContent=`@media print{
+    @page{margin:1.2cm 1.5cm;size:A4 portrait}
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    body > *{display:none!important}
+    #print-wrapper{display:block!important;padding:16px!important}
+    .rel-ver-block,.rel-em-block{page-break-inside:avoid}
+  }`;
+  document.head.appendChild(s);
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{
+      const el=document.getElementById('print-rel-ov');if(el)el.remove();
+      if(pw)pw.remove();
+    },1500);
+  },150);
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+//  EDIÇÕES / LOAs
+// ═══════════════════════════════════════════════════════════════
+function renderLoas(){
+  const fmtD=iso=>iso?new Date(iso).toLocaleDateString('pt-BR'):'—';
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div class="sec-head" style="margin:0"><span style="font-size:26px">📅</span><div>
+      <div class="sec-title">Edições / LOAs</div>
+      <div class="sec-sub">${edicoes_loa.length} edição(ões) · A edição ativa é usada em todas as telas</div>
+    </div></div>
+    <button class="btn btn-gold" onclick="openNovaLoa()">＋ Nova LOA</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    ${[...edicoes_loa].reverse().map(loa=>{
+      const isAtiva=loa.id===loaAtiva;
+      const ems=(loa.emendas||[]).filter(e=>e.status!=='Cancelado');
+      const total=ems.reduce((s,e)=>s+e.valor,0);
+      const usado_=(loa.vincs||[]).filter(v=>v.status!=='Cancelado').reduce((s,v)=>s+v.valor,0);
+      const qtdVi=(loa.vincs||[]).length;
+      const qtdEv=[...new Set((loa.vincs||[]).filter(v=>v.evento).map(v=>v.evento))].length;
+      const qtdProc=(loa.vincs||[]).filter(v=>v.processo&&v.processo.trim()).length;
+      return`<div style="background:${isAtiva?'var(--gold-l)':'var(--ink2)'};border:${isAtiva?'2px solid var(--gold)':'1px solid var(--border)'};border-radius:12px;padding:16px 20px;position:relative">
+        ${isAtiva?`<div style="position:absolute;top:14px;right:16px;background:var(--gold);color:#1a1000;font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.6px">● ATIVA</div>`:''}
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="flex:1">
+            <div style="font-size:16px;font-weight:800;color:${isAtiva?'var(--gold)':'#fff'};margin-bottom:3px">LOA ${loa.ano}${loa.descricao?` <span style="font-weight:400;font-size:12px;color:var(--sub)">— ${loa.descricao}</span>`:''}</div>
+            <div style="font-size:10px;color:var(--sub);margin-bottom:12px">Criada em ${fmtD(loa.criadaEm)}</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <div style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center">
+                <div style="font-size:17px;font-weight:800;color:var(--gold)">${R(total)}</div>
+                <div style="font-size:9px;color:var(--sub);font-weight:700;text-transform:uppercase">Total LOA</div>
+              </div>
+              <div style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center">
+                <div style="font-size:17px;font-weight:800;color:#f07a7a">${R(usado_)}</div>
+                <div style="font-size:9px;color:var(--sub);font-weight:700;text-transform:uppercase">Destinado</div>
+              </div>
+              <div style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center">
+                <div style="font-size:17px;font-weight:800;color:#4cd98a">${ems.length}</div>
+                <div style="font-size:9px;color:var(--sub);font-weight:700;text-transform:uppercase">Emendas</div>
+              </div>
+              <div style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center">
+                <div style="font-size:17px;font-weight:800;color:#6ab0d0">${qtdVi}</div>
+                <div style="font-size:9px;color:var(--sub);font-weight:700;text-transform:uppercase">Vinculações</div>
+              </div>
+              <div style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center">
+                <div style="font-size:17px;font-weight:800;color:#b08af0">${qtdEv}</div>
+                <div style="font-size:9px;color:var(--sub);font-weight:700;text-transform:uppercase">Eventos</div>
+              </div>
+              <div style="background:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center">
+                <div style="font-size:17px;font-weight:800;color:#c9a84c">${qtdProc}</div>
+                <div style="font-size:9px;color:var(--sub);font-weight:700;text-transform:uppercase">Processos</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;min-width:130px">
+            ${!isAtiva?`<button onclick="confirmarAtivarLoa(${loa.id})" class="btn btn-gold btn-sm">▶ Ativar</button>`:''}
+            <button onclick="exportarLoa(${loa.id})" class="btn btn-ghost btn-sm">⬇ Exportar</button>
+            ${!isAtiva?`<button onclick="confirmarExcluirLoa(${loa.id})" class="btn btn-rose btn-sm">✕ Excluir</button>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function openNovaLoa(){
+  ['nloa-ano','nloa-desc','nloa-csv'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const prev=document.getElementById('nloa-preview');if(prev)prev.style.display='none';
+  document.getElementById('modal-loa-bg').classList.add('open');
+}
+
+function previewLoaSeed(){
+  const txt=(document.getElementById('nloa-csv').value||'').trim();
+  const prev=document.getElementById('nloa-preview');
+  if(!txt){prev.style.display='none';return;}
+  const n=txt.split('\n').filter(l=>{const c=l.trim().split(/[;,\t]/);return c.length>=4&&!isNaN(parseFloat(c[3]));}).length;
+  prev.style.display='block'; prev.textContent=`✅ ${n} emenda(s) reconhecida(s)`;
+}
+
+function salvarNovaLoa(){
+  const ano=(document.getElementById('nloa-ano').value||'').trim();
+  if(!ano){alert('Informe o ano da LOA.');return;}
+  let novasEmendas=[];
+  const csv=(document.getElementById('nloa-csv').value||'').trim();
+  if(csv){
+    let id=1;
+    csv.split('\n').forEach(linha=>{
+      const cols=linha.trim().split(/[;,\t]/);
+      if(cols.length<4)return;
+      const v=parseFloat(cols[3]);
+      if(!cols[0]||isNaN(v))return;
+      novasEmendas.push({id:id++,vereador:cols[0].trim().toUpperCase(),num:parseInt(cols[1])||null,protocolo:parseInt(cols[2])||null,valor:v,status:'Previsto',obs:''});
+    });
+  }
+  const novaLoa={id:nextLoaId++,ano,descricao:(document.getElementById('nloa-desc').value||'').trim(),criadaEm:new Date().toISOString(),emendas:novasEmendas,vincs:[],eventos_cad:[],nextEm:novasEmendas.length+1,nextVi:1,nextEvC:1};
+  edicoes_loa.push(novaLoa);
+  ativarLoa(novaLoa.id,true);
+  closeAllModals();
+  toast(`✅ LOA ${ano} criada com ${novasEmendas.length} emenda(s). Agora é a edição ativa!`);
+  setTab('painel');
+}
+
+function confirmarAtivarLoa(id){
+  const loa=edicoes_loa.find(e=>e.id===id);if(!loa)return;
+  if(!confirm(`Ativar a LOA ${loa.ano}?\n\nTodas as telas passarão a exibir os dados desta edição. A edição atual é preservada no histórico.`))return;
+  ativarLoa(id,true); toast(`✅ LOA ${loa.ano} ativada!`); setTab('painel');
+}
+
+function confirmarExcluirLoa(id){
+  const loa=edicoes_loa.find(e=>e.id===id);if(!loa)return;
+  if(loa.id===loaAtiva){toast('⚠️ Não é possível excluir a edição ativa.');return;}
+  if(!confirm(`Excluir permanentemente a LOA ${loa.ano}?\n\nEsta ação não pode ser desfeita.`))return;
+  edicoes_loa=edicoes_loa.filter(e=>e.id!==id);
+  save(); toast(`🗑 LOA ${loa.ano} excluída.`); render();
+}
+
+function exportarLoa(id){
+  const loa=edicoes_loa.find(e=>e.id===id);if(!loa)return;
+  const blob=new Blob([JSON.stringify({emendas:loa.emendas,vincs:loa.vincs,eventos:loa.eventos_cad},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`loa_${loa.ano}_emendas.json`;a.click();
+  toast(`⬇ Exportando LOA ${loa.ano}...`);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+(async function init(){
+  const loaded = await loadRemote();
+  if(!loaded){
+    const seedEmendas=SEED.map((e,i)=>({id:i+1,...e,status:'Previsto',obs:''}));
+    const loaInicial={id:nextLoaId++,ano:'2026',descricao:'LOA 2026 — São Carlos',criadaEm:new Date().toISOString(),emendas:seedEmendas,vincs:[],eventos_cad:[],nextEm:seedEmendas.length+1,nextVi:1,nextEvC:1};
+    edicoes_loa=[loaInicial]; loaAtiva=loaInicial.id; ativarLoa(loaAtiva,false); save();
+  }
+  listenRealtime();
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2848 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎭 Chamamento Público — Gestão de Artistas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root {
+  --ink: #1a1a2e;
+  --ink2: #2d2d4e;
+  --cream: #faf8f3;
+  --gold: #c9a84c;
+  --gold-l: #f5e9c8;
+  --gold-d: #8a6a1e;
+  --teal: #1a6b5a;
+  --teal-l: #e0f0eb;
+  --teal-m: #2d9274;
+  --rose: #c0392b;
+  --rose-l: #fdecea;
+  --sky: #2471a3;
+  --sky-l: #eaf4fb;
+  --purple: #7d3c98;
+  --purple-l: #f4ecf7;
+  --border: #e8e4d9;
+  --shadow: 0 2px 12px rgba(26,26,46,.08);
+  --shadow-lg: 0 8px 32px rgba(26,26,46,.14);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--ink);
+  color: #fff;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 16px rgba(0,0,0,.25);
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  letter-spacing: .3px;
+}
+.topbar-brand span { color: var(--gold); }
+.topbar-meta { font-size: 11px; opacity: .55; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.btn-sm {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  transition: .15s;
+}
+.btn-gold { background: var(--gold); color: var(--ink); }
+.btn-gold:hover { background: #d4a830; }
+.btn-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.3); }
+.btn-outline:hover { background: rgba(255,255,255,.1); }
+.btn-teal { background: var(--teal); color: #fff; }
+.btn-teal:hover { background: var(--teal-m); }
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: calc(100vh - 56px); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--ink2);
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sb-section {
+  padding: 8px 18px 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.35);
+  margin-top: 8px;
+}
+.nav-item {
+  padding: 9px 18px;
+  cursor: pointer;
+  color: rgba(255,255,255,.65);
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  transition: .15s;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav-item.active {
+  background: rgba(201,168,76,.12);
+  color: var(--gold);
+  border-left-color: var(--gold);
+}
+.nav-cnt {
+  margin-left: auto;
+  background: rgba(255,255,255,.15);
+  color: rgba(255,255,255,.7);
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.nav-item.active .nav-cnt { background: var(--gold-d); color: var(--gold-l); }
+
+/* ── MAIN ── */
+.main {
+  flex: 1;
+  overflow: auto;
+  background: var(--cream);
+}
+
+/* ── PAGE HEADER ── */
+.pg-header {
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #fff;
+}
+.pg-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.pg-sub { font-size: 12px; color: #888; margin-top: 3px; }
+
+/* ── CONTENT ── */
+.content { padding: 20px 28px; }
+
+/* ── CARDS ── */
+.stat-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.stat-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  flex: 1;
+  min-width: 140px;
+  box-shadow: var(--shadow);
+}
+.stat-card.gold { border-color: var(--gold); background: var(--gold-l); }
+.stat-card.teal { border-color: var(--teal); background: var(--teal-l); }
+.stat-card.rose { border-color: var(--rose); background: var(--rose-l); }
+.stat-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+.stat-val { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--ink); line-height: 1; }
+.stat-sub { font-size: 10px; color: #aaa; margin-top: 3px; }
+
+/* ── SEARCH / FILTER BAR ── */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.search-wrap { position: relative; flex: 1; min-width: 200px; }
+.search-wrap input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  transition: .15s;
+}
+.search-wrap input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-l); }
+.search-ico {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  opacity: .4;
+}
+select.filter-sel {
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+}
+select.filter-sel:focus { border-color: var(--gold); }
+
+/* ── ARTIST GRID ── */
+.artist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+
+.artist-card {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: .2s;
+  position: relative;
+  box-shadow: var(--shadow);
+}
+.artist-card:hover {
+  border-color: var(--gold);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+.artist-card.selected {
+  border-color: var(--teal);
+  background: var(--teal-l);
+}
+.ac-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.ac-nome {
+  font-family: 'DM Serif Display', serif;
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.3;
+  flex: 1;
+  padding-right: 8px;
+}
+.ac-projeto {
+  font-size: 11px;
+  color: var(--teal);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.ac-razao { font-size: 10px; color: #888; margin-bottom: 6px; }
+.ac-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.tag-area-musica { background: #fef5e7; color: #8a6a1e; border: 1px solid #f0d98a; }
+.tag-area-artes { background: var(--purple-l); color: var(--purple); border: 1px solid #d7bfea; }
+.tag-porte { background: var(--sky-l); color: var(--sky); border: 1px solid #aed6f1; }
+.tag-genero { background: #f0f0f0; color: #555; border: 1px solid #ddd; }
+.tag-cat { background: var(--teal-l); color: var(--teal); border: 1px solid #a2d9cc; }
+.ac-cache {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.cache-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 16px;
+  color: var(--teal);
+  font-weight: 700;
+}
+.cache-lbl { font-size: 9px; color: #aaa; }
+.ac-insc { font-size: 9px; color: #bbb; }
+.btn-select {
+  padding: 5px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: .15s;
+}
+.btn-select:hover { background: var(--teal); }
+.btn-select.active { background: var(--teal); }
+
+/* ── CLASSIFICAÇÃO BADGE ── */
+.class-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.class-1 { background: var(--gold-l); color: var(--gold-d); border: 1.5px solid var(--gold); }
+.class-2 { background: #f0f0f0; color: #666; border: 1.5px solid #ccc; }
+.class-3 { background: #fde8d0; color: #a04010; border: 1.5px solid #f0a060; }
+.class-n { background: #f8f8f8; color: #999; border: 1.5px solid #ddd; }
+
+/* ── PROGRAMAÇÃO TABLE ── */
+.prog-table-wrap { background: #fff; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); }
+.prog-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.prog-table th {
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.prog-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.prog-table tr:last-child td { border-bottom: none; }
+.prog-table tr:nth-child(even) td { background: #fafaf8; }
+.prog-table tr:hover td { background: var(--gold-l); }
+.prog-nome { font-weight: 700; color: var(--ink); font-size: 12px; }
+.prog-projeto { font-size: 10px; color: var(--teal); }
+.prog-cache { font-weight: 800; color: var(--teal); font-family: 'DM Serif Display', serif; font-size: 14px; }
+.status-sel {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 10px;
+  font-family: 'DM Sans', sans-serif;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+}
+input.prog-inp {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 10px;
+  font-family: 'DM Sans', sans-serif;
+  width: 100%;
+  outline: none;
+}
+input.prog-inp:focus { border-color: var(--gold); }
+.btn-del {
+  background: var(--rose-l);
+  border: 1px solid #f5c6c2;
+  color: var(--rose);
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: .15s;
+}
+.btn-del:hover { background: var(--rose); color: #fff; }
+.total-row td {
+  background: var(--gold-l) !important;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--gold-d);
+  border-top: 2px solid var(--gold);
+}
+
+/* ── TABELA DE CACHÊS ── */
+.cache-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cache-table th {
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 10px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  text-align: center;
+}
+.cache-table th:first-child { text-align: left; }
+.cache-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); text-align: center; }
+.cache-table td:first-child { text-align: left; font-weight: 600; }
+.cache-table tr:nth-child(even) td { background: #fafaf8; }
+.cache-section { background: var(--gold-l) !important; font-weight: 800 !important; text-transform: uppercase; letter-spacing: .5px; font-size: 11px !important; color: var(--gold-d) !important; }
+.cache-val-cell { font-weight: 700; color: var(--teal); }
+
+/* ── MODAL ── */
+.modal-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,26,46,.6);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px;
+  width: 560px;
+  max-width: 95vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn .2s ease;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
+.modal-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+.modal-sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+.modal-artist-info {
+  background: var(--teal-l);
+  border: 1.5px solid var(--teal-m);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.mai-nome { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--teal); }
+.mai-proj { font-size: 12px; color: var(--ink); font-weight: 600; margin-top: 2px; }
+.mai-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.mai-cache { font-size: 22px; font-family: 'DM Serif Display', serif; color: var(--teal); font-weight: 800; margin-top: 10px; }
+.mai-cache span { font-size: 12px; color: #888; font-family: 'DM Sans', sans-serif; font-weight: 400; margin-left: 6px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.field-full { margin-bottom: 12px; }
+.field label { display: block; font-size: 10px; font-weight: 700; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  transition: .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-l);
+}
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+.btn-cancel { padding: 9px 20px; background: #f5f5f5; border: 1px solid #ddd; color: #666; border-radius: 7px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 12px; }
+.btn-confirm { padding: 9px 20px; background: var(--teal); color: #fff; border: none; border-radius: 7px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700; }
+.btn-confirm:hover { background: var(--teal-m); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  z-index: 500;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: .3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: none; }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 48px 20px; color: #ccc; }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-txt { font-size: 14px; color: #aaa; }
+
+/* ── STATUS TAGS ── */
+.st-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.st-pendente { background: #fef9c3; color: #854d0e; }
+.st-confirmado { background: var(--teal-l); color: var(--teal); }
+.st-contratado { background: #dcfce7; color: #166534; }
+.st-cancelado { background: var(--rose-l); color: var(--rose); }
+
+/* ── PRINT ── */
+@media print {
+  @page { margin: 1.2cm 1.5cm; size: A4 landscape; }
+  .topbar, .sidebar, .filter-bar, .stat-row, .pg-header button, .btn-del, .status-sel, .prog-inp { display: none !important; }
+  .main { margin: 0 !important; padding: 0 !important; }
+  .content { padding: 0 !important; }
+  .prog-table { font-size: 9px !important; }
+  .prog-table th { background: #1a1a2e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .total-row td { background: #f5e9c8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+/* ── CHAMAMENTO ── */
+.ch-group { background:#fff; border:1px solid #e8e0d0; border-radius:14px; margin-bottom:18px; overflow:hidden; }
+.ch-group-header { background:linear-gradient(135deg,#2a1e06,#1a1200); color:#c9a84c; padding:13px 18px; font-weight:800; font-size:13px; display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
+.ch-group-header:hover { background:linear-gradient(135deg,#3a2e10,#2a1e06); }
+.ch-group-body { padding:16px 18px; display:none; }
+.ch-group-body.open { display:block; }
+.ch-fila { margin-bottom:0; }
+.ch-fila-header { display:flex; align-items:center; gap:8px; padding:8px 0 6px; border-bottom:2px solid #e8e0d0; margin-bottom:10px; }
+.ch-fila-title { font-size:12px; font-weight:800; color:#5a3e1b; text-transform:uppercase; letter-spacing:.6px; flex:1; }
+.ch-fila-stats { font-size:10px; color:#9a8060; }
+.ch-artista-row { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; margin-bottom:5px; transition:.15s; border:1px solid transparent; }
+.ch-artista-row:hover { background:#fdf6e8; border-color:#e8d8a0; }
+.ch-artista-row.ch-vez { background:linear-gradient(135deg,#fff8e8,#fef0c8); border-color:#c9a84c; box-shadow:0 2px 8px rgba(201,168,76,.2); }
+.ch-artista-row.ch-recusou { background:#fff5f5; border-color:#f0c0c0; }
+.ch-artista-row.ch-realizado { background:#f0fdf4; border-color:#b0dfc0; opacity:.75; }
+.ch-pos { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
+.ch-pos.gold { background:#c9a84c; color:#fff; }
+.ch-pos.silver { background:#a0a8b0; color:#fff; }
+.ch-pos.bronze { background:#b8845a; color:#fff; }
+.ch-pos.normal { background:#e8e0d0; color:#7a6040; }
+.ch-pos.fim { background:#d0c0b0; color:#9a8060; }
+.ch-nome { flex:1; font-size:12px; font-weight:600; color:#2a1e06; }
+.ch-nome small { display:block; font-size:10px; color:#9a8060; font-weight:400; margin-top:1px; }
+.ch-recusas { display:flex; gap:3px; align-items:center; }
+.ch-recusa-dot { width:8px; height:8px; border-radius:50%; background:#e8d0b0; }
+.ch-recusa-dot.filled { background:#e05a3a; }
+.ch-badge-vez { background:#c9a84c; color:#fff; font-size:9px; font-weight:800; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+.ch-badge-aguard { background:#e8f0ff; color:#3a70c0; font-size:9px; font-weight:800; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+.ch-badge-realiz { background:#e0f5ea; color:#2a8a50; font-size:9px; font-weight:800; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+.ch-btn-group { display:flex; gap:5px; }
+.ch-btn { padding:5px 11px; border-radius:7px; border:none; font-size:10px; font-weight:700; cursor:pointer; transition:.15s; font-family:inherit; }
+.ch-btn-chamar { background:#c9a84c; color:#fff; }
+.ch-btn-chamar:hover { background:#b8973b; }
+.ch-btn-recusar { background:#fff0ee; color:#c0392b; border:1px solid #f0c0b8; }
+.ch-btn-recusar:hover { background:#ffe0dc; }
+.ch-btn-desfazer { background:#f0f0f0; color:#666; border:1px solid #ddd; }
+.ch-btn-desfazer:hover { background:#e4e4e4; }
+.ch-empty { text-align:center; padding:30px; color:#9a8060; font-size:12px; }
+.ch-history-item { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:7px; font-size:11px; background:#fdf8f0; border:1px solid #ede0c8; margin-bottom:4px; }
+.ch-history-time { color:#9a8060; font-size:10px; white-space:nowrap; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div style="background:#0f1923;padding:7px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e2e40;font-family:'DM Sans',sans-serif">
+  <a href="index.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;background:#1a2535;border:1px solid #2a3a50;color:#8a9bb0;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;transition:.15s" onmouseover="this.style.color='#fff';this.style.borderColor='#3a5a70'" onmouseout="this.style.color='#8a9bb0';this.style.borderColor='#2a3a50'">
+    ← Início
+  </a>
+  <div style="width:1px;height:18px;background:#1e2e40"></div>
+  <span style="font-size:11px;color:#3a4a5a">Abrir:</span>
+  <a href="gerenciador_eventos_v2.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;background:#0e2418;border:1px solid #1e4d30;color:#4cd98a;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;transition:.15s" onmouseover="this.style.background='#1e4d30'" onmouseout="this.style.background='#0e2418'">
+    📁 Gerenciador de Eventos
+  </a>
+</div>
+<div class="topbar">
+  <div class="topbar-brand">🎭 <span>Chamamento Público</span>&nbsp;— Gestão de Artistas</div>
+  <div class="topbar-meta" id="topbar-edicao-badge">Prefeitura Municipal de São Carlos · SMCT · 2025</div>
+  <div class="topbar-actions">
+    <button class="btn-sm btn-outline" onclick="setTab('edicoes')" style="border-color:#4cd98a;color:#4cd98a">📦 Edições</button>
+    <button class="btn-sm btn-outline" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn-sm btn-gold" onclick="openAddArtista()">＋ Novo Artista</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-section">Navegação</div>
+    <div class="nav-item active" onclick="setTab('banco')" id="nav-banco">🎤 Banco de Artistas <span class="nav-cnt" id="cnt-banco">0</span></div>
+    <div class="sb-section">Chamamento</div>
+    <div class="nav-item" onclick="setTab('chamamento')" id="nav-chamamento">📢 Fila de Chamamento <span class="nav-cnt" id="cnt-chamamento">0</span></div>
+    <div class="nav-item" onclick="setTab('edicoes')" id="nav-edicoes">📦 Edições / Histórico</div>
+    <div class="sb-section">Eventos</div>
+    <div class="nav-item" onclick="setTab('eventos')" id="nav-eventos">🎪 Meus Eventos <span class="nav-cnt" id="cnt-eventos">0</span></div>
+    <div class="nav-item" onclick="setTab('programacao')" id="nav-programacao">📅 Programação <span class="nav-cnt" id="cnt-prog">0</span></div>
+    <div class="nav-item" onclick="setTab('relatorio')" id="nav-relatorio">📋 Resumo Executivo</div>
+    <div class="sb-section">Referência</div>
+    <div class="nav-item" onclick="setTab('caches')" id="nav-caches">💰 Tabela de Cachês</div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<!-- MODAL ADICIONAR À PROGRAMAÇÃO -->
+<div class="modal-bg" id="modal-prog-bg">
+  <div class="modal" id="modal-prog" style="width:600px">
+    <div class="modal-title">Escalar Artista</div>
+    <div class="modal-sub">Selecione o evento e defina os detalhes da apresentação</div>
+    <div class="modal-artist-info" id="modal-artist-info"></div>
+
+    <div class="field-full field" style="margin-bottom:14px">
+      <label>Evento <span style="color:var(--rose);font-size:10px">*obrigatório</span></label>
+      <select id="mp-evento" onchange="onModalEventoChange()" style="font-weight:700;border-color:var(--teal)">
+        <option value="">— Selecione o evento —</option>
+      </select>
+    </div>
+
+    <div id="mp-evento-info" style="display:none;background:var(--gold-l);border:1px solid var(--gold);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--gold-d)"></div>
+
+    <div class="field-row">
+      <div class="field"><label>Data da Apresentação</label><select id="mp-data" style="font-weight:600"><option value="">— selecione a data —</option></select></div>
+      <div class="field"><label>Horário de Início</label><input type="time" id="mp-horario" oninput="calcHorarioFim()" style="font-family:'DM Sans',sans-serif"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Duração (minutos)</label><input type="number" id="mp-duracao" placeholder="ex: 60" min="1" max="480" oninput="calcHorarioFim()" style="font-family:'DM Sans',sans-serif"></div>
+      <div class="field"><label>Horário de Término <span style="font-size:9px;color:#aaa">(calculado)</span></label><input type="time" id="mp-horario-fim" readonly style="background:#f0faf5;color:var(--teal);font-weight:700;font-family:'DM Sans',sans-serif"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Palco / Local</label><input type="text" id="mp-local" placeholder="ex: Palco Central"></div>
+      <div class="field"><label>Cachê <span style="font-size:9px;color:#aaa">(calculado automaticamente)</span></label><input type="text" id="mp-cache-total" readonly style="background:#f0faf5;font-weight:800;color:var(--teal);font-size:14px"></div>
+    </div>
+    <div class="field-full field">
+      <label>Observações / Rider Técnico</label>
+      <textarea id="mp-obs" rows="2" placeholder="Necessidades de palco, transporte, alimentação..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-prog-bg')">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmAddProg()">✓ Confirmar Escalação</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO/EDITAR ARTISTA -->
+<div class="modal-bg" id="modal-artista-bg">
+  <div class="modal" id="modal-artista">
+    <div class="modal-title" id="ma-title">Cadastrar Artista</div>
+    <div class="modal-sub">Dados do chamamento público</div>
+    <div class="field-row">
+      <div class="field"><label>Nº Inscrição</label><input id="ma-insc" placeholder="ex: 18"></div>
+      <div class="field"><label>Classificação</label><input type="number" id="ma-class" placeholder="1" min="1"></div>
+    </div>
+    <div class="field-full field"><label>Nome / Razão Social</label><input id="ma-razao" placeholder="Nome completo ou razão social"></div>
+    <div class="field-full field"><label>Nome do Projeto / Nome Artístico</label><input id="ma-projeto" placeholder="Nome artístico ou nome do projeto"></div>
+    <div class="field-row">
+      <div class="field"><label>CNPJ / CPF</label><input id="ma-cnpj" placeholder="00.000.000/0001-00"></div>
+      <div class="field"><label>Área</label>
+        <select id="ma-area" onchange="updateCacheModal()">
+          <option value="MÚSICA">🎵 Música</option>
+          <option value="ARTES PERFORMÁTICAS">🎭 Artes Performáticas</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Porte</label>
+        <select id="ma-porte" onchange="updateCacheModal()">
+          <option value="SOLO">Solo (1 pessoa)</option>
+          <option value="DUPLAS E TRIOS">Duplas e Trios (2-3)</option>
+          <option value="GRUPOS">Grupos (4+)</option>
+        </select>
+      </div>
+      <div class="field"><label>Categoria</label>
+        <select id="ma-categoria" onchange="updateCacheModal()">
+          <option value="1">Categoria 1</option>
+          <option value="2">Categoria 2</option>
+          <option value="3">Categoria 3</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-full field"><label>Gênero / Modalidade</label><input id="ma-genero" placeholder="ex: MPB, Rock, Dança Contemporânea..."></div>
+    <div class="field-row">
+      <div class="field"><label>Telefone</label><input id="ma-tel" placeholder="(16) 9xxxx-xxxx"></div>
+      <div class="field"><label>E-mail</label><input id="ma-email" type="email" placeholder="artista@email.com"></div>
+    </div>
+    <div class="field-full field"><label>Observações / Rider Técnico</label><textarea id="ma-obs" rows="2" placeholder="Necessidades técnicas, equipamentos..."></textarea></div>
+    <div style="background:var(--teal-l);border:1px solid var(--teal-m);border-radius:8px;padding:10px 14px;margin-bottom:4px">
+      <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Cachê Calculado</div>
+      <div id="ma-cache-preview" style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--teal);font-weight:800">R$ 0,00</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-artista-bg')">Cancelar</button>
+      <button class="btn-confirm" onclick="saveArtista()">✓ Salvar Artista</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EVENTO -->
+<div class="modal-bg" id="modal-evento-bg">
+  <div class="modal" id="modal-evento" style="width:620px">
+    <div class="modal-title" id="me-title">Novo Evento</div>
+    <div class="modal-sub">Preencha os dados do evento para organizar a programação artística</div>
+    <div class="field-row">
+      <div class="field" style="grid-column:1/-1"><label>Nome do Evento</label><input id="me-nome" placeholder="ex: 57ª Festa do Clima"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Data de Início</label><input id="me-dtInicio" placeholder="ex: 01/04/2026"></div>
+      <div class="field"><label>Data de Encerramento</label><input id="me-dtFim" placeholder="ex: 04/04/2026"></div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="grid-column:1/-1"><label>Local / Endereço</label><input id="me-local" placeholder="ex: Parque do Kartódromo, São Carlos/SP"></div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="grid-column:1/-1"><label>Público Esperado</label><input id="me-publico" placeholder="ex: 10.000 pessoas"></div>
+    </div>
+    <div class="field-full field"><label>Observações Gerais</label><textarea id="me-obs" rows="2" placeholder="Descrição do evento, patrocinadores, contexto..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-evento-bg')">Cancelar</button>
+      <button class="btn-confirm" onclick="saveEvento()">✓ Salvar Evento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR APRESENTAÇÃO -->
+<div class="modal-bg" id="modal-edit-bg">
+  <div class="modal" style="width:520px">
+    <div class="modal-title">✏ Editar Apresentação</div>
+    <div class="modal-sub" id="med-sub"></div>
+    <div style="background:var(--teal-l);border:1px solid var(--teal-m);border-radius:8px;padding:10px 14px;margin-bottom:16px" id="med-artist-info"></div>
+    <div class="field-row">
+      <div class="field"><label>Data</label><select id="med-data" style="font-weight:600"><option>—</option></select></div>
+      <div class="field"><label>Horário de Início</label><input type="time" id="med-horario" oninput="calcEditFim()" style="font-family:'DM Sans',sans-serif"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Duração (minutos)</label><input type="number" id="med-duracao" min="1" max="480" oninput="calcEditFim()"></div>
+      <div class="field"><label>Horário de Término</label><input type="time" id="med-horario-fim" readonly style="background:#f0faf5;color:var(--teal);font-weight:700"></div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="grid-column:1/-1"><label>Palco / Local</label><input id="med-local" placeholder="ex: Palco Central"></div>
+    </div>
+    <div class="field-full field"><label>Observações / Rider Técnico</label><textarea id="med-obs" rows="2"></textarea></div>
+    <div id="med-conflict-warn" style="display:none;background:var(--rose-l);border:1px solid #fcc;border-radius:8px;padding:10px 14px;font-size:11px;color:var(--rose);margin-bottom:4px"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-bg')">Cancelar</button>
+      <button class="btn-confirm" onclick="saveEditProg()">✓ Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVA EDIÇÃO DO CHAMAMENTO -->
+<div class="modal-bg" id="modal-edicao-bg">
+  <div class="modal" style="width:680px;max-height:90vh;overflow-y:auto">
+    <div class="modal-title" id="med-edicao-title">📦 Nova Edição do Chamamento</div>
+    <div class="modal-sub">Crie uma nova base de artistas para o próximo período do chamamento público. A edição anterior será preservada no histórico.</div>
+
+    <div class="field-row">
+      <div class="field"><label>Nome da Edição</label><input id="ned-nome" placeholder="ex: Chamamento 2026"></div>
+      <div class="field"><label>Ano / Período</label><input id="ned-ano" placeholder="ex: 2026 ou 2025-2026"></div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="grid-column:1/-1"><label>Vigência</label><input id="ned-vigencia" placeholder="ex: Jan/2026 a Jun/2026"></div>
+    </div>
+    <div class="field-full field"><label>Descrição</label><textarea id="ned-desc" rows="2" placeholder="ex: Chamamento Público nº 002/2026 — Artes Cênicas e Música"></textarea></div>
+
+    <div style="background:#0e1e2e;border:1px solid #1e3a50;border-radius:10px;padding:14px 16px;margin:10px 0">
+      <div style="font-size:11px;font-weight:800;color:#4cd98a;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">📥 Importar Artistas</div>
+
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <button type="button" onclick="selectImportMode('csv')" id="imp-btn-csv"
+          style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #4cd98a;background:#0e2418;color:#4cd98a;font-size:11px;font-weight:700;cursor:pointer">
+          📄 Colar CSV / Planilha
+        </button>
+        <button type="button" onclick="selectImportMode('json')" id="imp-btn-json"
+          style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #2a3a50;background:#0f1923;color:#8a9bb0;font-size:11px;font-weight:700;cursor:pointer">
+          {} Colar JSON
+        </button>
+        <button type="button" onclick="selectImportMode('manual')" id="imp-btn-manual"
+          style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #2a3a50;background:#0f1923;color:#8a9bb0;font-size:11px;font-weight:700;cursor:pointer">
+          ✋ Começar vazio
+        </button>
+      </div>
+
+      <div id="imp-csv-area">
+        <div style="font-size:10px;color:#6a8a9a;margin-bottom:6px">
+          Cole os dados copiados direto do Excel/Google Sheets. Colunas esperadas (nessa ordem):<br>
+          <code style="color:#4cd98a;font-size:10px">insc | razão social | nome artístico | CNPJ/CPF | área | porte | categoria | gênero | classificação</code>
+        </div>
+        <textarea id="ned-csv" rows="8" placeholder="Cole aqui os dados da planilha (com ou sem cabeçalho)..."
+          style="width:100%;background:#0a1520;border:1px solid #1e3a50;border-radius:8px;color:#c0d4e4;padding:10px;font-family:monospace;font-size:11px;resize:vertical;box-sizing:border-box"
+          oninput="previewImport()"></textarea>
+        <div id="imp-preview" style="margin-top:8px;font-size:11px;color:#4cd98a"></div>
+      </div>
+
+      <div id="imp-json-area" style="display:none">
+        <div style="font-size:10px;color:#6a8a9a;margin-bottom:6px">Cole o JSON exportado de outra edição ou gerado externamente:</div>
+        <textarea id="ned-json" rows="8" placeholder='[{"insc":18,"razao":"NOME","projeto":"ARTÍSTICO",...}]'
+          style="width:100%;background:#0a1520;border:1px solid #1e3a50;border-radius:8px;color:#c0d4e4;padding:10px;font-family:monospace;font-size:11px;resize:vertical;box-sizing:border-box"
+          oninput="previewImport()"></textarea>
+        <div id="imp-preview" style="margin-top:8px;font-size:11px;color:#4cd98a"></div>
+      </div>
+
+      <div id="imp-manual-area" style="display:none">
+        <div style="font-size:11px;color:#6a8a9a;padding:10px;background:#0a1520;border-radius:8px;border:1px solid #1e3a50">
+          A edição será criada vazia. Você poderá adicionar artistas manualmente pelo botão "＋ Novo Artista".
+        </div>
+      </div>
+    </div>
+
+    <div id="ned-import-result" style="display:none;background:#0e2418;border:1px solid #1e5030;border-radius:8px;padding:10px 14px;font-size:11px;color:#4cd98a;margin-bottom:8px"></div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-edicao-bg')">Cancelar</button>
+      <button class="btn-confirm" onclick="salvarNovaEdicao()" style="background:#4cd98a;color:#0a1520">📦 Criar Edição e Ativar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  TABELA DE CACHÊS
+// ═══════════════════════════════════════════════
+const CACHES = {
+  'MÚSICA': {
+    'SOLO':          { '1': 1500, '2': 1000, '3': 1000 },
+    'DUPLAS E TRIOS':{ '1': 3000, '2': 1500, '3': 2000 },
+    'GRUPOS':        { '1': 6500, '2': 2500, '3': 5000 }
+  },
+  'ARTES PERFORMÁTICAS': {
+    'SOLO':          { '1': 1800, '2': 900  },
+    'DUPLAS E TRIOS':{ '1': 3000, '2': 1500 },
+    'GRUPOS':        { '1': 6500, '2': 2500 }
+  }
+};
+
+function getCache(area, porte, cat) {
+  try { return CACHES[area][porte][String(cat)] || 0; }
+  catch(e) { return 0; }
+}
+
+function fmtV(v) {
+  return (v||0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+
+// ═══════════════════════════════════════════════
+//  BANCO DE ARTISTAS — pré-carregado do chamamento
+// ═══════════════════════════════════════════════
+let nextId = 1;
+function mk(insc, razao, projeto, cnpj, area, porte, cat, genero, classif) {
+  return { id: nextId++, insc, razao, projeto, cnpj, area, porte, categoria: String(cat), genero, classif, tel:'', email:'', obs:'' };
+}
+
+let artistas = [
+  // ── MÚSICA – SOLO 1 ──
+  mk(18,'GABRIEL REZENDE ROJAS DIAS','Gabriel Dias','32.760.184/0001-84','MÚSICA','SOLO','1','SERTANEJO UNIVERSITÁRIO',1),
+  mk(170,'GUSTAVO HENRIQUE SILVA CESARIO','Gustavo Vallin','48.654.244/0001-14','MÚSICA','SOLO','1','SERTANEJO UNIVERSITÁRIO',2),
+  mk(110,'OSDINEI CARLOS PICHARILLO JUNIOR','Picharillo','50.583.815/0001-19','MÚSICA','SOLO','1','SERTANEJO UNIVERSITÁRIO',3),
+  mk(114,'FERNANDO JOSE OLIVEIRA','Zé Fernando Show','54.475.855/0001-06','MÚSICA','SOLO','1','SERTANEJO UNIVERSITÁRIO',4),
+  mk(70,'NAIARA DE ANGELO AMARAL','Cantora Nayara Amaral','45.459.183/0001-46','MÚSICA','SOLO','1','SERTANEJO UNIVERSITÁRIO',5),
+  mk(17,'MATEUS RESENDE PALUDETTI','Teiuturau Vivo','39.941.970/0001-27','MÚSICA','SOLO','1','MPB',1),
+  mk(153,'GABRIELA BRAGA LORETI','Música Brasileira com Gustavo Ortiz','32.576.485/0001-52','MÚSICA','SOLO','1','MPB',2),
+  mk(204,'REGINA MARA ABRAHAO DIAS','Rita Lee – Só Louco É Quem Me Diz','52.828.667.0001/76','MÚSICA','SOLO','1','POP',1),
+  mk(10,'GUILHERME COSTA ARRUDA','Apresentação Solo Gui Arruda','454.420.928-51','MÚSICA','SOLO','1','POP ROCK',1),
+  mk(145,'REGINA MARA ABRAHAO DIAS','Samba, Festa e Folia','52.828.667.0001/76','MÚSICA','SOLO','1','SAMBA',1),
+  mk(34,'RUIDO PRODUCOES LTDA','Show Musical: Fabiola Beni "A música como um bálsamo"','23.538.068/0001-24','MÚSICA','SOLO','1','SERTANEJO RAIZ',1),
+  // ── MÚSICA – SOLO 2 ──
+  mk(154,'GABRIELA BRAGA LORETI','Música Brasileira com Gustavo Ortiz','32.576.485/0001-52','MÚSICA','SOLO','2','MPB',1),
+  mk(207,'REGINA MARA ABRAHAO DIAS','Um Piano e um violão','52.828.667.0001/76','MÚSICA','SOLO','2','MPB',2),
+  mk(214,'REGINA MARA ABRAHAO DIAS','Madame no Samba (Samba de Rainha)','52.828.667.0001/76','MÚSICA','SOLO','2','SAMBA',1),
+  mk(11,'GUILHERME COSTA ARRUDA','Apresentação Musical Solo Gui Arruda. Categoria 2','454.420.928-51','MÚSICA','SOLO','2','POP ROCK',1),
+  // ── MÚSICA – SOLO 3 ──
+  mk(155,'GABRIELA BRAGA LORETI','Música Brasileira com Gustavo Ortiz','32.576.485/0001-52','MÚSICA','SOLO','3','MPB',1),
+  mk(12,'GUILHERME COSTA ARRUDA','Apresentação Solo Gui Arruda – Modalidade 3','454.420.928-51','MÚSICA','SOLO','3','POP ROCK',1),
+  // ── DUPLAS E TRIOS 1 ──
+  mk(2,'NATALIA ROZENDO','Tocaya','32.506.611/0001-00','MÚSICA','DUPLAS E TRIOS','1','DJ',1),
+  mk(173,'GERALDO BIASON GOMES','Gostoso É Viver Todos os Sons','001.222.108-24','MÚSICA','DUPLAS E TRIOS','1','MPB',1),
+  mk(142,'ANDRÉ LUÍS DE SOUZA PINTO','"Caetanear o Que Há de Bom"','20.259.991/0001-39','MÚSICA','DUPLAS E TRIOS','1','MPB',2),
+  mk(100,'GABRIEL FABIANO DOS SANTOS','Música para violoncelo e piano: um recorte LGBTQIA+','373.428.398-17','MÚSICA','DUPLAS E TRIOS','1','MÚSICA ERUDITA',1),
+  mk(72,'LARISSA PEDROSA MISAEL','Não deixe o samba morrer','43.022.310/0001-10','MÚSICA','DUPLAS E TRIOS','1','SAMBA',1),
+  mk(69,'LARISSA PEDROSA MISAEL','Elas no samba: homenagem a Clementina de Jesus, Jovelina Pérola Negra e Dona Ivone Lara','43.022.310/0001-10','MÚSICA','DUPLAS E TRIOS','1','SAMBA',2),
+  mk(156,'GABRIELA BRAGA LORETI','Tributo a Clementina de Jesus e Batatinha','32.576.485/0001-52','MÚSICA','DUPLAS E TRIOS','1','SAMBA',3),
+  mk(36,'MARIA EDUARDA DOS REIS STEFANO','Duda Stéfano Clássicos do Forró Pé de Serra','60.535.194/0001-51','MÚSICA','DUPLAS E TRIOS','1','FORRÓ',1),
+  mk(107,'RODOLFO DONIZETTI LAVELI','João Pedro e Zé Paulo','60.243.657/0001-01','MÚSICA','DUPLAS E TRIOS','1','SERTANEJO RAIZ',1),
+  // ── DUPLAS E TRIOS 2 ──
+  mk(63,'GABRIEL RAMPONE','Dj Tonelada brasilidades nos vinis','181.108.838-42','MÚSICA','DUPLAS E TRIOS','2','DJ',1),
+  mk(217,'DÉBORA VENUTA REMONTI ZANARDO','Sala Retrô Duo','287.767.828-83','MÚSICA','DUPLAS E TRIOS','2','FLASHBACK',1),
+  mk(225,'PEDRO IVO XIMENES GUIZZO','Ivo e os mal remunerados','470.425.488-76','MÚSICA','DUPLAS E TRIOS','2','MPB',1),
+  mk(44,'APARECIDO DONIZETTI PENHA','Projeto Som Nascente','47.468.471/0001-92','MÚSICA','DUPLAS E TRIOS','2','MPB',2),
+  mk(101,'CAIO RIBEIRO DA SILVA','Caio Ribeiro','24.627.578/0001-30','MÚSICA','DUPLAS E TRIOS','2','POP ROCK',1),
+  mk(82,'FERNANDO RODRIGO DE ARAUJO BERNI','Uma Viagem ao Fluxo do Autoral','038.693.606-40','MÚSICA','DUPLAS E TRIOS','2','ROCK',1),
+  mk(157,'GABRIELA BRAGA LORETI','Tributo a Clementina de Jesus e Batatinha','32.576.485/0001-52','MÚSICA','DUPLAS E TRIOS','2','SAMBA',1),
+  mk(19,'GABRIEL REZENDE ROJAS DIAS','Duo Us Dias','32.760.184/0001-84','MÚSICA','DUPLAS E TRIOS','2','SERTANEJO RAIZ',1),
+  // ── DUPLAS E TRIOS 3 ──
+  mk(158,'GABRIELA BRAGA LORETI','Tributo a Clementina de Jesus e Batatinha','32.576.485/0001-52','MÚSICA','DUPLAS E TRIOS','3','SAMBA',1),
+  mk(210,'DÉBORA VENUTA REMONTI ZANARDO','Sala Retrô – Cinema Hits','287.767.828-83','MÚSICA','DUPLAS E TRIOS','3','FLASHBACK',1),
+  // ── GRUPOS 1 ──
+  mk(212,'LUIZ DA SILVA NETTO','Netto Rockfeller','36.402.060/0001-88','MÚSICA','GRUPOS','1','BLUES',1),
+  mk(209,'MAYRA RODRIGUES SILVA','Mayra Aveliz e Netto Rockfeller Trio','41.925.675/0001-29','MÚSICA','GRUPOS','1','BLUES',2),
+  mk(38,'DIEGO LIMA - EDUCACAO MUSICAL E MUSICOTERAPIA LTDA','Diego Lima – Choro de uma história','17.024.532/0001-61','MÚSICA','GRUPOS','1','CHORO',1),
+  mk(9,'TIAGO LUIZ VELTRONE','Violão Tenor – Historia e sonoridade','329.846.598-48','MÚSICA','GRUPOS','1','CHORO',2),
+  mk(86,'MUCCILLO & MUCCILLO LTDA','Túnel do Tempo Flashback Total','54.161.047/0001-66','MÚSICA','GRUPOS','1','FLASHBACK',1),
+  mk(147,'LUCINEI ALVES CUSTODIO','Banda Onnix','36.241.595/0001-14','MÚSICA','GRUPOS','1','FLASHBACK',2),
+  mk(105,'ROGERIO DA SILVA','Vinil78','41.730.696/0001-99','MÚSICA','GRUPOS','1','FLASHBACK',3),
+  mk(230,'ANDRELINO JESUS DA SILVA','Banda Brexó – Celebrando a Vida através da Música','49.266.007/0001-49','MÚSICA','GRUPOS','1','FLASHBACK',4),
+  mk(54,'ROBSON DOMINGOS PAGANIN','Banda STR80','43.366.159/0001-37','MÚSICA','GRUPOS','1','FLASHBACK',5),
+  mk(224,'ALEXANDER CIARLO','Orquestrando São Carlos','03.436.884/0001-10','MÚSICA','GRUPOS','1','INSTRUMENTAL',1),
+  mk(143,'ANDRÉ LUÍS DE SOUZA PINTO','"Alma em Claves"','20.259.991/0001-39','MÚSICA','GRUPOS','1','MPB',1),
+  mk(172,'REGINA MARA ABRAHAO DIAS','MPB e','52.828.667.0001/76','MÚSICA','GRUPOS','1','MPB',2),
+  mk(15,'DANILO CARVALHO HANSEM','Catarina no Sofá – Show Nossas Senhoras','31.959.655/0001-15','MÚSICA','GRUPOS','1','MPB',3),
+  mk(53,'GUILHERME DERIGI AMBROZIO','The Kitchen – Brasilidades com Roqueiragem','45.576.125/0001-00','MÚSICA','GRUPOS','1','MPB',4),
+  mk(165,'GUSTAVO ARCIPRETTI RIBEIRO BOEL','Salvese Music','027.818.281-06','MÚSICA','GRUPOS','1','MPB',5),
+  mk(148,'PAULO CESAR AGGIO','Tributo a Milton Nascimento','224.803.438-55','MÚSICA','GRUPOS','1','MPB',6),
+  mk(102,'MARIA PEREIRA BUTCHER','Maria Butcher Voz e Emoção','22.374.642/0001-93','MÚSICA','GRUPOS','1','MPB',7),
+  mk(228,'MARCELLO MNEZES DA SILVA','O Vento Solar apresenta "Do Mar a Montanha"','223.201.908-05','MÚSICA','GRUPOS','1','MPB',8),
+  mk(80,'SOLANGE BATISTA DE MORAIS','Sync2 Apresenta – Sandy & Junior – Faz parte da "Nossa História"','51.919.960/0001-90','MÚSICA','GRUPOS','1','POP',1),
+  mk(104,'SOLANGE BATISTA DE MORAIS','Sync2 Apresenta "Tributo Pitty ACNXX"','51.919.960/0001-90','MÚSICA','GRUPOS','1','POP',2),
+  mk(68,'SIMONE APARECIDA DE CAMPOS','Proxima Parada Pocket Show','25.129.209/0001-80','MÚSICA','GRUPOS','1','POP',3),
+  mk(79,'PAULO HENRIQUE IBANHES','Freon Rock','334.044.948-14','MÚSICA','GRUPOS','1','POP ROCK',1),
+  mk(149,'LUCINEI ALVES CUSTODIO','Banda Onnix','36.241.595/0001-14','MÚSICA','GRUPOS','1','POP ROCK',2),
+  mk(103,'VICTOR DE ALMEIDA LIZABELLE','Hutal – Tudo é fase','41.756.771/0001-90','MÚSICA','GRUPOS','1','POP ROCK',3),
+  mk(171,'CRISTIANE APARECIDA MARTINS TAVARES ME','Vozes Femininas do Pop Rock Nacional e Internacional – Tributo Kid Abelha','51.960.430/00010-96','MÚSICA','GRUPOS','1','POP ROCK',4),
+  mk(16,'MAURICIO SCHIABEL','Banda Victória','133.319.828-06','MÚSICA','GRUPOS','1','POP ROCK',5),
+  mk(176,'JOANA BARBOSA','Batalha da Alcatéia','52.783.536/0001-24','MÚSICA','GRUPOS','1','RAP/HIP HOP',1),
+  mk(166,'FREDERICO DE SOUZA GOMES','Reggae o seu coração. Artista: Fred Gomes & Jah Lovers','43.798.791/0001-50','MÚSICA','GRUPOS','1','REGGAE',1),
+  mk(74,'ALINE MONZANI','Fenícia – Lançamento do EP "Meu Bem"','39.832.967/0001-75','MÚSICA','GRUPOS','1','ROCK',1),
+  mk(75,'JULIO CEZAR DE BARROS','Banda Ubelina\'69 – Autoral','311.049.338-10','MÚSICA','GRUPOS','1','ROCK',2),
+  mk(71,'JULIO CEZAR DE BARROS','Banda Tendogs – Cover/Tributo','311.049.338-10','MÚSICA','GRUPOS','1','ROCK',3),
+  mk(193,'MARCIO LIMA BRUNO','Wagner Seixas & Banda Duraul','55.609.744/0001-08','MÚSICA','GRUPOS','1','ROCK',4),
+  mk(81,'FERNANDO RODRIGO DE ARAUJO BERNI','Vem Pretextar Com a Gente!','038.693.606-40','MÚSICA','GRUPOS','1','ROCK',5),
+  mk(197,'DÉBORA VENUTA REMONTI ZANARDO','Ploc Experencie – Banda Rota 80','287.767.828-83','MÚSICA','GRUPOS','1','ROCK',6),
+  mk(106,'CARLOS EDUARDO MARGADONA MARQUES','The Lost Trouble Boys – Show de 10 Anos de Estrada','21.987.182/0001-06','MÚSICA','GRUPOS','1','ROCK',7),
+  mk(229,'AMANDA VERGARA SANDI','Divas do Rock','47.255.506/0001-05','MÚSICA','GRUPOS','1','ROCK',8),
+  mk(84,'RODRIGO LANCELOTI','Lanceloti','27.889.514/000104','MÚSICA','GRUPOS','1','ROCK',9),
+  mk(161,'ALEXANDRE SALES FERREIRA','Overdramatik Apresenta: Especial Anos 2000 + Autorais','413.904.118-85','MÚSICA','GRUPOS','1','ROCK',10),
+  mk(226,'ELIEZER BERNANRDO DE AGUIRRE','Lapada Dukão','447.909.478-40','MÚSICA','GRUPOS','1','ROCK',11),
+  mk(13,'DANIEL MULLER GUERRINI','Sambas de Chico – Grupo Conversa de Botequim','08.752.025/0001-53','MÚSICA','GRUPOS','1','SAMBA',1),
+  mk(1,'GUSTAVO RODRIGUES','Show – Sambas e outras Brasilidades','19.791.515/0001-85','MÚSICA','GRUPOS','1','SAMBA',2),
+  mk(127,'MATHEUS SANTOS DE SOUSA','O Samba da Gente','55.810.811/0001-40','MÚSICA','GRUPOS','1','SAMBA',3),
+  mk(208,'ADRIAN CAIRES HADDAD','Samba de Todos os Tempos – Dico da Lira e Banda','60.019.630/0001-30','MÚSICA','GRUPOS','1','SAMBA',4),
+  mk(26,'RUIDO PRODUCOES LTDA','Fabiola Beni "O céu da minha cabeça"','23.538.068/0001-24','MÚSICA','GRUPOS','1','SERTANEJO RAIZ',1),
+  // ── GRUPOS 2 ──
+  mk(184,'LEONARDO MERIGHI PICONE','Sanka Jazz','447.871.28-28','MÚSICA','GRUPOS','2','INSTRUMENTAL',1),
+  mk(180,'JOANA BARBOSA','Batalha da Alcateia','52.783.536/0001-24','MÚSICA','GRUPOS','2','RAP/HIP HOP',1),
+  mk(77,'JULIO CEZAR DE BARROS','Banda Ubelina\'69 – Autoral','311.049.338-10','MÚSICA','GRUPOS','2','ROCK',1),
+  mk(99,'JULIO CEZAR DE BARROS','Banda Tendogs – Cover/Tributo','311.049.338-10','MÚSICA','GRUPOS','2','ROCK',2),
+  mk(162,'ALEXANDRE SALES FERREIRA','Overdramatik Apresenta: Especial Anos 2000 + Autorais','413.904.118-85','MÚSICA','GRUPOS','2','ROCK',3),
+  mk(223,'RAFAEL CARLOS SITOLIN','Banda Conexão Amazônica "Tributo à Legião Urbana"','53.852.189/0001-07','MÚSICA','GRUPOS','2','ROCK',4),
+  mk(169,'MARIA SALETE CORREIA','Atos Henrique e Banda','52.239.562/0001-96','MÚSICA','GRUPOS','2','SERTANEJO UNIVERSITÁRIO',1),
+  // ── GRUPOS 3 ──
+  mk(144,'DAVID TANGANELI','David Tanganelli – Autoral','22.530.657/0001-01','MÚSICA','GRUPOS','3','BLUES',1),
+  mk(151,'LUCINEI ALVES CUSTODIO','Banda Onnix','36.241.595/0001-14','MÚSICA','GRUPOS','3','FLASHBACK',1),
+  mk(159,'ANDRE LUIZ MANIA DUARTE','Banda Os Meia Boca','56.166.343/0001-85','MÚSICA','GRUPOS','3','FLASHBACK',2),
+  mk(227,'ALEXANDER CIARLO','Popularizando o Clássico nos Bairros','03.436.884/0001-10','MÚSICA','GRUPOS','3','INSTRUMENTAL',1),
+  mk(190,'KAIQUE CESAR PEREIRA','Kin Chupando Manga (Ao Vivo)','54.451.178/0001-88','MÚSICA','GRUPOS','3','INSTRUMENTAL',2),
+  mk(174,'ÁGATHA MARIA DA SILVA GOMES','Síntese – as partes de um todo','520.795.728-73','MÚSICA','GRUPOS','3','MPB',1),
+  mk(65,'VERIDIANA DO NASCIMENTO','Brasileiríssima','40.301.548/0001-96','MÚSICA','GRUPOS','3','MPB',2),
+  mk(152,'LUCINEI ALVES CUSTODIO','Banda Onnix','36.241.595/0001-14','MÚSICA','GRUPOS','3','POP ROCK',1),
+  mk(61,'TULIO JARDINI AIMOLA','Banda Boca de Lobo','413.805.778-10','MÚSICA','GRUPOS','3','POP ROCK',2),
+  mk(183,'GABRIEL GOMES DE CARVALHO','Bandafa','390.845.628-28','MÚSICA','GRUPOS','3','POP ROCK',3),
+  mk(181,'JOANA BARBOSA','Batalha da Alcateia','52.783.536/0001-24','MÚSICA','GRUPOS','3','RAP/HIP HOP',1),
+  mk(76,'JULIO CEZAR DE BARROS','Banda Ubelina\'69 – Autoral','311.049.338-10','MÚSICA','GRUPOS','3','ROCK',1),
+  mk(98,'JULIO CEZAR DE BARROS','Banda Tendogs – Cover/Tributo','311.049.338-10','MÚSICA','GRUPOS','3','ROCK',2),
+  mk(56,'CESAR DA CONCEIÇÃO','Igreja do Sexo','345.266.268-30','MÚSICA','GRUPOS','3','ROCK',3),
+  mk(83,'FERNANDO RODRIGO DE ARAUJO BERNI','#Pretextando','038.693.606-40','MÚSICA','GRUPOS','3','ROCK',4),
+  mk(202,'DÉBORA VENUTA REMONTI ZANARDO','Acústico – Banda Rota 80','287.767.828-83','MÚSICA','GRUPOS','3','ROCK',5),
+  mk(37,'RICARDO CURY NASSUR FILHO','Eu Canto o meu Samba','335.309.868-28','MÚSICA','GRUPOS','3','SAMBA',1),
+  // ── ARTES PERFORMÁTICAS – SOLO ──
+  mk(64,'MYLENE CORCCI','Corpo-chão-gravidade','34.496.386/0001-96','ARTES PERFORMÁTICAS','SOLO','1','DANÇA CONTEMPORÂNEA',1),
+  mk(123,'MYLENE CORCCI','Solo para um Recomeço','34.496.386/0001-96','ARTES PERFORMÁTICAS','SOLO','2','DANÇA CONTEMPORÂNEA',1),
+  mk(23,'DANIELE BUSATTO MENDONCA','A Formiga e a Cigarra','15.259.304/0001-45','ARTES PERFORMÁTICAS','SOLO','1','TEATRO CONTAÇÃO HISTÓRIAS',1),
+  mk(33,'KEREM APUK MENDONCA DA SILVA','Leituras de Pés Descalços – Mediação de Leitura','40.006.941/0001-57','ARTES PERFORMÁTICAS','SOLO','1','TEATRO CONTAÇÃO HISTÓRIAS',2),
+  mk(195,'CRISTIANA SOUZA CESCHI','Pássaro Preto – ponte entre a vida e a morte','18.032.726/0001-71','ARTES PERFORMÁTICAS','SOLO','1','TEATRO CONTAÇÃO HISTÓRIAS',3),
+  mk(198,'CRISTIANA SOUZA CESCHI','Histórias de Viajantes Bem-Vindos','18.032.726/0001-71','ARTES PERFORMÁTICAS','SOLO','1','TEATRO CONTAÇÃO HISTÓRIAS',4),
+  mk(201,'ESTAÇÃO DO CIRCO PRODUÇÕES ARTÍSTICAS LTDA','Intervenção de Perna de Pau','10.321.562/0001-90','ARTES PERFORMÁTICAS','SOLO','2','CIRCO',1),
+  // ── ARTES PERFORMÁTICAS – DUPLAS E TRIOS ──
+  mk(21,'DANIELE BUSATTO MENDONCA','Brincadeira com fogo, é fogo!','15.259.304/0001-45','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','CIRCO',1),
+  mk(178,'ESTAÇÃO DO CIRCO PRODUÇÕES ARTÍSTICAS LTDA','Circolores','10.321.562/0001-90','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','CIRCO',2),
+  mk(203,'ESTAÇÃO DO CIRCO PRODUÇÕES ARTÍSTICAS LTDA','Palhaçadas','10.321.562/0001-90','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','CIRCO',3),
+  mk(218,'MYLENE CORCCI','Ponto de Apoio','34.496.386/0001-96','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','DANÇA CONTEMPORÂNEA',1),
+  mk(188,'MAIRA MILLER FERRARI','Performance: "Minha Rede, Nossa!!"','18.677.456/0001-56','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','DANÇA CONTEMPORÂNEA',2),
+  mk(194,'MARIANA MAKKI CAVALCANTE OMURA','08h às 18h (oito às dezoito)','473.037.328-61','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','DANÇA CONTEMPORÂNEA',3),
+  mk(117,'VALERIA DOMINGUES SILVA','Forrozeando','18.153.888/0001-68','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','DANÇA DE SALÃO',1),
+  mk(150,'UDSON FERREIRA DE ANDRADE CONCEIÇÃO','Forró pra todos','59.245.629/0001-44','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','DANÇA DE SALÃO',2),
+  mk(22,'DANIELE BUSATTO MENDONCA','O Cão e o Lobo','15.259.304/0001-45','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO CONTAÇÃO HISTÓRIAS',1),
+  mk(133,'CIA TPK PRODUCOES ARTISTICAS LTDA','Vida e obra de Tarsila do Amaral','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO CONTAÇÃO HISTÓRIAS',2),
+  mk(49,'MARCEL ARRUDA FATIBELLO','Três pratos de trigo para três palhaces tristes','54.581.702/0001-35','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO ADULTO',1),
+  mk(52,'MARCEL ARRUDA FATIBELLO','Borocoshow','54.581.702/0001-35','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO DE RUA',1),
+  mk(132,'CIA TPK PRODUCOES ARTISTICAS LTDA','Um Sonho de Palhaço','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO DE RUA',2),
+  mk(50,'MARCEL ARRUDA FATIBELLO','Trim trim, o que é o que é, fede e ninguém quer?','54.581.702/0001-35','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO INFANTIL',1),
+  mk(113,'CIA TPK PRODUCOES ARTISTICAS LTDA','Flor da Vida','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO INFANTIL',2),
+  mk(121,'CIA TPK PRODUCOES ARTISTICAS LTDA','Pindorama','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO INFANTIL',3),
+  mk(134,'CIA TPK PRODUCOES ARTISTICAS LTDA','O menino de Cantagalo','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO INFANTIL',4),
+  mk(126,'CIA TPK PRODUCOES ARTISTICAS LTDA','Exercícios de ser criança – Manuel de Barros','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO INFANTIL',5),
+  mk(139,'CIA TPK PRODUCOES ARTISTICAS LTDA','Era Uma Vez: Show de Palhaço','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO INFANTIL',6),
+  mk(179,'BATIELY CAMARGO DE AZEVEDO','Quem Comeu a Nutella?','097.807.757-14','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','1','TEATRO ESPETÁCULO INFANTIL',7),
+  // ── ARTES PERFORMÁTICAS – DUPLAS E TRIOS 2 ──
+  mk(51,'MARCEL ARRUDA FATIBELLO','Nem lá nem cá','54.581.702/0001-35','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','2','CIRCO',1),
+  mk(216,'ESTAÇÃO DO CIRCO PRODUÇÕES ARTÍSTICAS LTDA','Intervenção com Sombras','10.321.562/0001-90','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','2','CIRCO',2),
+  mk(215,'MYLENE CORCCI','Duo Contato-Improvisação','34.496.386/0001-96','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','2','DANÇA CONTEMPORÂNEA',1),
+  mk(129,'CIA TPK PRODUCOES ARTISTICAS LTDA','Circo TPK – A magia e a alegria dos palhaços','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','2','TEATRO ESPETÁCULO DE RUA',1),
+  mk(163,'LUIZA CAMPOS MARTINS','A melhor história do mundo!','450.294.098-40','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','2','TEATRO ESPETÁCULO DE RUA',2),
+  mk(124,'CIA TPK PRODUCOES ARTISTICAS LTDA','Principes Princesas e Dragões','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','2','TEATRO ESPETÁCULO INFANTIL',1),
+  mk(130,'CIA TPK PRODUCOES ARTISTICAS LTDA','A Caixa Preta','13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','2','TEATRO ESPETÁCULO INFANTIL',2),
+  // ── ARTES PERFORMÁTICAS – GRUPOS 1 ──
+  mk(196,'ESTAÇÃO DO CIRCO PRODUÇÕES ARTÍSTICAS LTDA','Pocket Show','10.321.562/0001-90','ARTES PERFORMÁTICAS','GRUPOS','1','CIRCO',1),
+  mk(73,'ASSOCIACAO DANCA E IMAGEM DE SAO CARLOS','"Êta Nóis", espetáculo de dança contemporânea de Francisco Urze','10.297.118/0001-87','ARTES PERFORMÁTICAS','GRUPOS','1','DANÇA CONTEMPORÂNEA',1),
+  mk(78,'ASSOCIACAO DANCA E IMAGEM DE SAO CARLOS','Uivo, de Francisco Urze (espetáculo de dança contemporânea e teatro físico)','10.297.118/0001-87','ARTES PERFORMÁTICAS','GRUPOS','1','DANÇA CONTEMPORÂNEA',2),
+  mk(14,'MARINA SANCHES SILVESTRINI','Cuidado Frágil?! – Espetáculo de contemporaneidade e improvisação em dança','46.095.340/0001-44','ARTES PERFORMÁTICAS','GRUPOS','1','DANÇA CONTEMPORÂNEA',3),
+  mk(164,'MARINA SANCHES SILVESTRINI','Vos de Brechó: histórias cantadas e dançadas','46.095.340/0001-44','ARTES PERFORMÁTICAS','GRUPOS','1','DANÇA CONTEMPORÂNEA',4),
+  mk(55,'LUCAS HENRIQUE DA SILVA','Vivências da cultura ballroom no Brasil','58.121.919/0001-13','ARTES PERFORMÁTICAS','GRUPOS','1','DANÇA URBANA',1),
+  mk(116,'JONAS PRADO BARBOSA','Dança indígena Grupo de Karisú','023.697.762-85','ARTES PERFORMÁTICAS','GRUPOS','1','DANÇAS POPULARES',1),
+  mk(211,'MAIRA MILLER FERRARI','A Estrela e o Pássaro Encantado','18.677.456/0001-56','ARTES PERFORMÁTICAS','GRUPOS','1','TEATRO CONTAÇÃO HISTÓRIA',1),
+  mk(39,'ANA CAROLINA GARBUIO','Eco','33.344.088/0001-18','ARTES PERFORMÁTICAS','GRUPOS','1','TEATRO ADULTO',1),
+  mk(205,'WALDIR ALVARES MENENDES NETO','Espetáculo Teatral "O Ultimo Brinde"','40.933.462/0001-86','ARTES PERFORMÁTICAS','GRUPOS','1','TEATRO ADULTO',2),
+  mk(219,'CAIE DONATTI STRUMIELLO','Hip Hop Salva: Cypher do Conhecimento','52.333.008/0001-73','ARTES PERFORMÁTICAS','GRUPOS','1','TEATRO ESPETÁCULO DE RUA',1),
+  mk(108,'CIA TPK PRODUCOES ARTISTICAS LTDA','"Encantador de Palavras – O menino João"','13.729.898/0001-85','ARTES PERFORMÁTICAS','GRUPOS','1','TEATRO ESPETÁCULO INFANTIL',1),
+  mk(109,'CIA TPK PRODUCOES ARTISTICAS LTDA','Cara de um, focinho do Dono','13.729.898/0001-85','ARTES PERFORMÁTICAS','GRUPOS','1','TEATRO ESPETÁCULO INFANTIL',2),
+  // ── ARTES PERFORMÁTICAS – GRUPOS 2 ──
+  mk(67,'ANA CAROLINA GARBUIO','Melodrama da Meia Noite (rua/praça/feira)','33.344.088/0001-18','ARTES PERFORMÁTICAS','GRUPOS','2','TEATRO ESPETÁCULO ADULTO',1),
+  mk(186,'CAIE DONATTI STRUMIELLO','Hip Hop Salva: Freestyle do Conhecimento','52.333.008/0001-73','ARTES PERFORMÁTICAS','GRUPOS','2','TEATRO ESPETÁCULO DE RUA',1),
+];
+
+// Multiple Duplas/Trios 2 Teatro Contação entries
+const ctpkTeatroContacao2 = [
+  [46,'Era uma Vez – Bom dia todas as cores',1],[47,'Era uma Vez – O Príncipe Sapo',2],
+  [43,'Era uma vez – A Orangotango tem medo',3],[57,'Era uma vez: Uxa ora fada ora bruxa',4],
+  [58,'Era uma vez: Romeu e Julieta',5],[60,'Era uma vez: Andira',6],
+  [62,'Era uma vez: AS PERIPÉCIAS DE VENTINHO',7],
+  [94,'Clowntação de Histórias: "Mil Pássaros pelo Céu" Inspirada na obra de Ruth Rocha',8],
+  [95,'Clowntação de Histórias: "A Guerra do Macarrão" Inspirado na obra de Domingos Pellegrini',9],
+  [128,'Mix Shakespeare – Um megulho sobre a vida e a obra de William Shakespeare',10],
+  [131,'Bisa Bia Bisa Bel',11],[89,'Colowntação de Histórias: "Belinda, a Bailarina" Inspirado na obra de Amy Young',12],
+  [92,'Clowntação de Histórias: Chapéuzinho Vermelho',13],
+  [96,'Clowntação de Histórias: Branca de Neve',14],
+  [97,'Clowntação de Histórias: Os Três Porquinhos',15],
+  [87,'Colowntação de Histórias: "Moana, Um Mar de Aventuras e Risadas"',16],
+  [59,'Era uma vez: Princesa em Busca da Felicidade',17],
+];
+ctpkTeatroContacao2.forEach(([insc,proj,cls]) => {
+  artistas.push(mk(insc,'CIA TPK PRODUCOES ARTISTICAS LTDA',proj,'13.729.898/0001-85','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','2','TEATRO CONTAÇÃO HISTÓRIAS',cls));
+});
+
+// Kerem Apuk Teatro Contação
+const keremProjs = [
+  [28,'Quando Crescer Quero ser Avião',18],[29,'A menina que voou pro mar',19],
+  [30,'Pererê Cundê',20],[31,'Tinha Um Planeta no Meio do Caminho',21],
+  [32,'Cuidado Com o Curupira Bem no Alto da Sucupira',22],[35,'Inventárias de Bernardo',23],
+];
+keremProjs.forEach(([insc,proj,cls]) => {
+  artistas.push(mk(insc,'KEREM APUK MENDONCA DA SILVA',proj,'40.006.941/0001-57','ARTES PERFORMÁTICAS','DUPLAS E TRIOS','2','TEATRO CONTAÇÃO HISTÓRIAS',cls));
+});
+
+// CIA TPK Grupos 1 Teatro Espetáculo Infantil (additional)
+const ctpkG1Inf = [
+  [111,'As aventuras de Romião e Julieta',3],[115,'O voo do gato – o amor entre as diferenças',4],
+  [119,'"Sitio do Pica Pau Amarelo em: o anjinho que caiu do céu"',5],
+  [122,'Era uma casa muito engraçada',6],[125,'Saltimbancos',7],
+  [118,'Presépio de Francisco',8],[120,'A menina que sabia sonhar',9],
+  [40,'é lenda mas é verdade',10],[135,'Era Uma Vez: A mais linda historia de amor – inspirado no classico A Bela e a Fera',11],
+  [136,'Era Uma Vez: 1001 Aventuras em Agrabah',12],[137,'Era Uma Vez: Uma Aventura Congelante',13],
+  [138,'Era Uma Vez: Aventuras no Fundo do Mar',14],
+];
+ctpkG1Inf.forEach(([insc,proj,cls]) => {
+  artistas.push(mk(insc, insc===40 ? 'ANA CAROLINA GARBUIO' : 'CIA TPK PRODUCOES ARTISTICAS LTDA', proj, insc===40 ? '33.344.088/0001-18' : '13.729.898/0001-85','ARTES PERFORMÁTICAS','GRUPOS','1','TEATRO ESPETÁCULO INFANTIL',cls));
+});
+
+// ── PROGRAMAÇÃO ──
+let eventos = [];
+let nextEventoId = 1;
+let curEventoId = null;
+let programacao = [];
+let nextProgId = 1;
+let _modalArtista = null;
+let _editArtistaId = null;
+let _editEventoId = null;
+
+// ─── STATE ───
+let curTab = 'banco';
+let _filterBusca = '';
+let _filterArea  = '';
+let _filterPorte = '';
+let _filterGenero = '';
+// chamamento filters
+let _chCat = ''; let _chPorte = ''; let _chGenero = '';
+
+// ─── EDIÇÕES DO CHAMAMENTO ───────────────────────────────────────────────────
+// Cada edição preserva seus próprios artistas, filas e histórico.
+// Apenas a edição ativa é usada nas telas de banco/chamamento/programação.
+// Estrutura: { id, nome, ano, vigencia, descricao, criadaEm,
+//              artistas[], filas{}, ch_historico[], nextId }
+let edicoes_chamamento = [];
+let edicaoAtiva = null;          // ID da edição ativa (a mais recente por padrão)
+let nextEdicaoId = 1;
+
+// ─── SAVE / LOAD — Supabase (tempo real para toda a equipe) ───
+const STORAGE_KEY = 'chamamento_artistas_v1';
+const SUPABASE_URL = window.SMCT_SUPABASE_URL || 'https://uhalxchwpspupvfmpixq.supabase.co';
+const SUPABASE_KEY = window.SMCT_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYWx4Y2h3cHNwdXB2Zm1waXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODcwOTIsImV4cCI6MjA4OTI2MzA5Mn0.kVlk3z8__heq3bRbAMmra_LiNDmRs0wuMFkLtokSL6M';
+let _sb = null;
+function getSB(){if(!_sb&&window.supabase)_sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);return _sb;}
+function showSync(ok){let e=document.getElementById('_sync');if(!e){e=document.createElement('div');e.id='_sync';e.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0d2018;color:#4cd98a;font-size:11px;padding:5px 14px;border-radius:20px;border:1px solid #1a4731;z-index:9999;transition:opacity .5s;pointer-events:none;font-weight:700';document.body.appendChild(e);}e.textContent=ok?'✓ Sincronizado':'↻ Salvando...';e.style.opacity='1';if(ok)setTimeout(()=>e.style.opacity='0',2000);}
+
+function saveData() {
+  try {
+    if (edicaoAtiva !== null) {
+      const idx = edicoes_chamamento.findIndex(e => e.id === edicaoAtiva);
+      if (idx >= 0) {
+        edicoes_chamamento[idx].artistas     = artistas;
+        edicoes_chamamento[idx].filas        = filas;
+        edicoes_chamamento[idx].ch_historico = ch_historico;
+        edicoes_chamamento[idx].nextId       = nextId;
+      }
+    }
+    const payload = {edicoes_chamamento, edicaoAtiva, nextEdicaoId, programacao, eventos, nextProgId, nextEventoId, curEventoId};
+    // Salva local (fallback) + remoto
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    const sb = getSB();
+    if(sb){showSync(false);sb.from('modulos').upsert({nome:STORAGE_KEY,dados:JSON.stringify(payload),atualizado_em:new Date().toISOString()},{onConflict:'nome'}).then(({error})=>{if(!error)showSync(true);});}
+  } catch(e) {}
+}
+async function loadDataRemote() {
+  const sb = getSB();
+  if(sb){try{const{data}=await sb.from('modulos').select('dados').eq('nome',STORAGE_KEY).single();if(data&&data.dados){const d=JSON.parse(data.dados);applyLoadedData(d);return true;}}catch(e){}}
+  // fallback localStorage
+  try{const d=JSON.parse(localStorage.getItem(STORAGE_KEY));if(d){applyLoadedData(d);return true;}}catch(e){}
+  return false;
+}
+
+function applyLoadedData(d) {
+  if (!d) return;
+  if (d.edicoes_chamamento && d.edicoes_chamamento.length) {
+    edicoes_chamamento = d.edicoes_chamamento;
+    nextEdicaoId = d.nextEdicaoId || edicoes_chamamento.length + 1;
+    edicaoAtiva  = d.edicaoAtiva  || edicoes_chamamento[edicoes_chamamento.length - 1].id;
+    ativarEdicao(edicaoAtiva, false);
+  } else if (d.artistas && d.artistas.length) {
+    const edicaoMigrada = {
+      id: nextEdicaoId++, nome: 'Chamamento 2024/2025', ano: '2024-2025',
+      vigencia: 'Edição migrada automaticamente', descricao: 'Dados da edição anterior',
+      criadaEm: new Date().toISOString(), artistas: d.artistas,
+      filas: d.filas || {}, ch_historico: d.ch_historico || [], nextId: d.nextId || 1
+    };
+    Object.values(edicaoMigrada.filas).forEach(f => { if (f.eventoAberto === undefined) f.eventoAberto = false; });
+    edicoes_chamamento = [edicaoMigrada];
+    edicaoAtiva = edicaoMigrada.id;
+    ativarEdicao(edicaoAtiva, false);
+  }
+  if (d.programacao) programacao = d.programacao;
+  if (d.eventos) eventos = d.eventos;
+  if (d.nextProgId) nextProgId = d.nextProgId;
+  if (d.nextEventoId) nextEventoId = d.nextEventoId;
+  if (d.curEventoId != null) curEventoId = d.curEventoId;
+}
+
+function loadData() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (d) applyLoadedData(d);
+  } catch(e) {}
+}
+
+function listenRealtime() {
+  const sb = getSB(); if(!sb) return;
+  sb.channel('ch-realtime').on('postgres_changes',{event:'UPDATE',schema:'public',table:'modulos',filter:`nome=eq.${STORAGE_KEY}`},payload=>{
+    try{const d=JSON.parse(payload.new.dados);applyLoadedData(d);render();showSync(true);}catch(e){}
+  }).subscribe();
+}
+
+// Carrega artistas/filas/histórico da edição especificada em memória ativa
+function ativarEdicao(id, salvar) {
+  const ed = edicoes_chamamento.find(e => e.id === id);
+  if (!ed) return;
+  edicaoAtiva = id;
+  artistas    = ed.artistas    || [];
+  filas       = ed.filas       || {};
+  ch_historico= ed.ch_historico|| [];
+  nextId      = ed.nextId      || 1;
+  // migração inline
+  Object.values(filas).forEach(f => { if (f.eventoAberto === undefined) f.eventoAberto = false; });
+  if (salvar) saveData();
+}
+
+// ─── NAVIGATION ───
+function setTab(tab) {
+  curTab = tab;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+tab);
+  if (navEl) navEl.classList.add('active');
+  render();
+}
+
+function render() {
+  const main = document.getElementById('main');
+  if (curTab === 'banco')           main.innerHTML = renderBanco();
+  else if (curTab === 'eventos')     main.innerHTML = renderEventos();
+  else if (curTab === 'programacao') main.innerHTML = renderProgramacao();
+  else if (curTab === 'caches')      main.innerHTML = renderCaches();
+  else if (curTab === 'relatorio')   main.innerHTML = renderRelatorio();
+  else if (curTab === 'chamamento')  main.innerHTML = renderChamamento();
+  else if (curTab === 'edicoes')     main.innerHTML = renderEdicoes();
+  updateCounts();
+  updateTopbarEdicao();
+}
+
+function updateTopbarEdicao() {
+  const el = document.getElementById('topbar-edicao-badge');
+  if (!el) return;
+  const ed = edicoes_chamamento.find(e => e.id === edicaoAtiva);
+  if (ed) {
+    el.innerHTML = `<span style="background:#0e2418;border:1px solid #1e5030;color:#4cd98a;border-radius:12px;padding:2px 10px;font-size:10px;font-weight:800">● ${ed.nome}</span> <span style="color:#3a4a5a;font-size:10px">Edição ativa · ${artistas.length} artistas</span>`;
+  } else {
+    el.textContent = 'Prefeitura Municipal de São Carlos · SMCT · 2025';
+  }
+}
+
+function updateCounts() {
+  const cb = document.getElementById('cnt-banco');
+  const cp = document.getElementById('cnt-prog');
+  const ce = document.getElementById('cnt-eventos');
+  const cc = document.getElementById('cnt-chamamento');
+  if (cc) cc.textContent = ch_historico.filter(h=>h.tipo==='chamado').length;
+  if (cb) cb.textContent = artistas.length;
+  const evProg = curEventoId ? programacao.filter(p => p.eventoId === curEventoId) : programacao;
+  if (cp) cp.textContent = evProg.length;
+  if (ce) ce.textContent = eventos.length;
+}
+
+function curEvento() { return eventos.find(e => e.id === curEventoId) || null; }
+function progDoEvento(eid) { return programacao.filter(p => p.eventoId === (eid ?? curEventoId)); }
+
+// ─── BANCO DE ARTISTAS ───
+function renderBanco() {
+  const generos = [...new Set(artistas.map(a => a.genero))].sort();
+  const filtered = artistas.filter(a => {
+    const q = _filterBusca.toLowerCase();
+    const matchQ = !q || a.razao.toLowerCase().includes(q) || a.projeto.toLowerCase().includes(q) || a.genero.toLowerCase().includes(q);
+    const matchArea  = !_filterArea  || a.area  === _filterArea;
+    const matchPorte = !_filterPorte || a.porte === _filterPorte;
+    const matchGen   = !_filterGenero|| a.genero === _filterGenero;
+    return matchQ && matchArea && matchPorte && matchGen;
+  });
+
+  const totalCache = filtered.reduce((s, a) => s + getCache(a.area, a.porte, a.categoria), 0);
+
+  const cards = filtered.length ? filtered.map(a => {
+    const cache = getCache(a.area, a.porte, a.categoria);
+    const isInProg = curEventoId ? programacao.some(p => p.artistaId === a.id && p.eventoId === curEventoId) : programacao.some(p => p.artistaId === a.id);
+    const cbadge = a.classif <= 3 ? `class-${a.classif}` : 'class-n';
+    return `<div class="artist-card${isInProg?' selected':''}" ondblclick="addToProg(${a.id})">
+      <div class="ac-top">
+        <div class="ac-nome">${a.projeto || a.razao}</div>
+        <div class="class-badge ${cbadge}" title="Classificação ${a.classif}">${a.classif}</div>
+      </div>
+      <div class="ac-razao">${a.razao}</div>
+      <div class="ac-tags">
+        <span class="tag ${a.area==='MÚSICA'?'tag-area-musica':'tag-area-artes'}">${a.area==='MÚSICA'?'🎵':'🎭'} ${a.area}</span>
+        <span class="tag tag-porte">${a.porte}</span>
+        <span class="tag tag-genero">${a.genero}</span>
+        <span class="tag tag-cat">CAT ${a.categoria}</span>
+      </div>
+      <div class="ac-cache">
+        <div>
+          <div class="cache-lbl">Cachê</div>
+          <div class="cache-val">${fmtV(cache)}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn-sm btn-outline" style="color:#888;border-color:#ddd;background:#f8f8f8;font-size:9px" onclick="editArtista(${a.id})">✏</button>
+          ${isInProg
+            ? '<button class="btn-select active" onclick="removeProgByArtista('+a.id+')" title="Clique para remover da programação" style="background:var(--rose);display:flex;align-items:center;gap:4px">✕ Remover</button>'
+            : '<button class="btn-select" onclick="addToProg('+a.id+')">＋ Escalar</button>'
+          }
+        </div>
+      </div>
+      <div class="ac-insc" style="margin-top:6px">Insc. nº ${a.insc} · CNPJ/CPF: ${a.cnpj}</div>
+    </div>`;
+  }).join('') : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-txt">Nenhum artista encontrado com esse filtro.</div></div>`;
+
+  return `<div class="pg-header">
+    <div>
+      <div class="pg-title">🎤 Banco de Artistas</div>
+      <div class="pg-sub">${filtered.length} artista(s) encontrado(s) · Chamamento Público São Carlos 2025</div>
+    </div>
+    <button class="btn-sm btn-teal" onclick="openAddArtista()">＋ Novo Artista</button>
+  </div>
+  <div class="content">
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-lbl">Total no Banco</div><div class="stat-val">${artistas.length}</div><div class="stat-sub">artistas cadastrados</div></div>
+      <div class="stat-card teal"><div class="stat-lbl">Escalados</div><div class="stat-val">${curEventoId?programacao.filter(p=>p.eventoId===curEventoId).length:programacao.length}</div><div class="stat-sub">${curEventoId?(curEvento()?curEvento().nome:'evento ativo'):'todos os eventos'}</div></div>
+      <div class="stat-card gold"><div class="stat-lbl">Potencial (filtro atual)</div><div class="stat-val">${fmtV(totalCache).replace('R$','').trim()}</div><div class="stat-sub">R$ · soma dos cachês filtrados</div></div>
+      <div class="stat-card rose"><div class="stat-lbl">Total Comprometido</div><div class="stat-val">${fmtV((curEventoId?programacao.filter(p=>p.eventoId===curEventoId):programacao).filter(p=>p.status!=='Cancelado').reduce((s,p)=>s+p.cacheTotal,0)).replace('R$','').trim()}</div><div class="stat-sub">${curEventoId?(curEvento()?curEvento().nome:'evento ativo'):'todos os eventos'}</div></div>
+    </div>
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input placeholder="Buscar por nome, projeto ou gênero..." value="${_filterBusca}" oninput="_filterBusca=this.value;render()">
+      </div>
+      <select class="filter-sel" onchange="_filterArea=this.value;render()">
+        <option value="">Todas as áreas</option>
+        <option value="MÚSICA" ${_filterArea==='MÚSICA'?'selected':''}>🎵 Música</option>
+        <option value="ARTES PERFORMÁTICAS" ${_filterArea==='ARTES PERFORMÁTICAS'?'selected':''}>🎭 Artes Performáticas</option>
+      </select>
+      <select class="filter-sel" onchange="_filterPorte=this.value;render()">
+        <option value="">Todos os portes</option>
+        <option value="SOLO" ${_filterPorte==='SOLO'?'selected':''}>Solo</option>
+        <option value="DUPLAS E TRIOS" ${_filterPorte==='DUPLAS E TRIOS'?'selected':''}>Duplas e Trios</option>
+        <option value="GRUPOS" ${_filterPorte==='GRUPOS'?'selected':''}>Grupos</option>
+      </select>
+      <select class="filter-sel" onchange="_filterGenero=this.value;render()">
+        <option value="">Todos os gêneros</option>
+        ${generos.map(g => `<option value="${g}" ${_filterGenero===g?'selected':''}>${g}</option>`).join('')}
+      </select>
+      ${(_filterBusca||_filterArea||_filterPorte||_filterGenero)?`<button class="btn-sm" style="background:#f0f0f0;color:#666;border:1px solid #ddd" onclick="_filterBusca='';_filterArea='';_filterPorte='';_filterGenero='';render()">✕ Limpar filtros</button>`:''}
+    </div>
+    <div class="artist-grid">${cards}</div>
+  </div>`;
+}
+
+// ─── EVENTOS ───
+function renderEventos() {
+  const cards = eventos.length ? eventos.map(ev => {
+    const prog = progDoEvento(ev.id);
+    const total = prog.filter(p=>p.status!=='Cancelado').reduce((s,p) => s+p.cacheTotal, 0);
+    const isCur = ev.id === curEventoId;
+    return `<div style="border:2px solid ${isCur?'var(--teal)':'var(--border)'};border-radius:12px;padding:18px 20px;background:${isCur?'var(--teal-l)':'#fff'};cursor:pointer;box-shadow:var(--shadow);transition:.2s;position:relative" onclick="selectEvento(${ev.id})">
+      ${isCur?'<span style="position:absolute;top:12px;right:14px;background:var(--teal);color:#fff;font-size:9px;padding:2px 10px;border-radius:10px;font-weight:800">ATIVO</span>':''}
+      <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink);margin-bottom:2px;padding-right:80px">${ev.nome}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:12px">${ev.edicao||''}${ev.edicao&&ev.dtInicio?' · ':''}${ev.dtInicio||''}${ev.dtFim&&ev.dtFim!==ev.dtInicio?' a '+ev.dtFim:''} ${ev.local?'· '+ev.local:''}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+        <div style="background:#f5f5f5;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--teal)">${prog.length}</div>
+          <div style="font-size:9px;color:#aaa">ARTISTAS</div>
+        </div>
+        <div style="background:#f5f5f5;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--gold-d)">${fmtV(total)}</div>
+          <div style="font-size:9px;color:#aaa">TOTAL CACHÊS</div>
+        </div>
+        <div style="background:#f5f5f5;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink)">${prog.filter(p=>p.status==='Contratado'||p.status==='Confirmado').length}</div>
+          <div style="font-size:9px;color:#aaa">CONFIRMADOS</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm btn-teal" onclick="event.stopPropagation();selectEvento(${ev.id});setTab('programacao')">📅 Ver Programação</button>
+        <button class="btn-sm btn-teal" onclick="event.stopPropagation();selectEvento(${ev.id});setTab('relatorio')" style="background:var(--gold-d)">📋 Resumo Executivo</button>
+        <button class="btn-sm" onclick="event.stopPropagation();editEvento(${ev.id})" style="background:#f5f5f5;border:1px solid #ddd;color:#666">✏ Editar</button>
+        <button class="btn-sm" onclick="event.stopPropagation();deleteEvento(${ev.id})" style="background:var(--rose-l);border:1px solid #fcc;color:var(--rose)">✕</button>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty"><div class="empty-icon">🎪</div><div class="empty-txt">Nenhum evento criado ainda.<br>Clique em <strong>＋ Novo Evento</strong> para começar.</div></div>`;
+
+  return `<div class="pg-header" style="justify-content:space-between">
+    <div><div class="pg-title">🎪 Meus Eventos</div>
+    <div class="pg-sub">${eventos.length} evento(s) cadastrado(s)</div></div>
+    <button class="btn-sm btn-teal" onclick="openNovoEvento()">＋ Novo Evento</button>
+  </div>
+  <div class="content"><div style="display:grid;gap:14px">${cards}</div></div>`;
+}
+
+function selectEvento(id) {
+  curEventoId = id;
+  saveData();
+  render();
+}
+
+function openNovoEvento() {
+  _editEventoId = null;
+  document.getElementById('me-title').textContent = 'Novo Evento';
+  ['me-nome','me-dtInicio','me-dtFim','me-local','me-publico','me-obs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('modal-evento-bg').classList.add('open');
+}
+
+function editEvento(id) {
+  const ev = eventos.find(e => e.id === id);
+  if (!ev) return;
+  _editEventoId = id;
+  document.getElementById('me-title').textContent = 'Editar Evento';
+  document.getElementById('me-nome').value   = ev.nome || '';
+  document.getElementById('me-dtInicio').value = ev.dtInicio || '';
+  document.getElementById('me-dtFim').value  = ev.dtFim || '';
+  document.getElementById('me-local').value  = ev.local || '';
+  document.getElementById('me-publico').value= ev.publico || '';
+  document.getElementById('me-obs').value    = ev.obs || '';
+  document.getElementById('modal-evento-bg').classList.add('open');
+}
+
+function saveEvento() {
+  const nome = document.getElementById('me-nome').value.trim();
+  if (!nome) { alert('Informe o nome do evento.'); return; }
+  const data = {
+    nome,
+    dtInicio: document.getElementById('me-dtInicio').value.trim(),
+    dtFim:    document.getElementById('me-dtFim').value.trim(),
+    local:    document.getElementById('me-local').value.trim(),
+    publico:  document.getElementById('me-publico').value.trim(),
+    obs:      document.getElementById('me-obs').value.trim(),
+  };
+  if (_editEventoId) {
+    const idx = eventos.findIndex(e => e.id === _editEventoId);
+    if (idx !== -1) eventos[idx] = { ...eventos[idx], ...data };
+    toast('✅ Evento atualizado!');
+  } else {
+    const newId = nextEventoId++;
+    eventos.push({ id: newId, ...data });
+    curEventoId = newId;
+    toast('✅ Evento criado! Agora escale os artistas.');
+  }
+  saveData();
+  closeModal('modal-evento-bg');
+  render();
+}
+
+function deleteEvento(id) {
+  if (!confirm('Excluir este evento e toda a sua programação?')) return;
+  eventos = eventos.filter(e => e.id !== id);
+  programacao = programacao.filter(p => p.eventoId !== id);
+  if (curEventoId === id) curEventoId = eventos.length ? eventos[0].id : null;
+  saveData();
+  render();
+}
+
+// ─── PROGRAMAÇÃO ───
+function renderProgramacao() {
+  const ev = curEvento();
+  const prog = ev ? progDoEvento(ev.id) : programacao;
+
+  // Group by date
+  const byDate = {};
+  prog.forEach(p => {
+    const key = p.data || 'Sem data';
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(p);
+  });
+  // Sort each day by horario
+  Object.values(byDate).forEach(arr => arr.sort((a,b) => (a.horario||'').localeCompare(b.horario||'')));
+
+  const totalCache = prog.reduce((s,p) => s+p.cacheTotal, 0);
+  const evBanner = ev ? `<div style="background:linear-gradient(90deg,var(--ink),var(--ink2));color:#fff;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-family:'DM Serif Display',serif;font-size:16px">${ev.nome}</div>
+      <div style="font-size:11px;opacity:.7;margin-top:2px">${ev.edicao||''}${ev.edicao&&ev.dtInicio?' · ':''}${ev.dtInicio||''}${ev.dtFim&&ev.dtFim!==ev.dtInicio?' a '+ev.dtFim:''} ${ev.local?'· '+ev.local:''}</div>
+    </div>
+    <button class="btn-sm" onclick="editEvento(${ev.id})" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)">✏ Editar Evento</button>
+  </div>` : `<div style="background:var(--gold-l);border:1.5px solid var(--gold);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--gold-d)">⚠️ Nenhum evento selecionado. <a href="#" onclick="setTab('eventos')" style="color:var(--gold-d);font-weight:700">Crie ou selecione um evento</a> para organizar a programação.</div>`;
+
+  // Build day sections
+  const daySections = Object.keys(byDate).sort().map(date => {
+    const items = byDate[date];
+    const dayTotal = items.filter(p=>p.status!=='Cancelado').reduce((s,p) => s+p.cacheTotal, 0);
+    const rows = items.map(p => {
+      const a = artistas.find(a => a.id === p.artistaId) || {};
+      const stClass = p.status==='Confirmado'?'st-confirmado':p.status==='Contratado'?'st-contratado':p.status==='Cancelado'?'st-cancelado':'st-pendente';
+      // Check for conflict: same date + overlapping time with another item
+      const hasConflict = items.some(other => {
+        if (other.id === p.id) return false;
+        if (!p.horario || !other.horario) return false;
+        const ps = timeToMins(p.horario), pe = p.horarioFim ? timeToMins(p.horarioFim) : ps + (parseInt(p.duracao)||60);
+        const os = timeToMins(other.horario), oe = other.horarioFim ? timeToMins(other.horarioFim) : os + (parseInt(other.duracao)||60);
+        return ps < oe && pe > os;
+      });
+      const rowBg = hasConflict ? 'background:#fff5f5;' : '';
+      const conflictIcon = hasConflict ? '<span title="Conflito de horário!" style="color:var(--rose);font-size:14px;cursor:help"> ⚠️</span>' : '';
+      return `<tr style="${rowBg}">
+        <td style="font-weight:700;color:var(--ink);white-space:nowrap">${p.horario||'—'}${p.horarioFim?' – '+p.horarioFim:''}${conflictIcon}</td>
+        <td style="white-space:nowrap;font-size:11px;color:#888">${p.duracao||'—'}${p.duracao?' min':''}</td>
+        <td><div style="font-weight:700;font-size:12px">${a.projeto||a.razao||'—'}</div><div style="font-size:10px;color:#888">${a.razao||''}</div></td>
+        <td><span class="tag ${a.area==='MÚSICA'?'tag-area-musica':'tag-area-artes'}" style="font-size:8px">${a.genero||'—'}</span></td>
+        <td style="font-size:11px">${p.local||'—'}</td>
+        <td class="prog-cache" style="font-size:13px;${p.status==='Cancelado'?'text-decoration:line-through;color:#ccc;':''}">${fmtV(p.cacheTotal)}</td>
+        <td><select class="status-sel" onchange="updateProgItem(${p.id},'status',this.value)">
+          <option ${p.status==='Pendente'?'selected':''}>Pendente</option>
+          <option ${p.status==='Confirmado'?'selected':''}>Confirmado</option>
+          <option ${p.status==='Contratado'?'selected':''}>Contratado</option>
+          <option ${p.status==='Cancelado'?'selected':''}>Cancelado</option>
+        </select></td>
+        <td><input class="prog-inp" value="${p.obs||''}" onchange="updateProgItem(${p.id},'obs',this.value)" placeholder="Obs / rider" style="width:110px"></td>
+        <td style="white-space:nowrap">
+          <button class="btn-sm" style="background:var(--sky-l);border:1px solid #aed6f1;color:var(--sky);padding:4px 8px;font-size:10px;margin-right:4px" onclick="openEditProg(${p.id})">✏</button>
+          <button class="btn-del" onclick="removeProg(${p.id})">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return `<div style="margin-bottom:16px">
+      <div style="background:var(--ink2);color:#fff;padding:9px 16px;border-radius:6px 6px 0 0;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:800;font-size:13px">📅 ${date}</span>
+        <span style="font-size:11px;opacity:.75">${items.length} apresentação(ões) · ${fmtV(dayTotal)}</span>
+      </div>
+      <div class="prog-table-wrap" style="border-radius:0 0 6px 6px;margin-bottom:0">
+        <table class="prog-table">
+          <thead><tr><th>Horário</th><th>Duração</th><th>Artista / Projeto</th><th>Gênero</th><th>Palco / Local</th><th>Cachê</th><th>Status</th><th>Observações</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty"><div class="empty-icon">🎤</div><div class="empty-txt">Nenhum artista escalado ainda.<br><a href="#" onclick="setTab('banco')" style="color:var(--teal)">Ir ao Banco de Artistas</a> para escalar.</div></div>`;
+
+  return `<div class="pg-header" style="justify-content:space-between">
+    <div><div class="pg-title">📅 Programação do Evento</div>
+    <div class="pg-sub">${prog.length} artista(s) · ${Object.keys(byDate).length} dia(s) · Total: ${fmtV(totalCache)}</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sm" style="background:#f5f5f5;border:1px solid #ddd;color:#666" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn-sm btn-teal" onclick="setTab('banco')">＋ Escalar Artistas</button>
+    </div>
+  </div>
+  <div class="content">
+    ${evBanner}
+    <div class="stat-row">
+      <div class="stat-card gold"><div class="stat-lbl">Total Cachês</div><div class="stat-val">${fmtV(totalCache).replace('R$','').trim()}</div><div class="stat-sub">R$ · toda a programação</div></div>
+      <div class="stat-card teal"><div class="stat-lbl">Confirmados/Contratados</div><div class="stat-val">${prog.filter(p=>p.status==='Confirmado'||p.status==='Contratado').length}</div><div class="stat-sub">de ${prog.length} escalados</div></div>
+      <div class="stat-card"><div class="stat-lbl">Dias de Evento</div><div class="stat-val">${Object.keys(byDate).length}</div><div class="stat-sub">dias com programação</div></div>
+    </div>
+    ${daySections}
+    ${prog.length ? `<div style="background:var(--gold-l);border:2px solid var(--gold);border-radius:8px;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+      <span style="font-weight:800;font-size:14px;color:var(--gold-d)">💰 TOTAL GERAL DOS CACHÊS</span>
+      <span style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold-d)">${fmtV(totalCache)}</span>
+    </div>` : ''}
+  </div>`;
+}
+
+
+// ─── TABELA DE CACHÊS ───
+function renderCaches() {
+  return `<div class="pg-header"><div class="pg-title">💰 Tabela Oficial de Cachês</div><div class="pg-sub">Prefeitura Municipal de São Carlos · SMCT · Anexo I</div></div>
+  <div class="content">
+    <div class="prog-table-wrap" style="margin-bottom:20px">
+      <table class="cache-table">
+        <thead><tr><th>Porte</th><th>Categoria 1</th><th>Categoria 2</th><th>Categoria 3</th></tr></thead>
+        <tbody>
+          <tr><td class="cache-section" colspan="4">🎵 MÚSICA</td></tr>
+          <tr><td>Solo (1 pessoa)</td><td class="cache-val-cell">R$ 1.500,00</td><td class="cache-val-cell">R$ 1.000,00</td><td class="cache-val-cell">R$ 1.000,00</td></tr>
+          <tr><td>Duplas e Trios (2-3 pessoas)</td><td class="cache-val-cell">R$ 3.000,00</td><td class="cache-val-cell">R$ 1.500,00</td><td class="cache-val-cell">R$ 2.000,00</td></tr>
+          <tr><td>Grupos (4+ pessoas)</td><td class="cache-val-cell">R$ 6.500,00</td><td class="cache-val-cell">R$ 2.500,00</td><td class="cache-val-cell">R$ 5.000,00</td></tr>
+          <tr><td class="cache-section" colspan="4">🎭 ARTES PERFORMÁTICAS</td></tr>
+          <tr><td>Solo (1 pessoa)</td><td class="cache-val-cell">R$ 1.800,00</td><td class="cache-val-cell">R$ 900,00</td><td style="color:#ccc">—</td></tr>
+          <tr><td>Duplas e Trios (2-3 pessoas)</td><td class="cache-val-cell">R$ 3.000,00</td><td class="cache-val-cell">R$ 1.500,00</td><td style="color:#ccc">—</td></tr>
+          <tr><td>Grupos (4+ pessoas)</td><td class="cache-val-cell">R$ 6.500,00</td><td class="cache-val-cell">R$ 2.500,00</td><td style="color:#ccc">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="background:var(--gold-l);border:1.5px solid var(--gold);border-radius:10px;padding:16px 20px;font-size:12px;color:var(--gold-d)">
+      <strong>ℹ️ Sobre as Categorias:</strong> A categorização é definida pelo gênero/modalidade artística no chamamento público.
+      Categoria 1 = maior valor de cachê por porte. Categorias 2 e 3 = valores diferenciados conforme a natureza do projeto.
+      Artes Performáticas possui apenas Categoria 1 e 2.
+    </div>
+  </div>`;
+}
+
+// ─── RELATÓRIO FINAL / RESUMO EXECUTIVO ───
+function renderRelatorio() {
+  const ev = curEvento();
+  const prog = ev ? progDoEvento(ev.id) : programacao;
+  const totalCache = prog.reduce(function(s,p){ return s+p.cacheTotal; },0);
+  const confirmados = prog.filter(function(p){ return p.status==='Confirmado'||p.status==='Contratado'; });
+  const pendentes   = prog.filter(function(p){ return p.status==='Pendente'; });
+  const now = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  if (!ev) return '<div class="pg-header"><div class="pg-title">📋 Resumo Executivo</div></div>' +
+    '<div class="content"><div class="empty"><div class="empty-icon">🎪</div>' +
+    '<div class="empty-txt">Selecione um evento em <a href="#" onclick="setTab(\'eventos\')" style="color:var(--teal)">Meus Eventos</a> para gerar o resumo.</div></div></div>';
+
+  if (!prog.length) return '<div class="pg-header"><div class="pg-title">📋 Resumo Executivo</div></div>' +
+    '<div class="content"><div class="empty"><div class="empty-icon">🎤</div>' +
+    '<div class="empty-txt">Nenhum artista escalado para <strong>' + ev.nome + '</strong>.<br><a href="#" onclick="setTab(\'banco\')" style="color:var(--teal)">Escale artistas</a> para gerar o resumo.</div></div></div>';
+
+  // Group by date then sort by horario
+  var byDate = {};
+  prog.forEach(function(p) {
+    var key = p.data || 'Data a confirmar';
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(p);
+  });
+  Object.values(byDate).forEach(function(arr){ arr.sort(function(a,b){ return (a.horario||'').localeCompare(b.horario||''); }); });
+
+  // Cost breakdown by area
+  var byArea = {};
+  prog.forEach(function(p) {
+    var a = artistas.find(function(a){ return a.id===p.artistaId; }) || {};
+    var area = a.area || 'Outros';
+    if (!byArea[area]) byArea[area] = {items:[], total:0};
+    byArea[area].items.push({p:p,a:a});
+    if (p.status!=='Cancelado') byArea[area].total += p.cacheTotal;
+  });
+
+  // Programação por dia — detailed
+  var progSection = Object.keys(byDate).sort().map(function(date) {
+    var items = byDate[date];
+    var dayTotal = items.filter(function(p){ return p.status!=='Cancelado'; }).reduce(function(s,p){ return s+p.cacheTotal; },0);
+    var rows = items.map(function(p, i) {
+      var a = artistas.find(function(a){ return a.id===p.artistaId; }) || {};
+      var bg = i%2===0 ? '' : 'background:#fafafa';
+      var stColor = p.status==='Contratado'?'#166534':p.status==='Confirmado'?'var(--teal)':p.status==='Cancelado'?'var(--rose)':'#92400e';
+      var horFim = p.horarioFim ? ' – ' + p.horarioFim : (p.duracao ? ' ('+p.duracao+')' : '');
+      return '<tr style="' + bg + '">' +
+        '<td style="font-weight:800;color:var(--ink);white-space:nowrap;min-width:90px">' + (p.horario||'—') + horFim + '</td>' +
+        '<td style="min-width:170px">' +
+          '<div style="font-weight:800;font-size:12px">' + (a.projeto||a.razao||'—') + '</div>' +
+          '<div style="font-size:9px;color:#888;margin-top:1px">' + (a.razao||'') + '</div>' +
+        '</td>' +
+        '<td>' +
+          '<span class="tag ' + (a.area==='MÚSICA'?'tag-area-musica':'tag-area-artes') + '" style="font-size:8px">' + (a.area==='MÚSICA'?'🎵':'🎭') + ' ' + (a.genero||'—') + '</span>' +
+        '</td>' +
+        '<td style="font-size:10px;text-align:center">' + (a.porte||'—') + '</td>' +
+        '<td style="font-size:10px;text-align:center;color:var(--sky)">Cat. ' + (a.categoria||'—') + '</td>' +
+        '<td style="font-size:9px;color:#777">' + (a.cnpj||'—') + '</td>' +
+        '<td style="font-size:10px">' + (p.local||ev.local||'—') + '</td>' +
+        '<td style="font-weight:800;color:var(--teal);font-family:\'DM Serif Display\',serif;font-size:13px;text-align:right;white-space:nowrap">' + fmtV(p.cacheTotal) + '</td>' +
+        '<td style="white-space:nowrap">' +
+        (p.status==='Pendente'
+          ? '<button onclick="confirmArtista(' + p.id + ')" style="padding:4px 10px;background:var(--teal);color:#fff;border:none;border-radius:5px;font-size:9px;font-weight:800;cursor:pointer;font-family:var(--sans,sans-serif)">✓ Confirmar</button>'
+          : '<span style="font-size:9px;font-weight:700;color:' + stColor + '">' + (p.status) + '</span>' +
+            (p.status!=='Cancelado' ? ' <button onclick="cancelArtista(' + p.id + ')" title="Reverter para Pendente" style="padding:2px 6px;background:#f5f5f5;border:1px solid #ddd;border-radius:4px;font-size:9px;color:#888;cursor:pointer">↩</button>' : '')
+        ) +
+        '</td>' +
+        '<td style="font-size:9px;color:#888;max-width:130px">' + (p.obs||'—') + '</td>' +
+      '</tr>';
+    }).join('');
+    return '<div style="margin-bottom:14px">' +
+      '<div style="background:var(--ink2);color:#fff;padding:9px 16px;border-radius:6px 6px 0 0;display:flex;justify-content:space-between">' +
+        '<span style="font-weight:800;font-size:13px">📅 ' + date + '</span>' +
+        '<span style="opacity:.75;font-size:11px">' + items.length + ' apresentação(ões) · ' + fmtV(dayTotal) + '</span>' +
+      '</div>' +
+      '<div class="prog-table-wrap" style="border-radius:0 0 6px 6px">' +
+        '<table class="prog-table" style="font-size:11px">' +
+          '<thead><tr>' +
+            '<th>Horário</th><th>Artista / Projeto</th><th>Gênero</th>' +
+            '<th style="text-align:center">Porte</th><th style="text-align:center">Cat.</th>' +
+            '<th>CNPJ/CPF</th><th>Palco/Local</th>' +
+            '<th style="text-align:right">Cachê</th><th>Status</th><th>Obs.</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows +
+            '<tr style="background:var(--teal-l)">' +
+              '<td colspan="7" style="text-align:right;font-weight:800;color:var(--teal);padding-right:12px">Subtotal ' + date + '</td>' +
+              '<td style="font-weight:800;color:var(--teal);font-family:\'DM Serif Display\',serif;font-size:14px;text-align:right">' + fmtV(dayTotal) + '</td>' +
+              '<td colspan="2"></td>' +
+            '</tr>' +
+          '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // Cost by area rows
+  var breakdownRows = Object.entries(byArea).map(function(entry) {
+    var area = entry[0], d = entry[1];
+    var byGenero = {};
+    d.items.forEach(function(item){
+      var g = item.a.genero||'Outros';
+      if (!byGenero[g]) byGenero[g] = {n:0,total:0};
+      if (item.p.status!=='Cancelado') { byGenero[g].n++; byGenero[g].total += item.p.cacheTotal; }
+    });
+    return '<tr>' +
+      '<td style="font-weight:700">' + (area==='MÚSICA'?'🎵':'🎭') + ' ' + area + '</td>' +
+      '<td style="text-align:center">' + d.items.length + '</td>' +
+      '<td style="font-size:10px;color:#666">' + Object.entries(byGenero).map(function(e){ return e[0]+' ('+e[1].n+')'; }).join(', ') + '</td>' +
+      '<td style="font-weight:800;color:var(--teal);font-family:\'DM Serif Display\',serif;font-size:14px;text-align:right">' + fmtV(d.total) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  // Period display
+  var periodo = ev.dtInicio || '';
+  if (ev.dtFim && ev.dtFim !== ev.dtInicio) periodo += ' a ' + ev.dtFim;
+
+  return '<div class="pg-header" style="justify-content:space-between">' +
+    '<div style="display:flex;align-items:center;gap:14px">' +
+      '<span style="font-size:36px">📋</span>' +
+      '<div>' +
+        '<div class="pg-title">' + ev.nome + '</div>' +
+        '<div class="pg-sub">' + (periodo?periodo+' · ':'') + (ev.local?ev.local+' · ':'') + 'Emitido em ' + now + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;align-items:center">' +
+    '<button class="btn-sm btn-gold" onclick="gerarPDF()" style="display:flex;align-items:center;gap:6px">📄 Gerar PDF</button>' +
+    '<button class="btn-sm btn-outline" style="color:#666;border-color:#ddd;background:#f5f5f5" onclick="window.print()">🖨 Imprimir</button>' +
+  '</div>' +
+  '</div>' +
+  '<div class="content">' +
+
+  // ── DADOS DO EVENTO ──
+  '<div style="background:#fff;border:1.5px solid var(--teal);border-radius:10px;padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow)">' +
+    '<div style="font-size:10px;font-weight:800;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">🎪 DADOS DO EVENTO</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">' +
+      '<div><div style="font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Evento</div><div style="font-weight:800;font-size:14px;margin-top:2px;color:var(--ink)">' + ev.nome + '</div></div>' +
+      '<div><div style="font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Período</div><div style="font-weight:700;margin-top:2px">' + (periodo||'—') + '</div></div>' +
+      '<div><div style="font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Local</div><div style="font-weight:700;margin-top:2px">' + (ev.local||'—') + '</div></div>' +
+      (ev.publico?'<div><div style="font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Público Esperado</div><div style="font-weight:700;margin-top:2px">'+ev.publico+'</div></div>':'') +
+      (ev.obs?'<div style="grid-column:1/-1"><div style="font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Observações</div><div style="font-size:11px;color:#666;margin-top:2px">'+ev.obs+'</div></div>':'') +
+    '</div>' +
+  '</div>' +
+
+  // ── CARDS RESUMO ──
+  '<div class="stat-row" style="margin-bottom:16px">' +
+    '<div class="stat-card gold"><div class="stat-lbl">💰 Total Geral</div><div class="stat-val">' + fmtV(totalCache).replace('R$','').trim() + '</div><div class="stat-sub">R$ · ' + prog.length + ' artista(s)</div></div>' +
+    '<div class="stat-card teal"><div class="stat-lbl">✅ Confirmados</div><div class="stat-val">' + confirmados.length + '</div><div class="stat-sub">' + fmtV(confirmados.reduce(function(s,p){return s+p.cacheTotal;},0)) + '</div></div>' +
+    '<div class="stat-card rose"><div class="stat-lbl">⏳ Pendentes</div><div class="stat-val">' + pendentes.length + '</div><div class="stat-sub">' + fmtV(pendentes.reduce(function(s,p){return s+p.cacheTotal;},0)) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-lbl">📅 Dias</div><div class="stat-val">' + Object.keys(byDate).length + '</div><div class="stat-sub">dias de programação</div></div>' +
+  '</div>' +
+
+  // ── CUSTO POR ÁREA ──
+  '<div style="background:#fff;border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow)">' +
+    '<div style="background:var(--ink);color:#fff;padding:9px 16px;font-size:11px;font-weight:800;letter-spacing:.5px">🎨 CUSTO POR ÁREA ARTÍSTICA</div>' +
+    '<table class="cache-table" style="margin:0">' +
+      '<thead><tr><th>Área</th><th style="text-align:center">Artistas</th><th>Gêneros</th><th style="text-align:right">Subtotal</th></tr></thead>' +
+      '<tbody>' + breakdownRows +
+        '<tr style="background:var(--gold-l)">' +
+          '<td colspan="3" style="text-align:right;font-weight:800;color:var(--gold-d)">TOTAL GERAL</td>' +
+          '<td style="font-weight:800;font-family:\'DM Serif Display\',serif;font-size:18px;color:var(--gold-d);text-align:right">' + fmtV(totalCache) + '</td>' +
+        '</tr>' +
+      '</tbody>' +
+    '</table>' +
+  '</div>' +
+
+  // ── PROGRAMAÇÃO COMPLETA ──
+  '<div style="background:var(--ink);color:#fff;padding:9px 16px;font-size:11px;font-weight:800;letter-spacing:.5px;border-radius:6px;margin-bottom:10px">📅 PROGRAMAÇÃO COMPLETA COM DETALHES</div>' +
+  progSection +
+
+  // ── TOTAL FINAL ──
+  '<div style="background:linear-gradient(90deg,var(--gold-d),#d4a830);color:#fff;border-radius:10px;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;margin-top:4px;box-shadow:var(--shadow-lg)">' +
+    '<div>' +
+      '<div style="font-size:11px;opacity:.85;font-weight:700;letter-spacing:.5px;text-transform:uppercase">💰 Total Geral das Contratações Artísticas</div>' +
+      '<div style="font-size:10px;opacity:.65;margin-top:2px">' + prog.length + ' artista(s) · ' + Object.keys(byDate).length + ' dia(s) · Chamamento Público São Carlos 2025</div>' +
+    '</div>' +
+    '<div style="font-family:\'DM Serif Display\',serif;font-size:30px;font-weight:800">' + fmtV(totalCache) + '</div>' +
+  '</div>' +
+  '<p style="font-size:10px;color:#ccc;text-align:right;margin-top:8px">Gerado em ' + now + ' · Sistema de Gestão de Artistas – SMCT São Carlos</p>' +
+  '</div>';
+}
+
+
+// ─── ADD TO PROGRAMAÇÃO ───
+function addToProg(id) {
+  const a = artistas.find(a => a.id === id);
+  if (!a) return;
+  _modalArtista = a;
+  const cache = getCache(a.area, a.porte, a.categoria);
+
+  // Fill artist info panel
+  document.getElementById('modal-artist-info').innerHTML =
+    '<div class="mai-nome">' + (a.projeto || a.razao) + '</div>' +
+    '<div class="mai-proj">' + a.razao + '</div>' +
+    '<div class="mai-tags">' +
+      '<span class="tag ' + (a.area==='MÚSICA'?'tag-area-musica':'tag-area-artes') + '">' + a.area + '</span>' +
+      '<span class="tag tag-porte">' + a.porte + '</span>' +
+      '<span class="tag tag-genero">' + a.genero + '</span>' +
+      '<span class="tag tag-cat">CAT ' + a.categoria + '</span>' +
+    '</div>' +
+    '<div class="mai-cache">' + fmtV(cache) + '<span>cachê desta categoria</span></div>';
+
+  // Populate events dropdown
+  const sel = document.getElementById('mp-evento');
+  sel.innerHTML = '<option value="">— Selecione o evento —</option>';
+  eventos.forEach(function(ev) {
+    const opt = document.createElement('option');
+    opt.value = ev.id;
+    opt.textContent = ev.nome + (ev.dtInicio ? ' · ' + ev.dtInicio : '');
+    if (ev.id === curEventoId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Reset fields
+  document.getElementById('mp-horario').value = '';
+  document.getElementById('mp-duracao').value = '';
+  document.getElementById('mp-horario-fim').value = '';
+  document.getElementById('mp-horario-fim').value = '';
+  document.getElementById('mp-local').value = '';
+  document.getElementById('mp-obs').value = a.obs || '';
+  document.getElementById('mp-cache-total').value = fmtV(cache);
+
+  // Pre-fill from current event
+  onModalEventoChange();
+
+  document.getElementById('modal-prog-bg').classList.add('open');
+}
+
+function parseDateBR(s) {
+  if (!s) return null;
+  var p = s.trim().split('/');
+  if (p.length !== 3) return null;
+  return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+}
+function formatDateBR(d) {
+  return (d.getDate()<10?'0':'')+d.getDate()+'/'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'/'+d.getFullYear();
+}
+function getEventDates(ev) {
+  if (!ev || !ev.dtInicio) return [];
+  var start = parseDateBR(ev.dtInicio);
+  if (!start) return [ev.dtInicio];
+  var end = ev.dtFim ? parseDateBR(ev.dtFim) : start;
+  if (!end) end = start;
+  var dates = [];
+  var cur = new Date(start);
+  while (cur <= end) {
+    dates.push(formatDateBR(cur));
+    cur.setDate(cur.getDate()+1);
+  }
+  return dates;
+}
+
+function onModalEventoChange() {
+  const sel = document.getElementById('mp-evento');
+  const evId = parseInt(sel.value);
+  const ev = eventos.find(function(e){ return e.id === evId; });
+  const info = document.getElementById('mp-evento-info');
+  const dataSel = document.getElementById('mp-data');
+  if (ev) {
+    // Populate date dropdown with all event days
+    var dates = getEventDates(ev);
+    dataSel.innerHTML = '<option value="">— selecione a data —</option>';
+    dates.forEach(function(d) {
+      var opt = document.createElement('option');
+      opt.value = d; opt.textContent = d;
+      dataSel.appendChild(opt);
+    });
+    if (dates.length === 1) dataSel.value = dates[0];
+    document.getElementById('mp-local').value = ev.local || '';
+    info.style.display = 'block';
+    info.innerHTML = '📅 ' + ev.nome + (ev.dtInicio ? ' · ' + ev.dtInicio : '') + (ev.dtFim && ev.dtFim !== ev.dtInicio ? ' a ' + ev.dtFim : '') + (ev.local ? ' &nbsp;·&nbsp; 📍 ' + ev.local : '') + (ev.publico ? ' &nbsp;·&nbsp; 👥 ' + ev.publico : '');
+  } else {
+    dataSel.innerHTML = '<option value="">— selecione a data —</option>';
+    info.style.display = 'none';
+    document.getElementById('mp-data').value = '';
+  }
+}
+
+function calcHorarioFim() {
+  var inicio = document.getElementById('mp-horario').value;
+  var durMins = parseInt(document.getElementById('mp-duracao').value) || 0;
+  var fim = document.getElementById('mp-horario-fim');
+  if (!inicio || !durMins) { fim.value = ''; return; }
+  var parts = inicio.split(':');
+  var h = parseInt(parts[0]||0), m = parseInt(parts[1]||0);
+  var total = h*60 + m + durMins;
+  var fh = Math.floor(total/60)%24, fm = total%60;
+  fim.value = (fh<10?'0':'')+fh+':'+(fm<10?'0':'')+fm;
+}
+
+function timeToMins(t) {
+  if (!t) return 0;
+  var p = t.split(':');
+  return parseInt(p[0]||0)*60 + parseInt(p[1]||0);
+}
+
+function checkConflict(eventoId, data, horario, horarioFim, duracao, excludeId) {
+  var ps = timeToMins(horario);
+  var pe = horarioFim ? timeToMins(horarioFim) : ps + (parseInt(duracao)||60);
+  return programacao.filter(function(p) {
+    if (p.id === excludeId) return false;
+    if (p.eventoId !== eventoId) return false;
+    if (p.data !== data) return false;
+    if (!p.horario) return false;
+    var os = timeToMins(p.horario);
+    var oe = p.horarioFim ? timeToMins(p.horarioFim) : os + (parseInt(p.duracao)||60);
+    return ps < oe && pe > os;
+  });
+}
+
+function confirmAddProg() {
+  if (!_modalArtista) return;
+  const selEvId = parseInt(document.getElementById('mp-evento').value);
+  if (!selEvId) { alert('Selecione um evento antes de confirmar.'); return; }
+  curEventoId = selEvId;
+  const cache = getCache(_modalArtista.area, _modalArtista.porte, _modalArtista.categoria);
+  const ev = eventos.find(function(e){ return e.id === selEvId; });
+  var data    = document.getElementById('mp-data').value.trim();
+  var horario = document.getElementById('mp-horario').value.trim();
+  var horFim  = document.getElementById('mp-horario-fim').value.trim();
+  var duracao = document.getElementById('mp-duracao').value.trim();
+  var conflicts = checkConflict(selEvId, data, horario, horFim, duracao, null);
+  if (conflicts.length) {
+    var names = conflicts.map(function(p) {
+      var a = artistas.find(function(a){ return a.id===p.artistaId; }) || {};
+      return (a.projeto||a.razao||'Artista') + ' (' + p.horario + (p.horarioFim?' – '+p.horarioFim:'') + ')';
+    }).join(', ');
+    var msg = '⚠️ Conflito de horário detectado!\n\nJá existe(m) apresentação(ões) neste horário:\n• ' + names + '\n\nDeseja escalar mesmo assim?';
+    if (!confirm(msg)) return;
+  }
+  programacao.push({
+    id: nextProgId++,
+    eventoId: selEvId,
+    artistaId: _modalArtista.id,
+    data: data,
+    horario: horario,
+    horarioFim: horFim,
+    duracao: duracao,
+    local: document.getElementById('mp-local').value.trim(),
+    qtdApresentacoes: 1,
+    cacheUnit: cache,
+    cacheTotal: cache,
+    obs: document.getElementById('mp-obs').value.trim(),
+    status: 'Pendente',
+  });
+  saveData();
+  closeModal('modal-prog-bg');
+  toast('✅ ' + (_modalArtista.projeto || _modalArtista.razao) + ' escalado para ' + (ev ? ev.nome : 'o evento') + '!');
+  _modalArtista = null;
+  render();
+}
+
+function removeProg(id) {
+  programacao = programacao.filter(p => p.id !== id);
+  saveData();
+  render();
+}
+
+function removeProgByArtista(artistaId) {
+  const eid = curEventoId;
+  const existing = eid
+    ? programacao.filter(p => p.artistaId === artistaId && p.eventoId === eid)
+    : programacao.filter(p => p.artistaId === artistaId);
+  if (!existing.length) return;
+  const a = artistas.find(a => a.id === artistaId) || {};
+  const nome = a.projeto || a.razao || 'Artista';
+  const evNome = eid && curEvento() ? curEvento().nome : 'a programação';
+  if (!confirm('Remover "' + nome + '" de ' + evNome + '?')) return;
+  if (eid) {
+    programacao = programacao.filter(p => !(p.artistaId === artistaId && p.eventoId === eid));
+  } else {
+    programacao = programacao.filter(p => p.artistaId !== artistaId);
+  }
+  saveData();
+  toast('🗑 ' + nome + ' removido da programação.');
+  render();
+}
+
+function updateProgItem(id, field, val) {
+  const p = programacao.find(p => p.id === id);
+  if (!p) return;
+  p[field] = val;
+  saveData();
+  // refresh counts without full re-render to avoid losing focus
+  updateCounts();
+  // re-render relatorio if visible
+  if (curTab === 'relatorio') render();
+}
+
+let _editProgId = null;
+
+function openEditProg(id) {
+  const p = programacao.find(function(p){ return p.id===id; });
+  if (!p) return;
+  _editProgId = id;
+  const a = artistas.find(function(a){ return a.id===p.artistaId; }) || {};
+  const ev = eventos.find(function(e){ return e.id===p.eventoId; });
+
+  document.getElementById('med-sub').textContent = ev ? ev.nome : '';
+  document.getElementById('med-artist-info').innerHTML =
+    '<div style="font-weight:800;font-size:14px;color:var(--teal)">' + (a.projeto||a.razao||'—') + '</div>' +
+    '<div style="font-size:10px;color:#666;margin-top:2px">' + (a.razao||'') + ' · ' + (a.area||'') + ' · ' + (a.porte||'') + ' · Cat. ' + (a.categoria||'') + '</div>' +
+    '<div style="font-size:12px;font-weight:800;color:var(--teal);margin-top:6px">Cachê: ' + fmtV(p.cacheTotal) + '</div>';
+
+  // Populate date selector
+  var dataSel = document.getElementById('med-data');
+  dataSel.innerHTML = '<option value="">— data —</option>';
+  if (ev) {
+    getEventDates(ev).forEach(function(d) {
+      var opt = document.createElement('option');
+      opt.value = d; opt.textContent = d;
+      if (d === p.data) opt.selected = true;
+      dataSel.appendChild(opt);
+    });
+  } else {
+    var opt = document.createElement('option');
+    opt.value = p.data||''; opt.textContent = p.data||'—'; opt.selected = true;
+    dataSel.appendChild(opt);
+  }
+
+  document.getElementById('med-horario').value = p.horario || '';
+  document.getElementById('med-duracao').value = p.duracao || '';
+  document.getElementById('med-horario-fim').value = p.horarioFim || '';
+  document.getElementById('med-local').value = p.local || '';
+  document.getElementById('med-obs').value = p.obs || '';
+  document.getElementById('med-conflict-warn').style.display = 'none';
+  document.getElementById('modal-edit-bg').classList.add('open');
+}
+
+function calcEditFim() {
+  var inicio = document.getElementById('med-horario').value;
+  var dur = parseInt(document.getElementById('med-duracao').value) || 0;
+  var fim = document.getElementById('med-horario-fim');
+  if (!inicio || !dur) { fim.value = ''; checkEditConflict(); return; }
+  var p = inicio.split(':');
+  var total = parseInt(p[0]||0)*60 + parseInt(p[1]||0) + dur;
+  var fh = Math.floor(total/60)%24, fm = total%60;
+  fim.value = (fh<10?'0':'')+fh+':'+(fm<10?'0':'')+fm;
+  checkEditConflict();
+}
+
+function checkEditConflict() {
+  if (!_editProgId) return;
+  var p = programacao.find(function(x){ return x.id===_editProgId; });
+  if (!p) return;
+  var data = document.getElementById('med-data').value;
+  var hor  = document.getElementById('med-horario').value;
+  var fim  = document.getElementById('med-horario-fim').value;
+  var dur  = document.getElementById('med-duracao').value;
+  var conflicts = checkConflict(p.eventoId, data, hor, fim, dur, _editProgId);
+  var warn = document.getElementById('med-conflict-warn');
+  if (conflicts.length) {
+    var names = conflicts.map(function(c) {
+      var a = artistas.find(function(a){ return a.id===c.artistaId; }) || {};
+      return (a.projeto||a.razao||'Artista') + ' (' + c.horario + (c.horarioFim?' – '+c.horarioFim:'') + ')';
+    }).join(', ');
+    warn.style.display = 'block';
+    warn.innerHTML = '⚠️ Conflito com: <strong>' + names + '</strong>';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+function saveEditProg() {
+  if (!_editProgId) return;
+  var p = programacao.find(function(x){ return x.id===_editProgId; });
+  if (!p) return;
+  var data = document.getElementById('med-data').value;
+  var hor  = document.getElementById('med-horario').value;
+  var fim  = document.getElementById('med-horario-fim').value;
+  var dur  = document.getElementById('med-duracao').value;
+  var conflicts = checkConflict(p.eventoId, data, hor, fim, dur, _editProgId);
+  if (conflicts.length) {
+    var names = conflicts.map(function(c) {
+      var a = artistas.find(function(a){ return a.id===c.artistaId; }) || {};
+      return (a.projeto||a.razao||'Artista') + ' (' + c.horario + (c.horarioFim?' – '+c.horarioFim:'') + ')';
+    }).join(', ');
+    if (!confirm('Ainda há conflito com: ' + names + '\n\nSalvar mesmo assim?')) return;
+  }
+  p.data       = data;
+  p.horario    = hor;
+  p.horarioFim = fim;
+  p.duracao    = dur;
+  p.local      = document.getElementById('med-local').value.trim();
+  p.obs        = document.getElementById('med-obs').value.trim();
+  saveData();
+  toast('✅ Apresentação atualizada!');
+  closeModal('modal-edit-bg');
+  render();
+}
+
+function confirmArtista(progId) {
+  const p = programacao.find(p => p.id === progId);
+  if (!p) return;
+  p.status = 'Confirmado';
+  saveData();
+  const a = artistas.find(a => a.id === p.artistaId) || {};
+  toast('✅ ' + (a.projeto||a.razao||'Artista') + ' confirmado!');
+  render();
+}
+
+function cancelArtista(progId) {
+  const p = programacao.find(p => p.id === progId);
+  if (!p) return;
+  p.status = 'Pendente';
+  saveData();
+  render();
+}
+
+// ─── ARTISTA MODAL ───
+function openAddArtista() {
+  _editArtistaId = null;
+  document.getElementById('ma-title').textContent = 'Cadastrar Artista';
+  document.getElementById('ma-insc').value = '';
+  document.getElementById('ma-class').value = '';
+  document.getElementById('ma-razao').value = '';
+  document.getElementById('ma-projeto').value = '';
+  document.getElementById('ma-cnpj').value = '';
+  document.getElementById('ma-area').value = 'MÚSICA';
+  document.getElementById('ma-porte').value = 'SOLO';
+  document.getElementById('ma-categoria').value = '1';
+  document.getElementById('ma-genero').value = '';
+  document.getElementById('ma-tel').value = '';
+  document.getElementById('ma-email').value = '';
+  document.getElementById('ma-obs').value = '';
+  updateCacheModal();
+  document.getElementById('modal-artista-bg').classList.add('open');
+}
+
+function editArtista(id) {
+  const a = artistas.find(a => a.id === id);
+  if (!a) return;
+  _editArtistaId = id;
+  document.getElementById('ma-title').textContent = 'Editar Artista';
+  document.getElementById('ma-insc').value = a.insc;
+  document.getElementById('ma-class').value = a.classif;
+  document.getElementById('ma-razao').value = a.razao;
+  document.getElementById('ma-projeto').value = a.projeto;
+  document.getElementById('ma-cnpj').value = a.cnpj;
+  document.getElementById('ma-area').value = a.area;
+  document.getElementById('ma-porte').value = a.porte;
+  document.getElementById('ma-categoria').value = a.categoria;
+  document.getElementById('ma-genero').value = a.genero;
+  document.getElementById('ma-tel').value = a.tel || '';
+  document.getElementById('ma-email').value = a.email || '';
+  document.getElementById('ma-obs').value = a.obs || '';
+  updateCacheModal();
+  document.getElementById('modal-artista-bg').classList.add('open');
+}
+
+function updateCacheModal() {
+  const area = document.getElementById('ma-area').value;
+  const porte = document.getElementById('ma-porte').value;
+  const cat = document.getElementById('ma-categoria').value;
+  const c = getCache(area, porte, cat);
+  const el = document.getElementById('ma-cache-preview');
+  if (el) el.textContent = fmtV(c);
+  // Hide cat 3 for Artes Performáticas
+  const opt3 = document.querySelector('#ma-categoria option[value="3"]');
+  if (opt3) opt3.style.display = area === 'ARTES PERFORMÁTICAS' ? 'none' : '';
+}
+
+function saveArtista() {
+  const area = document.getElementById('ma-area').value;
+  const porte = document.getElementById('ma-porte').value;
+  const cat = document.getElementById('ma-categoria').value;
+  const data = {
+    insc: parseInt(document.getElementById('ma-insc').value) || 0,
+    classif: parseInt(document.getElementById('ma-class').value) || 1,
+    razao: document.getElementById('ma-razao').value.trim().toUpperCase(),
+    projeto: document.getElementById('ma-projeto').value.trim(),
+    cnpj: document.getElementById('ma-cnpj').value.trim(),
+    area, porte, categoria: cat,
+    genero: document.getElementById('ma-genero').value.trim().toUpperCase(),
+    tel: document.getElementById('ma-tel').value.trim(),
+    email: document.getElementById('ma-email').value.trim(),
+    obs: document.getElementById('ma-obs').value.trim(),
+  };
+  if (!data.razao) { alert('Informe o nome/razão social.'); return; }
+
+  if (_editArtistaId) {
+    const idx = artistas.findIndex(a => a.id === _editArtistaId);
+    if (idx !== -1) artistas[idx] = { ...artistas[idx], ...data };
+    toast('✅ Artista atualizado!');
+  } else {
+    artistas.push({ id: nextId++, ...data });
+    toast('✅ Artista cadastrado!');
+  }
+  saveData();
+  closeModal('modal-artista-bg');
+  render();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ─── PDF GENERATION ───
+function gerarPDF() {
+  var style = document.createElement('style');
+  style.id = 'pdf-override';
+  style.textContent = [
+    '@page { margin: 1.2cm 1.5cm; size: A4 landscape; }',
+    '* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }',
+    'body { font-size: 10px !important; }',
+    '.topbar, .sidebar, .modal-bg, button, .filter-bar, .btn-del, .status-sel, .prog-inp { display:none!important; }',
+    '.layout { display:block!important; }',
+    '.main { width:100%!important; margin:0!important; overflow:visible!important; }',
+    '.content { padding:8px 4px!important; }',
+    '.pg-header { padding:8px 4px 6px!important; page-break-inside:avoid; border-bottom:2px solid #1a1a2e!important; }',
+    '.pg-title { font-size:16px!important; }',
+    '.pg-sub { font-size:9px!important; }',
+    '.stat-row { display:flex!important; gap:8px!important; margin-bottom:10px!important; flex-wrap:nowrap!important; }',
+    '.stat-card { padding:8px 10px!important; flex:1!important; page-break-inside:avoid; }',
+    '.stat-val { font-size:16px!important; }',
+    '.stat-lbl { font-size:7px!important; }',
+    '.stat-sub { font-size:7px!important; }',
+    '.stat-card.gold { background:#f5e9c8!important; border-color:#c9a84c!important; }',
+    '.stat-card.teal { background:#e0f0eb!important; border-color:#1a6b5a!important; }',
+    '.stat-card.rose { background:#fdecea!important; border-color:#c0392b!important; }',
+    '.prog-table { font-size:8px!important; width:100%!important; }',
+    '.prog-table th { background:#1a1a2e!important; color:#fff!important; padding:5px 6px!important; font-size:7px!important; }',
+    '.prog-table td { padding:5px 6px!important; }',
+    '.prog-table-wrap { border-radius:0 0 4px 4px!important; overflow:visible!important; }',
+    '.cache-table { font-size:8px!important; }',
+    '.cache-table th, .cache-table td { padding:5px 8px!important; }',
+    'div[style*="margin-bottom:14px"] { page-break-inside:avoid; }',
+    'div[style*="margin-bottom:16px"] { page-break-inside:avoid; }',
+    '.prog-nome { font-size:9px!important; }',
+    '.tag { font-size:7px!important; padding:1px 4px!important; }',
+    'div[style*="background:linear-gradient"] { page-break-inside:avoid; }',
+    'div[style*="background:var(--ink2)"] { background:#2d2d4e!important; color:#fff!important; -webkit-print-color-adjust:exact!important; }',
+    'div[style*="background:var(--ink)"] { background:#1a1a2e!important; color:#fff!important; -webkit-print-color-adjust:exact!important; }',
+    'div[style*="background:var(--teal-l)"] { background:#e0f0eb!important; -webkit-print-color-adjust:exact!important; }',
+    'div[style*="background:var(--gold-l)"] { background:#f5e9c8!important; -webkit-print-color-adjust:exact!important; }',
+  ].join('\n');
+  document.head.appendChild(style);
+  window.print();
+  setTimeout(function(){ var el = document.getElementById('pdf-override'); if(el) el.remove(); }, 2000);
+}
+
+// ─── CHAMAMENTO STATE ───
+/*
+ * ESTRUTURA DE CADA FILA (filas[key]):
+ *   ordem:    [id, id, ...]  — posições fixas (classif original)
+ *   cursor:   index do próximo a chamar na ordem
+ *   pendente: id | null — artista que recusou e deve ser reofertado antes do cursor avançar
+ *   recusas:  { id: n } — recusas consecutivas de cada artista
+ *   historico: [...] — log desta fila
+ *
+ * LÓGICA:
+ *   A. Sem pendente:
+ *      - chama ordem[cursor]; cursor++
+ *      - se recusa: pendente = id; cursor++ (chama próximo na sequência)
+ *   B. Com pendente:
+ *      - chama pendente primeiro
+ *      - se aceita: pendente=null; (cursor já estava avançado)
+ *      - se recusa: recusas[pendente]++; se >= 3 → move para fim; pendente=null
+ *        chama ordem[cursor] normalmente
+ */
+let filas = {};
+let ch_historico = [];
+
+function chKey(cat, porte, genero) { return cat + '§' + porte + '§' + genero; }
+
+// ════════════════════════════════════════════════════════════
+//  LÓGICA DE CHAMAMENTO — MODELO DEFINITIVO v4
+//
+//  Estrutura:
+//    ordem[]   — IDs em ordem de classificação atual
+//    cursor    — índice do próximo substituto/normal a chamar
+//    pendente  — ID em Stand By (reofertado primeiro em toda nova demanda)
+//    recusas{} — recusas consecutivas por artista
+//
+//  REGRA CURSOR:
+//    1ª recusa (sem pendente): cursor++ → aponta pro substituto desta demanda
+//    Reoferta recusada:        cursor NÃO avança → substituto = ordem[cursor]
+//    Penalidade:               cursor = índice do idNoCursor após splice
+//    Substituto aceita:        cursor++
+//    Reoferta aceita:          cursor NÃO avança (já está no próximo correto)
+//
+//  SIMULAÇÃO (DV=0,V78=1,Brexó=2,SRT=3,Flash=4,Back=5,Band=6):
+//    Carnaval: DV recusa(1) → pend=DV, cur=1(V78); V78 aceita → cur=2
+//    Milho:    pend=DV → DV recusa(2) reoferta, cur NÃO muda(2=Brexó); Brexó aceita → cur=3
+//    Clima:    pend=DV → DV recusa(3) PENALIDADE → ordem=[V78,Brexó,SRT,...,DV], cur=2(SRT)
+//              SRT aceita → cur=3(Flash)
+//    Matsuri:  Flash aceita → cur=4(Back)
+//    Laranja:  Back aceita  → cur=5(Band)
+//    Flores:   Band aceita  → cur=6(DV)
+//    Próxima:  DV(último)   → cur=0(V78)
+//    BÔNUS — DV aceita reoferta na Clima: pendente=null, cur=3(SRT) → próx=SRT ✓
+// ════════════════════════════════════════════════════════════
+
+function getFila(cat, porte, genero) {
+  const key = chKey(cat, porte, genero);
+  const sorted = artistas
+    .filter(a => String(a.categoria) === String(cat) && a.porte === porte && a.genero === genero)
+    .sort((a, b) => (Number(a.classif)||999) - (Number(b.classif)||999))
+    .map(a => a.id);
+
+  if (!filas[key]) {
+    filas[key] = { ordem: sorted, cursor: 0, pendente: null, recusas: {}, historico: [], eventoAberto: false };
+  } else {
+    const f = filas[key];
+    sorted.forEach(id => { if (!f.ordem.includes(id)) f.ordem.push(id); });
+    f.ordem = f.ordem.filter(id => sorted.includes(id));
+    if (f.ordem.length) f.cursor = Math.min(f.cursor, f.ordem.length - 1);
+    if (f.pendente !== null && !f.ordem.includes(f.pendente)) f.pendente = null;
+    if (f.eventoAberto === undefined) f.eventoAberto = false; // migração de dados antigos
+  }
+  return filas[key];
+}
+
+// Quem age AGORA:
+// - Se evento aberto (recusa recente, próximo ainda não respondeu) → ordem[cursor]
+// - Se evento fechado com pendente → pendente (Stand By tem prioridade no próximo evento)
+// - Se sem pendente → ordem[cursor]
+function getProxArtista(fila) {
+  if (!fila.ordem.length) return null;
+  const aberto = fila.eventoAberto === true;
+  const id = (fila.pendente !== null && !aberto)
+    ? fila.pendente
+    : fila.ordem[fila.cursor % fila.ordem.length];
+  return artistas.find(a => a.id === id) || null;
+}
+
+// ─── ACEITAR ───
+function chamarArtista(cat, porte, genero, artId) {
+  const fila = getFila(cat, porte, genero);
+  if (!fila.ordem.length) return;
+  const art = artistas.find(a => a.id === artId);
+  if (!art) return;
+
+  fila.recusas[art.id] = 0;
+  fila.historico.unshift({ tipo:'chamado', artId:art.id, nome:art.projeto||art.razao, ts:new Date().toISOString(), cat, porte, genero });
+  ch_historico.unshift(fila.historico[0]);
+
+  if (fila.pendente !== null && art.id === fila.pendente) {
+    // Stand By ACEITA → sai do stand by, evento fechado
+    fila.pendente = null;
+    fila.eventoAberto = false;
+  } else {
+    // Chamamento normal (cursor ou próximo durante evento aberto) → avança cursor, fecha evento
+    fila.cursor = (fila.cursor + 1) % fila.ordem.length;
+    fila.eventoAberto = false;
+  }
+
+  saveData(); render();
+}
+
+// ─── RECUSAR ───
+function recusarArtista(cat, porte, genero, artId) {
+  const fila = getFila(cat, porte, genero);
+  if (!fila.ordem.length) return;
+  const art = artistas.find(a => a.id === artId);
+  if (!art) return;
+
+  fila.recusas[art.id] = (fila.recusas[art.id] || 0) + 1;
+  const qtd = fila.recusas[art.id];
+
+  fila.historico.unshift({ tipo:'recusou', artId:art.id, nome:art.projeto||art.razao, recusas:qtd, ts:new Date().toISOString(), cat, porte, genero });
+  ch_historico.unshift(fila.historico[0]);
+
+  if (qtd >= 3) {
+    // ══ PENALIDADE: 3 recusas consecutivas — vai pro fim, cursor segue para o próximo ══
+    if (fila.pendente !== null && art.id === fila.pendente) {
+      // Veio de Stand By: cursor já aponta para o próximo correto, só move o penalizado
+      const cursorId = fila.ordem[fila.cursor % fila.ordem.length];
+      fila.ordem.splice(fila.ordem.indexOf(art.id), 1);
+      fila.ordem.push(art.id);
+      const novoIdx = fila.ordem.indexOf(cursorId);
+      fila.cursor = novoIdx >= 0 ? novoIdx : 0;
+    } else {
+      // Recusa normal chegando a 3: cursor estava no penalizado, avança pro próximo
+      const idxAtual = fila.ordem.indexOf(art.id);
+      const idProximo = fila.ordem[(idxAtual + 1) % fila.ordem.length];
+      fila.ordem.splice(idxAtual, 1);
+      fila.ordem.push(art.id);
+      const novoIdx = fila.ordem.indexOf(idProximo);
+      fila.cursor = novoIdx >= 0 ? novoIdx : 0;
+    }
+    fila.recusas[art.id] = 0;
+    fila.pendente = null;
+    fila.eventoAberto = true; // STR80 precisa responder agora
+    fila.historico.unshift({ tipo:'fim_fila', artId:art.id, nome:art.projeto||art.razao, ts:new Date().toISOString(), cat, porte, genero });
+    ch_historico.unshift(fila.historico[0]);
+
+  } else if (fila.pendente !== null && art.id === fila.pendente) {
+    // Stand By RECUSA de novo (1ª ou 2ª vez):
+    // cursor já aponta para o próximo correto (avançou quando virou Stand By)
+    // só abre o evento para o próximo responder
+    fila.eventoAberto = true;
+
+  } else if (fila.eventoAberto) {
+    // Próximo recusa durante evento aberto (Stand By já existe):
+    // este artista também entra em stand by (substitui o anterior), cursor avança
+    fila.pendente = art.id;
+    fila.cursor = (fila.cursor + 1) % fila.ordem.length;
+    fila.eventoAberto = true; // ainda aberto, próximo precisa responder
+
+  } else {
+    // Recusa normal (sem stand by, evento fechado):
+    // este artista entra em stand by, cursor avança, evento abre para o próximo
+    fila.pendente = art.id;
+    fila.cursor = (fila.cursor + 1) % fila.ordem.length;
+    fila.eventoAberto = true; // evento aberto — próximo (cursor) responde agora
+  }
+
+  saveData(); render();
+}
+
+// ─── RENDER CHAMAMENTO ───
+function renderChamamento() {
+  // ── build option lists — each cascades from ALL other active filters ──
+  // Artists matching current combo (used to derive valid options per select)
+  const matchAll = artistas.filter(a =>
+    (!_chCat    || a.categoria === _chCat) &&
+    (!_chPorte  || a.porte     === _chPorte) &&
+    (!_chGenero || a.genero    === _chGenero)
+  );
+  // Cats: filtered by porte+genero already selected
+  const cats = [...new Set(artistas.filter(a =>
+    (!_chPorte  || a.porte  === _chPorte) &&
+    (!_chGenero || a.genero === _chGenero)
+  ).map(a=>a.categoria))].sort((a,b)=>Number(a)-Number(b));
+  // Portes: filtered by cat+genero already selected
+  const portes = [...new Set(artistas.filter(a =>
+    (!_chCat    || a.categoria === _chCat) &&
+    (!_chGenero || a.genero   === _chGenero)
+  ).map(a=>a.porte))].sort();
+  // Generos: filtered by cat+porte already selected
+  const generos = [...new Set(artistas.filter(a =>
+    (!_chCat   || a.categoria === _chCat) &&
+    (!_chPorte || a.porte     === _chPorte)
+  ).map(a=>a.genero))].sort();
+
+  // auto-clear invalid combos
+  if (_chCat    && !cats.includes(_chCat))       _chCat    = '';
+  if (_chPorte  && !portes.includes(_chPorte))   _chPorte  = '';
+  if (_chGenero && !generos.includes(_chGenero)) _chGenero = '';
+
+  const totalChamados = ch_historico.filter(h=>h.tipo==='chamado').length;
+
+  // ── filtros HTML ──
+  let html = `<div class="pg-header" style="padding-bottom:0">
+    <h1 style="margin-bottom:2px">📢 Fila de Chamamento</h1>
+    <p class="pg-sub" style="margin-bottom:16px">${totalChamados} chamamento(s) realizado(s)</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:14px 0 18px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <select onchange="_chCat=this.value;render()" style="${selStyle()}">
+        <option value="">Todas as categorias</option>
+        ${cats.map(c=>`<option value="${c}" ${_chCat===c?'selected':''}>Categoria ${c}</option>`).join('')}
+      </select>
+      <select onchange="_chPorte=this.value;render()" style="${selStyle()}">
+        <option value="">Todos os portes</option>
+        ${portes.map(p=>`<option value="${p}" ${_chPorte===p?'selected':''}>${p}</option>`).join('')}
+      </select>
+      <select onchange="_chGenero=this.value;render()" style="${selStyle(true)}">
+        <option value="">Todos os gêneros</option>
+        ${generos.map(g=>`<option value="${g}" ${_chGenero===g?'selected':''}>${g}</option>`).join('')}
+      </select>
+      ${(_chCat||_chPorte||_chGenero)?`<button onclick="_chCat='';_chPorte='';_chGenero='';render()" style="padding:8px 14px;border-radius:8px;border:1px solid #ddd;background:#f5f5f5;font-size:11px;font-weight:700;cursor:pointer;color:#666;font-family:inherit">✕ Limpar</button>`:''}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="confirmarZerarFilas()" style="padding:8px 14px;border-radius:8px;border:2px solid #e53935;background:#fff5f5;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" title="Zera toda a fila voltando à ordem original">🔄 Zerar Filas</button>
+      </div>
+    </div>
+  </div>`;
+
+  // ── resolve which filas to show ──
+  const combos = [];
+  artistas.forEach(a => {
+    if (_chCat    && a.categoria !== _chCat)    return;
+    if (_chPorte  && a.porte     !== _chPorte)  return;
+    if (_chGenero && a.genero    !== _chGenero)  return;
+    const key = chKey(a.categoria, a.porte, a.genero);
+    if (!combos.find(x=>x.key===key)) combos.push({key, cat:a.categoria, porte:a.porte, genero:a.genero});
+  });
+  combos.sort((a,b)=>(Number(a.cat)-Number(b.cat))||a.porte.localeCompare(b.porte)||a.genero.localeCompare(b.genero));
+
+  if (!combos.length) {
+    html += `<div class="ch-empty"><p style="font-size:32px;margin-bottom:8px">🔍</p><p>Nenhuma fila encontrada para os filtros selecionados.</p></div>`;
+    return html;
+  }
+
+  // ── one card per fila ──
+  combos.forEach(({cat, porte, genero}) => {
+    const fila   = getFila(cat, porte, genero);
+    const proxArt = getProxArtista(fila);
+    const proxId  = proxArt ? proxArt.id : null;
+    const chamados= fila.historico.filter(h=>h.tipo==='chamado').length;
+
+    const porteIcon = porte==='SOLO'?'🎤':porte==='DUPLA/TRIO'?'👥':'🎶';
+
+    html += `<div style="background:#fff;border:1.5px solid #e8e0d0;border-radius:14px;margin-bottom:16px;overflow:hidden">
+      <!-- card header -->
+      <div style="background:linear-gradient(135deg,#1e1400,#2e2000);padding:13px 18px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:15px">${porteIcon}</span>
+        <div style="flex:1">
+          <div style="color:#f0d070;font-weight:800;font-size:13px">${genero}</div>
+          <div style="color:rgba(255,255,255,.55);font-size:10px;margin-top:1px">Categoria ${cat} · ${porte}${chamados?` · ${chamados} chamado(s)`:'·  nenhum chamamento ainda'}</div>
+        </div>
+      </div>
+      <!-- fila de artistas -->
+      <div style="padding:14px 16px">`;
+
+    if (!fila.ordem.length) {
+      html += `<div class="ch-empty" style="padding:16px">Nenhum artista nesta fila.</div>`;
+    } else {
+      // substitutoId: apenas quando evento fechado — indica quem vem após o Stand By se ele recusar
+      const substitutoId = (fila.pendente !== null && fila.eventoAberto !== true && fila.ordem.length > 1)
+        ? fila.ordem[fila.cursor % fila.ordem.length]
+        : null;
+      // Legenda visual se houver pendente ativo
+      if (fila.pendente !== null) {
+        const pArt = artistas.find(a=>a.id===fila.pendente);
+        const nArt = artistas.find(a=>a.id===fila.ordem[fila.cursor % fila.ordem.length]);
+        const msg = fila.eventoAberto
+          ? 'recusou este evento · aguarda o próximo da fila responder'
+          : 'deve ser o primeiro a ser chamado no próximo evento';
+        html += `<div style="display:flex;gap:8px;align-items:stretch;background:#fff4ed;border:1.5px solid #e05a20;
+                             border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:11px">
+          <span style="font-size:18px;line-height:1">🔄</span>
+          <div style="flex:1">
+            <div style="font-weight:800;color:#7a2a00;margin-bottom:4px;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Stand By — aguardando reoferta</div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:baseline">
+              <div>
+                <span style="font-weight:700;color:#1e1400">${pArt ? (pArt.projeto||pArt.razao) : '—'}</span>
+                <span style="color:#9a8060;font-size:10px"> · ${msg}</span>
+              </div>
+              ${nArt && nArt.id !== fila.pendente ? `<div style="color:#9a8060;font-size:10px">
+                ${fila.eventoAberto ? 'Respondendo agora:' : 'Se recusar → próximo será'} <strong style="color:#2471a3">${nArt.projeto||nArt.razao}</strong>
+              </div>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }
+
+      fila.ordem.forEach((artId, i) => {
+        const art   = artistas.find(a=>a.id===artId);
+        if (!art) return;
+        const isPendente   = artId === fila.pendente;
+        const isSubstituto = substitutoId !== null && artId === substitutoId && !isPendente;
+        const isVez        = artId === proxId; // pendente se existir, senão cursor
+        const recusas      = fila.recusas[artId] || 0;
+
+        // position badge
+        const posBg   = i===0?'#c9a84c':i===1?'#9aa8b0':i===2?'#b0784a':'#ddd';
+        const posColor= i<=2?'#fff':'#888';
+
+        // row style — 3 estados visuais distintos
+        let rowBg='transparent', rowBorder='transparent', rowShadow='none';
+        if (isPendente)    { rowBg='#fff4ed'; rowBorder='#e05a20'; rowShadow='0 0 0 2px #e05a2018'; }
+        else if (isSubstituto) { rowBg='#edf5ff'; rowBorder='#2471a3'; rowShadow='0 0 0 2px #2471a318'; }
+        else if (recusas>0){ rowBg='#fff8f5'; rowBorder='#f0c8b8'; }
+
+        html += `<div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;
+                             background:${rowBg};border:1.5px solid ${rowBorder};box-shadow:${rowShadow};margin-bottom:6px;transition:.15s">
+          <!-- posição -->
+          <div style="width:26px;height:26px;border-radius:50%;background:${posBg};color:${posColor};
+                      display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${i+1}º</div>
+          <!-- nome -->
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:#1e1400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${art.projeto||art.razao}</div>
+            <div style="font-size:10px;color:#9a8060;margin-top:1px">${art.razao}</div>
+          </div>
+          <!-- recusa dots -->
+          <div style="display:flex;gap:4px;align-items:center" title="${recusas} recusa(s) consecutiva(s)">
+            ${[0,1,2].map(n=>`<div style="width:8px;height:8px;border-radius:50%;background:${n<recusas?'#d9534f':'#ddd'}"></div>`).join('')}
+          </div>
+          <!-- badges — estados visuais -->
+          ${isPendente    ? `<span style="${badgeStyle('#e05a20')}">🔄 Stand By</span>` : ''}
+          ${isSubstituto  ? `<span style="${badgeStyle('#2471a3')}">🔵 Próximo</span>` : ''}
+          ${!isPendente && !isSubstituto && isVez ? `<span style="${badgeStyle('#c9a84c')}">⭐ Vez</span>` : ''}
+          ${!isVez && !isPendente && !isSubstituto && recusas>0 ? `<span style="${badgeStyle('#e08030','#fff8f2','#f0c080')}">⏳ ${recusas}/3</span>` : ''}
+          <!-- ações — apenas quem tem a vez atual (Stand By se existir, senão cursor) -->
+          ${isVez ? `<div style="display:flex;gap:5px;flex-shrink:0">
+            <button data-cat="${cat}" data-porte="${porte.replace(/"/g,'&quot;')}" data-genero="${genero.replace(/"/g,'&quot;')}" data-artid="${artId}"
+              onclick="chamarArtista(this.dataset.cat,this.dataset.porte,this.dataset.genero,Number(this.dataset.artid))"
+              style="padding:6px 12px;border-radius:7px;border:none;background:#2a8a50;color:#fff;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit">✅ Aceitar</button>
+            <button data-cat="${cat}" data-porte="${porte.replace(/"/g,'&quot;')}" data-genero="${genero.replace(/"/g,'&quot;')}" data-artid="${artId}"
+              onclick="recusarArtista(this.dataset.cat,this.dataset.porte,this.dataset.genero,Number(this.dataset.artid))"
+              style="padding:6px 12px;border-radius:7px;border:1px solid #f0c0b0;background:#fff5f0;color:#c03020;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit">⏭ Recusar</button>
+          </div>` : ''}
+        </div>`;
+      });
+    }
+
+    // mini history
+    const hist = fila.historico.filter(h=>h.tipo!=='fim_fila'||true).slice(0,4);
+    if (hist.length) {
+      html += `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e8d8b0">
+        <div style="font-size:9px;color:#b09060;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Histórico desta fila</div>
+        ${hist.map(h=>{
+          const ic={chamado:'✅',recusou:'⏭',fim_fila:'🔻'}[h.tipo]||'·';
+          const lb={chamado:'confirmado',recusou:`recusou (${h.recusas||1}x)`,fim_fila:'enviado ao fim da fila'}[h.tipo]||'';
+          const time=h.ts?new Date(h.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+          return `<div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#6a5030;padding:2px 0">
+            <span>${ic}</span><strong>${h.nome}</strong><span style="color:#b09060">${lb}</span>
+            <span style="margin-left:auto;color:#c0a870;font-size:9px">${time}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    html += `</div></div>`; // padding + card
+  });
+
+  // global history strip
+  if (ch_historico.length && !_chCat && !_chPorte && !_chGenero) {
+    html += `<div style="background:#fffdf5;border:1.5px solid #e8d8a0;border-radius:13px;padding:14px 18px;margin-top:4px">
+      <div style="font-size:10px;font-weight:800;color:#7a5a20;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">📋 Histórico Geral Recente</div>
+      ${ch_historico.slice(0,8).map(h=>{
+        const icons={chamado:'✅',recusou:'⏭',fim_fila:'🔻'};
+        const cores={chamado:'#2a8a50',recusou:'#b05020',fim_fila:'#c0392b'};
+        const labs={chamado:'confirmado',recusou:`recusou (${h.recusas||1}x)`,fim_fila:'enviado ao fim da fila'};
+        const time=h.ts?new Date(h.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0e8d0;font-size:11px">
+          <span>${icons[h.tipo]||'·'}</span>
+          <strong style="color:#2a1e06">${h.nome}</strong>
+          <span style="color:#b0a080;font-size:10px">Cat.${h.cat} · ${h.porte} · ${h.genero}</span>
+          <span style="color:${cores[h.tipo]||'#666'};font-weight:700;font-size:10px">${labs[h.tipo]||''}</span>
+          <span style="margin-left:auto;color:#c0a870;font-size:10px">${time}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  return html;
+}
+
+function selStyle(wide) {
+  return `padding:8px ${wide?'14px':'12px'};border-radius:9px;border:1.5px solid #ddd;background:#fff;
+          font-size:12px;font-family:inherit;color:#2a1e06;outline:none;cursor:pointer;
+          min-width:${wide?'200px':'140px'}`;
+}
+function badgeStyle(bg, bgL, border) {
+  if (!bgL) return `background:${bg};color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0`;
+  return `background:${bgL};color:${bg};border:1px solid ${border};font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0`;
+}
+function escJs(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function executarChamada(cat, porte, genero, openFila) {
+  // just scroll to the card — buttons are inline
+  if (openFila) {
+    const cards = document.querySelectorAll('[data-fila-key]');
+    // no-op: cards are already visible inline
+  }
+}
+
+function toggleChGroup(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+  const arrow = document.getElementById(id + '_arrow');
+  if (arrow) arrow.textContent = el.classList.contains('open') ? '▲' : '▼';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  EDIÇÕES DO CHAMAMENTO — funções de UI e lógica
+// ═══════════════════════════════════════════════════════════════════════
+
+let _importMode = 'csv';
+let _importedArtistas = [];
+
+function renderEdicoes() {
+  const fmtData = iso => iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
+  const total = edicoes_chamamento.length;
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div>
+      <div style="font-size:20px;font-weight:800;color:#e8d5a0;font-family:'DM Serif Display',serif">📦 Edições do Chamamento Público</div>
+      <div style="font-size:11px;color:#6a8a9a;margin-top:3px">${total} edição(ões) registrada(s) · A edição ativa é usada em Banco, Fila e Programação</div>
+    </div>
+    <button onclick="openNovaEdicao()" style="padding:8px 18px;border-radius:8px;border:none;background:#4cd98a;color:#0a1520;font-size:12px;font-weight:800;cursor:pointer">＋ Nova Edição</button>
+  </div>
+
+  ${edicoes_chamamento.length === 0 ? `<div style="text-align:center;padding:60px 20px;color:#6a8a9a;font-size:13px">Nenhuma edição cadastrada ainda.<br><small>Clique em "＋ Nova Edição" para importar a primeira base de artistas.</small></div>` : ''}
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    ${[...edicoes_chamamento].reverse().map(ed => {
+      const isAtiva = ed.id === edicaoAtiva;
+      const qtdArtistas = ed.artistas ? ed.artistas.length : 0;
+      const qtdChamados = ed.ch_historico ? ed.ch_historico.filter(h => h.tipo === 'chamado').length : 0;
+      const qtdFilas    = ed.filas ? Object.keys(ed.filas).length : 0;
+      return `<div style="background:${isAtiva ? '#0e2418' : '#0f1923'};border:${isAtiva ? '2px solid #4cd98a' : '1px solid #1e2e40'};border-radius:12px;padding:16px 20px;position:relative">
+        ${isAtiva ? `<div style="position:absolute;top:14px;right:16px;background:#4cd98a;color:#0a1520;font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.6px">● ATIVA</div>` : ''}
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:800;color:${isAtiva ? '#4cd98a' : '#c0d4e4'};margin-bottom:3px">${ed.nome}</div>
+            <div style="font-size:11px;color:#6a8a9a;margin-bottom:8px">
+              ${ed.ano ? `Período: <strong style="color:#8ab0c0">${ed.ano}</strong>` : ''}
+              ${ed.vigencia ? ` · Vigência: <strong style="color:#8ab0c0">${ed.vigencia}</strong>` : ''}
+              ${ed.criadaEm ? ` · Criada em ${fmtData(ed.criadaEm)}` : ''}
+            </div>
+            ${ed.descricao ? `<div style="font-size:11px;color:#6a8a9a;font-style:italic;margin-bottom:10px">${ed.descricao}</div>` : ''}
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <div style="background:#0a1520;border:1px solid #1e3a50;border-radius:8px;padding:6px 12px;text-align:center">
+                <div style="font-size:18px;font-weight:800;color:#4cd98a">${qtdArtistas}</div>
+                <div style="font-size:9px;color:#6a8a9a;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Artistas</div>
+              </div>
+              <div style="background:#0a1520;border:1px solid #1e3a50;border-radius:8px;padding:6px 12px;text-align:center">
+                <div style="font-size:18px;font-weight:800;color:#c9a84c">${qtdFilas}</div>
+                <div style="font-size:9px;color:#6a8a9a;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Filas</div>
+              </div>
+              <div style="background:#0a1520;border:1px solid #1e3a50;border-radius:8px;padding:6px 12px;text-align:center">
+                <div style="font-size:18px;font-weight:800;color:#e0a070">${qtdChamados}</div>
+                <div style="font-size:9px;color:#6a8a9a;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Chamados</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;min-width:120px">
+            ${!isAtiva ? `<button onclick="confirmarAtivarEdicao(${ed.id})" style="padding:7px 14px;border-radius:7px;border:1.5px solid #4cd98a;background:transparent;color:#4cd98a;font-size:11px;font-weight:700;cursor:pointer;text-align:center">▶ Ativar</button>` : ''}
+            <button onclick="exportarEdicao(${ed.id})" style="padding:7px 14px;border-radius:7px;border:1.5px solid #2a4a60;background:transparent;color:#6a9aba;font-size:11px;font-weight:700;cursor:pointer;text-align:center">⬇ Exportar JSON</button>
+            ${!isAtiva ? `<button onclick="confirmarExcluirEdicao(${ed.id})" style="padding:7px 14px;border-radius:7px;border:1.5px solid #4a1a1a;background:transparent;color:#f07a7a;font-size:11px;font-weight:700;cursor:pointer;text-align:center">✕ Excluir</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function openNovaEdicao() {
+  _importMode = 'csv';
+  _importedArtistas = [];
+  ['ned-nome','ned-ano','ned-vigencia','ned-desc','ned-csv','ned-json'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const prev = document.getElementById('ned-import-result');
+  if (prev) prev.style.display = 'none';
+  selectImportMode('csv');
+  document.getElementById('modal-edicao-bg').classList.add('open');
+}
+
+function selectImportMode(mode) {
+  _importMode = mode;
+  _importedArtistas = [];
+  ['csv','json','manual'].forEach(m => {
+    const btn = document.getElementById('imp-btn-' + m);
+    const area = document.getElementById('imp-' + m + '-area');
+    if (btn) btn.style.borderColor = m === mode ? '#4cd98a' : '#2a3a50';
+    if (btn) btn.style.color       = m === mode ? '#4cd98a' : '#8a9bb0';
+    if (btn) btn.style.background  = m === mode ? '#0e2418' : '#0f1923';
+    if (area) area.style.display   = m === mode ? 'block' : 'none';
+  });
+  const prev = document.getElementById('ned-import-result');
+  if (prev) prev.style.display = 'none';
+}
+
+function previewImport() {
+  const prev = document.getElementById('ned-import-result');
+  _importedArtistas = [];
+  try {
+    if (_importMode === 'csv') {
+      const txt = (document.getElementById('ned-csv').value || '').trim();
+      if (!txt) { if (prev) prev.style.display = 'none'; return; }
+      _importedArtistas = parseCsvArtistas(txt);
+    } else if (_importMode === 'json') {
+      const txt = (document.getElementById('ned-json').value || '').trim();
+      if (!txt) { if (prev) prev.style.display = 'none'; return; }
+      _importedArtistas = JSON.parse(txt);
+      // normaliza IDs para evitar conflito
+      _importedArtistas = _importedArtistas.map((a, i) => ({ ...a, id: i + 1 }));
+    }
+    if (prev) {
+      prev.style.display = 'block';
+      prev.innerHTML = `✅ <strong>${_importedArtistas.length} artistas</strong> reconhecidos e prontos para importação.
+        <div style="margin-top:6px;font-size:10px;color:#6a9a7a">
+          ${[...new Set(_importedArtistas.map(a => a.area))].map(a =>
+            `${a}: ${_importedArtistas.filter(x => x.area === a).length}`).join(' · ')}
+        </div>`;
+    }
+  } catch(e) {
+    if (prev) { prev.style.display = 'block'; prev.style.background = '#2a0a0a'; prev.style.borderColor = '#4a1a1a'; prev.style.color = '#f07a7a'; prev.innerHTML = '⚠️ Erro ao ler os dados: ' + e.message; }
+    _importedArtistas = [];
+  }
+}
+
+function parseCsvArtistas(txt) {
+  const linhas = txt.split('\n').map(l => l.trim()).filter(l => l);
+  const result = [];
+  let nextLocalId = 1;
+  // Detectar se primeira linha é cabeçalho
+  const primeiraLinha = linhas[0].split(/\t|;|,/);
+  const temCabecalho = isNaN(parseInt(primeiraLinha[0])) && primeiraLinha[0].toLowerCase().includes('insc');
+  const inicio = temCabecalho ? 1 : 0;
+
+  for (let i = inicio; i < linhas.length; i++) {
+    const cols = linhas[i].split(/\t|;|,/).map(c => c.replace(/^"|"$/g,'').trim());
+    if (cols.length < 4) continue;
+    const [insc, razao, projeto, cnpj, area, porte, cat, genero, classif] = cols;
+    const areaVal = (area || '').toUpperCase().includes('ARTES') ? 'ARTES PERFORMÁTICAS' : 'MÚSICA';
+    const porteVal = ['SOLO','DUPLAS E TRIOS','GRUPOS'].find(p => (porte||'').toUpperCase().includes(p.split(' ')[0])) || 'SOLO';
+    result.push({
+      id: nextLocalId++,
+      insc: parseInt(insc) || 0,
+      razao: (razao || '').toUpperCase().trim(),
+      projeto: (projeto || '').trim(),
+      cnpj: (cnpj || '').trim(),
+      area: areaVal,
+      porte: porteVal,
+      categoria: String(parseInt(cat) || 1),
+      genero: (genero || '').trim(),
+      classif: parseInt(classif) || 99,
+      tel: '', email: '', obs: ''
+    });
+  }
+  return result;
+}
+
+function salvarNovaEdicao() {
+  const nome = (document.getElementById('ned-nome').value || '').trim();
+  const ano  = (document.getElementById('ned-ano').value  || '').trim();
+  if (!nome) { alert('Informe o nome da edição.'); return; }
+
+  let artistasImportados = [];
+  if (_importMode === 'csv' || _importMode === 'json') {
+    if (_importedArtistas.length === 0) { previewImport(); }
+    artistasImportados = _importedArtistas;
+    if (artistasImportados.length === 0 && _importMode !== 'manual') {
+      if (!confirm('Nenhum artista foi reconhecido. Criar edição vazia mesmo assim?')) return;
+    }
+  }
+
+  // Renumera IDs para não conflitar
+  let idCounter = 1;
+  artistasImportados = artistasImportados.map(a => ({ ...a, id: idCounter++ }));
+
+  const novaEdicao = {
+    id: nextEdicaoId++,
+    nome,
+    ano,
+    vigencia: (document.getElementById('ned-vigencia').value || '').trim(),
+    descricao: (document.getElementById('ned-desc').value || '').trim(),
+    criadaEm: new Date().toISOString(),
+    artistas: artistasImportados,
+    filas: {},
+    ch_historico: [],
+    nextId: idCounter
+  };
+
+  edicoes_chamamento.push(novaEdicao);
+  ativarEdicao(novaEdicao.id, true);
+  closeModal('modal-edicao-bg');
+  toast(`✅ Edição "${nome}" criada com ${artistasImportados.length} artistas. Agora é a edição ativa!`);
+  setTab('banco');
+}
+
+function confirmarAtivarEdicao(id) {
+  const ed = edicoes_chamamento.find(e => e.id === id);
+  if (!ed) return;
+  if (!confirm(`Ativar a edição "${ed.nome}"?\n\nO banco de artistas, filas e histórico serão substituídos pelos desta edição. A edição atual permanece salva no histórico.`)) return;
+  ativarEdicao(id, true);
+  toast(`✅ Edição "${ed.nome}" ativada!`);
+  setTab('banco');
+}
+
+function confirmarExcluirEdicao(id) {
+  const ed = edicoes_chamamento.find(e => e.id === id);
+  if (!ed) return;
+  if (ed.id === edicaoAtiva) { toast('⚠️ Não é possível excluir a edição ativa.'); return; }
+  if (!confirm(`Excluir permanentemente a edição "${ed.nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+  edicoes_chamamento = edicoes_chamamento.filter(e => e.id !== id);
+  saveData();
+  toast(`🗑 Edição "${ed.nome}" excluída.`);
+  render();
+}
+
+function exportarEdicao(id) {
+  const ed = edicoes_chamamento.find(e => e.id === id);
+  if (!ed) return;
+  const blob = new Blob([JSON.stringify(ed.artistas, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `artistas_${(ed.nome || 'edicao').replace(/\s+/g,'_')}.json`;
+  a.click();
+  toast(`⬇ Exportando ${ed.artistas.length} artistas de "${ed.nome}"...`);
+}
+
+// ── INIT das edições: se não há nenhuma, cria a edição padrão com os artistas pré-carregados ──
+function inicializarEdicaoPadrao() {
+  if (edicoes_chamamento.length === 0) {
+    const ed = {
+      id: nextEdicaoId++,
+      nome: 'Chamamento 2024/2025',
+      ano: '2024-2025',
+      vigencia: 'Junho/2025',
+      descricao: 'Base inicial de artistas classificados no chamamento público',
+      criadaEm: new Date().toISOString(),
+      artistas: artistas,
+      filas: filas,
+      ch_historico: ch_historico,
+      nextId: nextId
+    };
+    edicoes_chamamento = [ed];
+    edicaoAtiva = ed.id;
+  }
+}
+
+// ─── INIT ───
+(async function init() {
+  const loaded = await loadDataRemote();
+  if (!loaded) inicializarEdicaoPadrao();
+  listenRealtime();
+  render();
+})();
+</script>
+</body>
+</html>
+
