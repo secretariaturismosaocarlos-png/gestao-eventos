@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gerenciador de Eventos</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -390,16 +389,28 @@ body{font-family:sans-serif;background:#0d1f16;color:var(--gray);min-height:100v
 <body>
 
 <!-- TOP BAR -->
-<div style="background:#0f1923;padding:7px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e2e40;font-family:'DM Sans',sans-serif">
+<div id="topnav" style="background:#0f1923;padding:7px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e2e40;font-family:'DM Sans',sans-serif">
   <a href="index.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;background:#1a2535;border:1px solid #2a3a50;color:#8a9bb0;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;transition:.15s" onmouseover="this.style.color='#fff';this.style.borderColor='#3a5a70'" onmouseout="this.style.color='#8a9bb0';this.style.borderColor='#2a3a50'">
     ← Início
   </a>
   <div style="width:1px;height:18px;background:#1e2e40"></div>
   <span style="font-size:11px;color:#3a4a5a">Abrir:</span>
-  <a href="artistas_chamamento.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;background:#2a1e06;border:1px solid #3d2e0a;color:#c9a84c;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;transition:.15s" onmouseover="this.style.background='#3d2e0a'" onmouseout="this.style.background='#2a1e06'">
-    🎭 Chamamento Público
-  </a>
+  <span id="topnav-links"></span>
 </div>
+<script>
+(function(){
+  var p = JSON.parse(localStorage.getItem('smct_perfil')||'{}');
+  var html = '';
+  if (p.acesso_chamamento || p.isAdmin) {
+    html += '<a href="artistas_chamamento.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;background:#2a1e06;border:1px solid #3d2e0a;color:#c9a84c;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;transition:.15s" onmouseover="this.style.background='#3d2e0a'" onmouseout="this.style.background='#2a1e06'">🎭 Chamamento Público</a>';
+  }
+  if (p.acesso_emendas || p.isAdmin) {
+    html += '<a href="emendas_parlamentares.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;background:#0a1a3a;border:1px solid #1a3a6a;color:#7ab3f0;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;transition:.15s" onmouseover="this.style.background='#1a3a6a'" onmouseout="this.style.background='#0a1a3a'">💰 Emendas Parlamentares</a>';
+  }
+  if (!html) html = '<span style="font-size:11px;color:#2a3a4a">Sem outros módulos</span>';
+  document.getElementById('topnav-links').innerHTML = html;
+})();
+</script>
 <div class="topbar">
   <span style="font-size:26px">🌸</span>
   <div class="topbar-logo">Gerenciador de Eventos</div>
@@ -420,6 +431,8 @@ body{font-family:sans-serif;background:#0d1f16;color:var(--gray);min-height:100v
     <div class="sb-label">Visualização</div>
     <div class="nav-item active" onclick="setTab('resumo')" id="nav-resumo"><span class="ne">📋</span> Resumo Executivo</div>
     <div class="nav-item" onclick="setTab('atas')" id="nav-atas"><span class="ne">📑</span> Atas &amp; Contratos<span class="nav-cnt" id="cnt-atas">0</span></div>
+    <div class="nav-item" onclick="setTab('nf')" id="nav-nf"><span class="ne">🧾</span> Notas Fiscais<span class="nav-cnt" id="cnt-nf">0</span></div>
+    <div class="nav-item" onclick="setTab('escala')" id="nav-escala"><span class="ne">🗓️</span> Escala de Trabalho</div>
     <div class="nav-item" onclick="setTab('config')" id="nav-config"><span class="ne">⚙️</span> Configurações</div>
     <div class="nav-item" onclick="setTab('historico')" id="nav-historico"><span class="ne">📊</span> Histórico &amp; Comparativo</div>
     <div class="sb-div"></div>
@@ -611,11 +624,11 @@ function filterHistorico(val) {
   if (inp) { inp.value = val; inp.setSelectionRange(val.length,val.length); }
 }
 
-function newEventFromCopy() {
+async function newEventFromCopy() {
   var src = ev();
   var newName = prompt('Nome do novo evento (a estrutura de blocos será copiada):', src.name);
   if (!newName || !newName.trim()) return;
-  var ne = defaultEvent(newName.trim());
+  var ne = defaultEvent(newName.trim().toUpperCase());
   // Copy module config and block structure, but not items
   ne.modules   = Object.assign({}, src.modules);
   ne.modDesc   = Object.assign({}, src.modDesc||{});
@@ -627,7 +640,7 @@ function newEventFromCopy() {
   curEventId = ne.id;
   curTab = 'config';
   toast('Nova edição criada! Configure as datas e adicione os itens.');
-  render();
+  await saveData(); render();
 }
 
 
@@ -648,7 +661,7 @@ function defaultEvent(name) {
     observacoes: '',
     programacao: [],
     modDesc: { staff: 'Escalas, turnos, limpeza, coordenação', estrutura: 'Tendas, geradores, mobiliário, identidade visual', hospedagem: 'Grupos, diárias, refeições, check-in/out' },
-    modules: { staff: true, estrutura: true, hospedagem: false },
+    modules: { staff: true, estrutura: true, hospedagem: false, atracoes: false },
     staff: [],
     estrutura: [],
     hospedagem: [],
@@ -656,6 +669,7 @@ function defaultEvent(name) {
     secoesEst:  [],
     secoesHosp: [],
     nextStaff: 1, nextEstrutura: 1, nextHospedagem: 1,
+    atracoes: [], nextAtracoes: 1,
   };
 }
 
@@ -664,10 +678,14 @@ function defaultEvent(name) {
 let atasMestre = [];
 let nextAtaMestre = 1;
 
+// Cadastro global de Notas Fiscais (compartilhado entre todos os eventos)
+let notasFiscais = [];
+let nextNF = 1;
+
 const seed = defaultEvent('61ª Exposição Nacional de Orquídeas');
 seed.local = 'Praça XV de Novembro, São Carlos/SP';
 seed.dataEvento = '24 a 26/04/2026';
-seed.modules = { staff: true, estrutura: true, hospedagem: true };
+seed.modules = { staff: true, estrutura: true, hospedagem: true, atracoes: true };
 // Seções são criadas manualmente pelo usuário por evento
 
 // Registro mestre de ATAs — cadastre suas ATAs na aba "Atas & Contratos"
@@ -692,14 +710,18 @@ function ev() { return events.find(e => e.id === curEventId); }
 // ═══════════════════════════════════════════════
 //  EVENT MANAGEMENT
 // ═══════════════════════════════════════════════
-function newEvent() {
+async function newEvent() {
   const name = prompt('Nome do novo evento:');
   if (!name) return;
-  const e = defaultEvent(name);
+  // Salva estado atual ANTES de criar novo evento
+  setSyncIndicator('saving');
+  await saveSupabase_ge();
+  const e = defaultEvent(name.trim().toUpperCase());
   events.push(e);
   curEventId = e.id;
   renderEventSelect();
   curTab = 'config';
+  await saveSupabase_ge();
   render();
   toast('Evento criado! Configure os detalhes na aba ⚙️ Configurações.');
 }
@@ -709,13 +731,13 @@ function switchEvent(id) {
   render();
 }
 
-function deleteEvent() {
+async function deleteEvent() {
   if (events.length === 1) { toast('Não é possível excluir o único evento.'); return; }
   if (!confirm(`Excluir "${ev().name}"? Esta ação não pode ser desfeita.`)) return;
   events = events.filter(e => e.id !== curEventId);
   curEventId = events[0].id;
   renderEventSelect();
-  render();
+  await saveData(); render();
 }
 
 function renderEventSelect() {
@@ -760,17 +782,8 @@ function fmtTimeInput(el) {
 }
 // Calculate CH Individual from start/end times
 function autoCalcChInd(hrIni, hrFim) {
-  var p1 = hrIni.split(':'), p2 = hrFim.split(':');
-  var m1 = parseInt(p1[0])*60 + parseInt(p1[1]);
-  var m2 = parseInt(p2[0])*60 + parseInt(p2[1]);
-  var diff = m2 - m1;
-  if (diff <= 0) diff += 24*60; // overnight
-  var hours = Math.round(diff / 60 * 100) / 100;
-  var fld = document.getElementById('f-chInd');
-  if (fld && !fld._manuallyEdited) {
-    fld.value = hours % 1 === 0 ? hours : hours.toFixed(2);
-    calcStaffCusto();
-  }
+  // Desativado — Staff agora usa campo direto "Total de Horas Contratadas" (f-totalHoras)
+  return;
 }
 
 // Parse Brazilian currency strings like "2.900,00" or "2900.00" or "2.900" → 2900
@@ -879,10 +892,13 @@ function renderModuleNav() {
   // Update global atas count
   const cntAtas = document.getElementById('cnt-atas');
   if (cntAtas) cntAtas.textContent = atasMestre.length;
+  const cntNF = document.getElementById('cnt-nf');
+  if (cntNF) cntNF.textContent = notasFiscais.length;
   let html = '';
   if (m.staff)      html += `<div class="nav-item" onclick="setTab('staff')" id="nav-staff"><span class="ne">👥</span> Staff<span class="nav-cnt" id="cnt-staff">${ev().staff.length}</span></div>`;
   if (m.estrutura)  html += `<div class="nav-item" onclick="setTab('estrutura')" id="nav-estrutura"><span class="ne">🏗️</span> Estrutura<span class="nav-cnt" id="cnt-estrutura">${ev().estrutura.length}</span></div>`;
   if (m.hospedagem) html += `<div class="nav-item" onclick="setTab('hospedagem')" id="nav-hospedagem"><span class="ne">🛏️</span> Hospedagem<span class="nav-cnt" id="cnt-hospedagem">${ev().hospedagem.length}</span></div>`;
+  if (m.atracoes)   html += `<div class="nav-item" onclick="setTab('atracoes')" id="nav-atracoes"><span class="ne">🎤</span> Atrações<span class="nav-cnt" id="cnt-atracoes">${(ev().atracoes||[]).length}</span></div>`;
   document.getElementById('module-nav').innerHTML = html;
   const el = document.getElementById('nav-'+curTab);
   if (el) el.classList.add('active');
@@ -899,9 +915,12 @@ function render() {
   else if (curTab==='atas')       main.innerHTML = renderAtas();
   else if (curTab==='config')     main.innerHTML = renderConfig();
   else if (curTab==='historico')  main.innerHTML = renderHistorico();
+  else if (curTab==='nf')         main.innerHTML = renderNF();
+  else if (curTab==='escala')     main.innerHTML = renderEscala();
   else if (curTab==='staff')      main.innerHTML = renderStaff();
   else if (curTab==='estrutura')  main.innerHTML = renderEstrutura();
   else if (curTab==='hospedagem') main.innerHTML = renderHospedagem();
+  else if (curTab==='atracoes')   main.innerHTML = renderAtracoes();
   bindEditable();
   bindUploadArea();
 }
@@ -936,7 +955,7 @@ function renderConfig() {
       <div class="cfg-grid" style="grid-template-columns:1fr 1fr">
         <div class="field" style="grid-column:1/-1">
           <label>Nome do Evento</label>
-          <input id="cfg-name" value="${e.name}" oninput="updateCfg('name',this.value)" style="font-size:15px;font-weight:700">
+          <input id="cfg-name" value="${e.name}" oninput="updateCfg('name',this.value.toUpperCase());this.value=this.value.toUpperCase()" style="font-size:15px;font-weight:700">
         </div>
         <div class="field">
           <label>Edição / Ano</label>
@@ -1012,6 +1031,18 @@ function renderConfig() {
           ${e.modules.hospedagem ? `<input value="${(e.modDesc&&e.modDesc.hospedagem)||''}" placeholder="ex: Grupos, diárias, refeições, check-in/out" oninput="updateModDesc('hospedagem',this.value)" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Sora,sans-serif;box-sizing:border-box">` : ''}
         </div>
       </div>
+
+        <!-- ATRAÇÕES -->
+        <div style="border:1.5px solid ${e.modules.atracoes ? 'var(--gm)' : '#e0e0e0'};border-radius:8px;padding:12px 16px;transition:.2s">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:${e.modules.atracoes ? '10px' : '0'}">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+              <input type="checkbox" id="mod-atracoes" ${e.modules.atracoes?'checked':''} onchange="toggleModule('atracoes',this.checked)" style="width:16px;height:16px;accent-color:var(--gm)">
+              <span style="font-size:13px;font-weight:700">🎤 Atrações Musicais / Artísticas</span>
+            </label>
+          </div>
+          ${e.modules.atracoes ? `<input value="${(e.modDesc&&e.modDesc.atracoes)||''}" placeholder="ex: Bandas, artistas, DJs, teatro" oninput="updateModDesc('atracoes',this.value)" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Sora,sans-serif;box-sizing:border-box">` : ''}
+        </div>
+      </div>
     </div>
 
   </div>`;
@@ -1019,13 +1050,24 @@ function renderConfig() {
 
 function updateCfg(field, val) {
   ev()[field] = val;
-  renderEventSelect();
-  renderModuleNav();
+  // Atualiza so o nome no select sem re-renderizar a pagina toda
+  if (field === 'name') {
+    const sel = document.getElementById('event-select');
+    if (sel) {
+      const opt = sel.querySelector('option[value="'+curEventId+'"]');
+      if (opt) opt.textContent = val || 'Novo Evento';
+    }
+  }
+  // Salva com debounce — nao chama render() durante digitacao
+  clearTimeout(window._cfgSaveTimer);
+  window._cfgSaveTimer = setTimeout(function(){ saveData(); }, 600);
 }
 
 function updateModDesc(mod, val) {
   if (!ev().modDesc) ev().modDesc = {};
   ev().modDesc[mod] = val;
+  clearTimeout(window._cfgSaveTimer);
+  window._cfgSaveTimer = setTimeout(function(){ saveData(); }, 600);
 }
 
 function addProg() {
@@ -1041,6 +1083,8 @@ function addProg() {
 function updateProg(i, field, val) {
   if (!ev().programacao) return;
   if (ev().programacao[i]) ev().programacao[i][field] = val.toUpperCase();
+  clearTimeout(window._cfgSaveTimer);
+  window._cfgSaveTimer = setTimeout(function(){ saveData(); }, 600);
 }
 
 function delProg(i) {
@@ -1051,6 +1095,7 @@ function delProg(i) {
 
 function toggleModule(mod, checked) {
   ev().modules[mod] = checked;
+  if (!ev().modDesc) ev().modDesc = {};
   renderModuleNav();
   if (curTab === mod && !checked) { curTab = 'resumo'; render(); }
   else { document.getElementById('main').innerHTML = renderConfig(); renderModuleNav(); saveData(); }
@@ -1071,6 +1116,630 @@ function findAtaMestre(refStr) {
   }) || null;
 }
 
+// ═══════════════════════════════════════════════
+//  NOTAS FISCAIS
+// ═══════════════════════════════════════════════
+function filtrarNF() {
+  var busca = document.getElementById('nf-busca');
+  var val = busca ? busca.value : '';
+  window._nfBusca = val;
+  var selStart = busca ? busca.selectionStart : 0;
+  var selEnd   = busca ? busca.selectionEnd   : 0;
+  // Re-renderiza a aba NF
+  document.getElementById('main').innerHTML = renderNF();
+  // Restaura foco e cursor
+  var inp = document.getElementById('nf-busca');
+  if (inp) {
+    inp.focus();
+    try { inp.setSelectionRange(selStart, selEnd); } catch(e) {}
+  }
+}
+
+
+function renderNF() {
+  const _busca = (window._nfBusca || '').toLowerCase().trim();
+  const _todasNfs = notasFiscais;
+  const nfs = _busca
+    ? _todasNfs.filter(function(n){
+        return (n.numero||'').toLowerCase().includes(_busca) ||
+               (n.processo||'').toLowerCase().includes(_busca) ||
+               (n.eventoNome||'').toLowerCase().includes(_busca);
+      })
+    : _todasNfs;
+  var _prf = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin';
+  const totalPago    = _todasNfs.filter(n=>n.status==='pago').reduce((s,n)=>s+(n.valor||0),0);
+  const totalPendente= _todasNfs.filter(n=>n.status==='pendente').reduce((s,n)=>s+(n.valor||0),0);
+  const totalGeral   = _todasNfs.reduce((s,n)=>s+(n.valor||0),0);
+  let html = `<div class="sh"><span class="sh-emoji">🧾</span><div><h2>Notas Fiscais</h2><p>Controle de notas fiscais vinculadas aos eventos</p></div><div class="sh-actions"><button class="add-btn" style="background:#0d47a1" onclick="gerarRelatorioNF()">📊 Relatório</button>${podeEditar?`<button class="add-btn" onclick="openModalNF(null)">＋ Nova Nota Fiscal</button>`:''}</div></div><div class="content"><div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px"><div style="flex:1;min-width:160px;background:#1a3a2a;border:1px solid #2e7d4f;border-radius:10px;padding:14px 18px"><div style="font-size:10px;color:#4aaa6a;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Total Geral</div><div style="font-size:18px;font-weight:700;color:#4cd98a">${fmtBRL(totalGeral)}</div><div style="font-size:10px;color:#5a6a7a;margin-top:2px">${nfs.length} nota(s)</div></div><div style="flex:1;min-width:160px;background:#1a2a1a;border:1px solid #2a4a2a;border-radius:10px;padding:14px 18px"><div style="font-size:10px;color:#4aaa6a;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">✅ Pagas</div><div style="font-size:18px;font-weight:700;color:#4cd98a">${fmtBRL(totalPago)}</div><div style="font-size:10px;color:#5a6a7a;margin-top:2px">${nfs.filter(n=>n.status==='pago').length} nota(s)</div></div><div style="flex:1;min-width:160px;background:#2a1a1a;border:1px solid #4a2a2a;border-radius:10px;padding:14px 18px"><div style="font-size:10px;color:#f08080;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">⏳ Pendentes</div><div style="font-size:18px;font-weight:700;color:#f08080">${fmtBRL(totalPendente)}</div><div style="font-size:10px;color:#5a6a7a;margin-top:2px">${nfs.filter(n=>n.status==='pendente').length} nota(s)</div></div></div>`;
+  // Barra de busca
+  html += `<div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
+    <div style="flex:1;position:relative">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#5a6a7a;font-size:14px">🔍</span>
+      <input id="nf-busca" value="${_busca}" placeholder="Buscar por Nº NF, Nº Processo ou Nome do Evento..." oninput="window._nfBusca=this.value;filtrarNF()" style="width:100%;padding:10px 12px 10px 36px;background:#1a2535;border:1.5px solid #2a3a50;border-radius:8px;color:#e0e8f0;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">
+    </div>
+    <button id="nf-busca-limpar" onclick="window._nfBusca='';document.getElementById('nf-busca').value='';filtrarNF()" style="padding:9px 14px;background:#2a3a50;border:none;border-radius:8px;color:#aec6d8;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;display:none">✕ Limpar</button>
+    <span id="nf-busca-cnt" style="font-size:11px;color:#8a9bb0;white-space:nowrap"></span>
+   </div>`;
+
+  if (!nfs.length) {
+    html += `<div style="text-align:center;padding:40px;color:#3a4a5a"><div style="font-size:40px;margin-bottom:12px">🧾</div><div style="font-size:14px">Nenhuma nota fiscal cadastrada</div>${podeEditar?`<div style="font-size:11px;margin-top:6px;color:#2a3a4a">Clique em "+ Nova Nota Fiscal" para começar</div>`:''}</div>`;
+  } else {
+    html += `<div style="background:#1a2535;border:1px solid #2a3a50;border-radius:12px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0f1923"><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Nº NF</th><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Data</th><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Fornecedor</th><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Processo</th><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">AF / Empenho</th><th style="padding:10px 14px;text-align:right;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Valor</th><th style="padding:10px 14px;text-align:center;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Status</th><th style="padding:10px 14px;text-align:center;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Data Pgto.</th><th style="padding:10px 14px;text-align:center;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">PDF</th><th style="border-bottom:1px solid #2a3a50"></th></tr></thead><tbody id="nf-tbody">`;
+    nfs.forEach(function(nf) {
+      const sc=nf.status==='pago'?'#4cd98a':'#f0c060',sb=nf.status==='pago'?'#1a3a2a':'#3a2a1a',sd=nf.status==='pago'?'#2e7d4f':'#8a6a2a';
+      html+=`<tr style="border-bottom:1px solid #1e2d40" onmouseover="this.style.background='#1e2d4080'" onmouseout="this.style.background=''"><td style="padding:11px 14px;font-size:12px;color:#e0e8f0;font-weight:600">${nf.numero||'—'}</td><td style="padding:11px 14px;font-size:12px;color:#aec6d8">${nf.dataEmissao?fmtData(nf.dataEmissao):'—'}</td><td style="padding:11px 14px;font-size:12px;color:#aec6d8;max-width:200px"><div style="font-weight:600;color:#e0e8f0">${nf.fornecedor||'—'}</div><div style="font-size:10px;color:#5a6a7a">${nf.descricao||''}</div>${nf.eventoNome?'<div style="font-size:10px;color:#c9a84c;margin-top:2px">📅 '+nf.eventoNome+'</div>':''}</td><td style="padding:11px 14px;font-size:11px;color:#e0e8f0;font-weight:600">${nf.processo||'—'}</td><td style="padding:11px 14px;font-size:11px;color:#8a9bb0">${nf.af?'<div>AF: <strong>'+nf.af+'</strong></div>':''}${nf.empenho?'<div>Emp: <strong>'+nf.empenho+'</strong></div>':''}${!nf.af&&!nf.empenho?'—':''}</td><td style="padding:11px 14px;font-size:13px;color:#4cd98a;font-weight:700;text-align:right">${fmtBRL(nf.valor||0)}</td><td style="padding:11px 14px;text-align:center">${podeEditar?`<button onclick="toggleStatusNF(${nf.id})" style="background:${sb};border:1px solid ${sd};color:${sc};padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${nf.status==='pago'?'✅ Pago':'⏳ Pendente'}</button>`:`<span style="background:${sb};border:1px solid ${sd};color:${sc};padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700">${nf.status==='pago'?'✅ Pago':'⏳ Pendente'}</span>`}</td><td style="padding:11px 14px;text-align:center;font-size:11px;color:#aec6d8">${nf.dataPagamento?fmtData(nf.dataPagamento):'<span style="color:#3a4a5a">—</span>'}</td><td style="padding:11px 14px;text-align:center">${(nf.pdfData||nf.pdfNome)?`<button onclick="verPdfNF(${nf.id})" style="background:#1a2a4a;border:1px solid #2a3a6a;color:#7ab3f0;padding:5px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">📄 Ver PDF</button>`:'<span style="color:#3a4a5a;font-size:10px">—</span>'}</td><td style="padding:11px 14px;text-align:right">${podeEditar?`<div style="display:flex;gap:6px;justify-content:flex-end"><button onclick="openModalNF(${nf.id})" style="background:transparent;border:1px solid #2a3a50;color:#8a9bb0;padding:4px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">✏</button><button onclick="delNF(${nf.id})" style="background:transparent;border:1px solid #4a2a2a;color:#f08080;padding:4px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">✕</button></div>`:''}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+function fmtBRL(v){ return 'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function maskBRL(el) {
+  // Remove tudo que não é dígito
+  var digits = el.value.replace(/\D/g, '');
+  if (!digits) { el.value = ''; return; }
+  // Converte para número com 2 casas decimais
+  var num = parseInt(digits, 10) / 100;
+  // Formata como moeda brasileira
+  el.value = num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtData(d){ if(!d) return '—'; var p=d.split('-'); if(p.length===3) return p[2]+'/'+p[1]+'/'+p[0]; return d; }
+async function toggleStatusNF(id){ var nf=notasFiscais.find(function(n){return n.id===id;}); if(!nf) return; nf.status=nf.status==='pago'?'pendente':'pago'; await saveNotasImediato(); render(); toast(nf.status==='pago'?'✅ Nota marcada como paga!':'⏳ Nota marcada como pendente!'); }
+async function delNF(id){ if(!confirm('Excluir esta nota fiscal?')) return; notasFiscais=notasFiscais.filter(function(n){return n.id!==id;}); await saveNotasImediato(); render(); toast('Nota fiscal excluída.'); }
+async function verPdfNF(id){ var nf=notasFiscais.find(function(n){return n.id===id;}); if(!nf) return; var pdf=nf.pdfData; if(!pdf){ var d=await loadNFPdf(id); if(d&&d.pdfData) pdf=d.pdfData; } if(!pdf){ toast('PDF nao encontrado.'); return; } var win=window.open(''); win.document.write('<iframe src="'+pdf+'" style="width:100%;height:100vh;border:none"></iframe>'); }
+var _nfEditId=null;
+function openModalNF(id){
+  _nfEditId=id;
+  var nf=id?notasFiscais.find(function(n){return n.id===id;}):null;
+  var fornOpts='<option value="">Selecione ou digite abaixo</option>';
+  atasMestre.forEach(function(a){ fornOpts+='<option value="'+a.fornecedor+'">'+a.fornecedor+'</option>'; });
+  var evOpts='<option value="">— Selecione o evento —</option>';
+  events.forEach(function(ev){ evOpts+='<option value="'+ev.id+'"'+(nf&&nf.eventoId===ev.id?' selected':'')+'>'+ev.name+'</option>'; });
+  var html=`<div class="modal-overlay" id="modal-nf" onclick="if(event.target===this)closeModalNF()" style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;align-items:center;justify-content:center"><div style="background:#1a2535;border:1px solid #2a3a50;border-radius:16px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto"><div style="font-family:'DM Serif Display',serif;font-size:18px;color:#fff;margin-bottom:20px">${id?'✏ Editar':'➕ Nova'} Nota Fiscal</div><div autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Nº da Nota Fiscal *</label><input id="nf-numero" type="text" autocomplete="off" value="${nf?.numero||''}" placeholder="Ex: 000123" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Data de Emissão</label><input id="nf-data" type="date" autocomplete="off" value="${nf?.dataEmissao||''}" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Nº da AF</label><input id="nf-af" type="text" autocomplete="off" value="${nf?.af||''}" placeholder="Ex: AF-2025-001" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Nº do Empenho</label><input id="nf-empenho" type="text" autocomplete="off" value="${nf?.empenho||''}" placeholder="Ex: 2025NE000123" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#f9a825;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">★ Nº do Processo *</label><input id="nf-processo" type="text" autocomplete="off" value="${nf?.processo||''}" placeholder="Ex: 23661/2024" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #f9a825;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Fornecedor *</label><select id="nf-forn-sel" onchange="if(this.value){document.getElementById('nf-fornecedor').value=this.value}" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#aec6d8;font-size:12px;font-family:inherit;outline:none;margin-bottom:6px">${fornOpts}</select><input id="nf-fornecedor" type="text" autocomplete="off" value="${nf?.fornecedor||''}" placeholder="Ou digite o fornecedor manualmente" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Descrição</label><input id="nf-desc" type="text" autocomplete="off" value="${nf?.descricao||''}" placeholder="Ex: Locação de equipamentos de som" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Valor (R$) *</label><input id="nf-valor" type="text" value="${nf?.valor?nf.valor.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):''}" placeholder="0,00" inputmode="numeric" oninput="maskBRL(this)" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:monospace;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Status</label><select id="nf-status" onchange="var w=document.getElementById('nf-data-pag-wrap');if(w)w.style.display=this.value==='pago'?'block':'none'" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#aec6d8;font-size:12px;font-family:inherit;outline:none"><option value="pendente" ${(!nf||nf.status==='pendente')?'selected':''}>⏳ Pendente pagamento</option><option value="pago" ${nf?.status==='pago'?'selected':''}>✅ Pago</option></select></div><div id="nf-data-pag-wrap" style="display:${nf?.status==='pago'?'block':'none'}"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Data do Pagamento</label><input id="nf-data-pag" type="date" autocomplete="off" value="${nf?.dataPagamento||''}" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Evento Vinculado</label><select id="nf-evento" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#aec6d8;font-size:12px;font-family:inherit;outline:none">${evOpts}</select></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">PDF da Nota Fiscal</label><div id="nf-pdf-area" onclick="document.getElementById('nf-pdf-input').click()" ondragover="event.preventDefault();this.style.borderColor='#2e7d4f'" ondragleave="this.style.borderColor='#2a3a50'" ondrop="handleDropNF(event)" style="border:2px dashed #2a3a50;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:.2s"><div style="font-size:24px;margin-bottom:8px">📎</div><div style="font-size:11px;color:#5a6a7a">${nf?.pdfData?'<span style="color:#4aaa6a">✅ PDF anexado — clique para substituir</span>':'<strong style="color:#aec6d8">Clique ou arraste</strong> para anexar o PDF'}</div></div><input type="file" id="nf-pdf-input" accept=".pdf" style="display:none" onchange="handleFileNF(this)"><div id="nf-pdf-nome" style="font-size:10px;color:#4aaa6a;margin-top:6px">${nf?.pdfNome||''}</div></div></div><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button onclick="closeModalNF()" style="padding:9px 18px;background:transparent;border:1px solid #3a4a5a;border-radius:8px;color:#8a9bb0;font-size:12px;cursor:pointer;font-family:inherit">Cancelar</button><button onclick="saveNF()" style="padding:9px 18px;background:#2e7d4f;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Salvar</button></div></div></div>`;
+  document.body.insertAdjacentHTML('beforeend',html);
+  window._nfPdfData=nf?.pdfData||null; window._nfPdfNome=nf?.pdfNome||null;
+}
+function closeModalNF(){ var m=document.getElementById('modal-nf'); if(m) m.remove(); }
+function handleFileNF(input){ var file=input.files[0]; if(!file) return; var reader=new FileReader(); reader.onload=function(e){ window._nfPdfData=e.target.result; window._nfPdfNome=file.name; document.getElementById('nf-pdf-nome').textContent='✅ '+file.name; document.getElementById('nf-pdf-area').innerHTML='<div style="font-size:24px;margin-bottom:8px">📄</div><div style="font-size:11px;color:#4aaa6a"><strong>'+file.name+'</strong> — PDF carregado</div>'; }; reader.readAsDataURL(file); }
+function handleDropNF(event){ event.preventDefault(); var file=event.dataTransfer.files[0]; if(file&&file.type==='application/pdf'){ var dt=new DataTransfer(); dt.items.add(file); document.getElementById('nf-pdf-input').files=dt.files; handleFileNF(document.getElementById('nf-pdf-input')); } }
+async function saveNF(){
+  var numero=document.getElementById('nf-numero').value.trim();
+  var dataEmissao=document.getElementById('nf-data').value;
+  var af=document.getElementById('nf-af').value.trim();
+  var empenho=document.getElementById('nf-empenho').value.trim();
+  var processo=document.getElementById('nf-processo').value.trim();
+  var fornecedor=document.getElementById('nf-fornecedor').value.trim();
+  var descricao=document.getElementById('nf-desc').value.trim();
+  var valorStr=document.getElementById('nf-valor').value.trim();
+  var status=document.getElementById('nf-status').value;
+  var dataPagamento=document.getElementById('nf-data-pag')?document.getElementById('nf-data-pag').value:'';
+  if(!numero||!fornecedor||!valorStr||!processo){ alert('Preencha Nº da NF, Fornecedor, Processo e Valor.'); return; }
+  var valor=parseBRL(valorStr);
+  if(!valor){ alert('Valor inválido. Use o formato: 1.500,00'); return; }
+  var eventoId=parseInt(document.getElementById('nf-evento').value)||null;
+  var eventoNome=eventoId?(events.find(function(e){return e.id===eventoId;})||{}).name||'':'';
+  if(_nfEditId){
+    var nf=notasFiscais.find(function(n){return n.id===_nfEditId;});
+    if(nf){ nf.numero=numero;nf.processo=processo;nf.dataEmissao=dataEmissao;nf.af=af;nf.empenho=empenho;nf.fornecedor=fornecedor;nf.descricao=descricao;nf.valor=valor;nf.status=status;nf.dataPagamento=dataPagamento||'';nf.eventoId=eventoId;nf.eventoNome=eventoNome;if(window._nfPdfData){nf.pdfData=window._nfPdfData;nf.pdfNome=window._nfPdfNome;} }
+    toast('Nota fiscal atualizada!');
+  } else {
+    notasFiscais.push({id:Date.now(),numero,processo,dataEmissao,af,empenho,fornecedor,descricao,valor,status,dataPagamento:dataPagamento||'',eventoId,eventoNome,pdfData:window._nfPdfData||null,pdfNome:window._nfPdfNome||null});
+    nextNF++;
+    toast('Nota fiscal cadastrada!');
+  }
+  var _pdfSave = window._nfPdfData;
+  var _pdfNomeSave = window._nfPdfNome;
+  var _idSave = _nfEditId || notasFiscais[notasFiscais.length-1]?.id;
+  window._nfPdfData=null; window._nfPdfNome=null;
+  console.log('[NF] Salvando... total antes:', notasFiscais.length);
+  closeModalNF();
+  await saveNotasImediato();
+  if (_pdfSave && _idSave) { saveNFPdf(_idSave, _pdfSave, _pdfNomeSave); }
+  console.log('[NF] Salvo! total agora:', notasFiscais.length);
+  render();
+}
+
+// ═══════════════════════════════════════════════
+//  RELATÓRIO DE NOTAS FISCAIS
+// ═══════════════════════════════════════════════
+function gerarRelatorioNF() {
+  var e = ev();
+  var nfs = notasFiscais;
+  var now = new Date().toLocaleDateString('pt-BR');
+  var totalGeral   = nfs.reduce(function(s,n){return s+(n.valor||0);},0);
+  var totalPago    = nfs.filter(function(n){return n.status==='pago';}).reduce(function(s,n){return s+(n.valor||0);},0);
+  var totalPendente= nfs.filter(function(n){return n.status==='pendente';}).reduce(function(s,n){return s+(n.valor||0);},0);
+
+  function mkTabela(lista, titulo, corHeader) {
+    if (!lista.length) return '<p style="color:#888;font-size:11px;font-style:italic">Nenhuma nota nesta categoria.</p>';
+    var rows = lista.map(function(nf) {
+      return '<tr>' +
+        '<td>'+( nf.numero||'—')+'</td>' +
+        '<td>'+(nf.dataEmissao?fmtData(nf.dataEmissao):'—')+'</td>' +
+        '<td style="font-weight:600">'+(nf.fornecedor||'—')+'</td>' +
+        '<td>'+(nf.descricao||'—')+'</td>' +
+        '<td>'+(nf.eventoNome||'—')+'</td>' +
+        '<td style="font-weight:600">'+(nf.processo||'—')+'</td>' +
+        '<td>'+(nf.af||'—')+'</td>' +
+        '<td>'+(nf.empenho||'—')+'</td>' +
+        '<td style="text-align:right;font-weight:700;font-family:monospace">'+fmtBRL(nf.valor||0)+'</td>' +
+        '<td style="text-align:center">'+(nf.dataPagamento?fmtData(nf.dataPagamento):'—')+'</td>' +
+      '</tr>';
+    }).join('');
+    var total = lista.reduce(function(s,n){return s+(n.valor||0);},0);
+    return '<table style="width:100%;border-collapse:collapse;font-size:9.5px;margin-bottom:6px">' +
+      '<thead><tr style="background:'+corHeader+';color:#fff">' +
+        '<th style="padding:5px 8px;text-align:left">Nº NF</th>' +
+        '<th style="padding:5px 8px;text-align:left">Emissão</th>' +
+        '<th style="padding:5px 8px;text-align:left">Fornecedor</th>' +
+        '<th style="padding:5px 8px;text-align:left">Descrição</th>' +
+        '<th style="padding:5px 8px;text-align:left">Evento</th>' +
+        '<th style="padding:5px 8px;text-align:left">Processo</th>' +
+        '<th style="padding:5px 8px;text-align:left">AF</th>' +
+        '<th style="padding:5px 8px;text-align:left">Empenho</th>' +
+        '<th style="padding:5px 8px;text-align:right">Valor</th>' +
+        '<th style="padding:5px 8px;text-align:center">Data Pgto.</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '<tfoot><tr style="background:#f0f0f0;font-weight:800">' +
+        '<td colspan="8" style="padding:5px 8px;text-align:right">TOTAL '+titulo.toUpperCase()+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;font-family:monospace">'+fmtBRL(total)+'</td>' +
+        '<td></td>' +
+      '</tr></tfoot>' +
+    '</table>';
+  }
+
+  var pagas    = nfs.filter(function(n){return n.status==='pago';});
+  var pendentes= nfs.filter(function(n){return n.status==='pendente';});
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+    '<title>Relatório de Notas Fiscais — '+e.name+'</title>' +
+    '<style>' +
+      'body{font-family:Arial,sans-serif;font-size:10px;color:#222;margin:0;padding:20px}' +
+      'h1{color:#1a4731;font-size:16px;border-bottom:3px solid #f9a825;padding-bottom:6px;margin-bottom:4px}' +
+      'h2{font-size:12px;color:#1a4731;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.5px;border-left:4px solid #f9a825;padding-left:8px}' +
+      'table{width:100%;border-collapse:collapse;margin-bottom:6px}' +
+      'td{padding:4px 7px;border-bottom:1px solid #eee;vertical-align:middle}' +
+      'tr:nth-child(even) td{background:#f9f9f9}' +
+      '.cards{display:flex;gap:12px;margin:12px 0 20px;flex-wrap:wrap}' +
+      '.card{flex:1;min-width:120px;border:2px solid #ddd;border-radius:8px;padding:10px 14px}' +
+      '.card-lbl{font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
+      '.card-val{font-size:15px;font-weight:800;margin:3px 0}' +
+      '.pago{border-color:#2e7d4f;background:#f0faf3}.pago .card-val{color:#1b5e20}' +
+      '.pendente{border-color:#e65100;background:#fff8f5}.pendente .card-val{color:#e65100}' +
+      '.geral{border-color:#1a4731;background:#f0f7f2}.geral .card-val{color:#1a4731}' +
+      '@media print{@page{margin:1.2cm;size:A4 landscape}body{padding:0}}' +
+    '</style></head><body>' +
+    '<h1>📋 Relatório de Notas Fiscais</h1>' +
+    '<p style="font-size:10px;color:#666;margin-bottom:4px"><strong>Evento:</strong> '+e.name+' &nbsp;|&nbsp; <strong>Data:</strong> '+e.dataEvento+' &nbsp;|&nbsp; <strong>Emitido em:</strong> '+now+'</p>' +
+    '<div class="cards">' +
+      '<div class="card geral"><div class="card-lbl">Total Geral</div><div class="card-val">'+fmtBRL(totalGeral)+'</div><div style="font-size:9px;color:#888">'+nfs.length+' nota(s)</div></div>' +
+      '<div class="card pago"><div class="card-lbl">✅ Pagas</div><div class="card-val">'+fmtBRL(totalPago)+'</div><div style="font-size:9px;color:#888">'+pagas.length+' nota(s)</div></div>' +
+      '<div class="card pendente"><div class="card-lbl">⏳ Pendentes</div><div class="card-val">'+fmtBRL(totalPendente)+'</div><div style="font-size:9px;color:#888">'+pendentes.length+' nota(s)</div></div>' +
+    '</div>' +
+    '<h2>✅ Notas Pagas ('+pagas.length+')</h2>' +
+    mkTabela(pagas, 'Pagas', '#1b5e20') +
+    '<h2>⏳ Notas Pendentes ('+pendentes.length+')</h2>' +
+    mkTabela(pendentes, 'Pendentes', '#bf360c') +
+    '<p style="font-size:9px;color:#aaa;text-align:right;margin-top:16px">Gerado em '+now+' · Sistema de Gerenciamento de Eventos — SMCT São Carlos</p>' +
+  '</body></html>';
+
+  var w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 600);
+}
+
+
+// ═══════════════════════════════════════════════
+//  ATRAÇÕES MUSICAIS / ARTÍSTICAS
+// ═══════════════════════════════════════════════
+function renderAtracoes() {
+  var e = ev();
+  var atracoes = e.atracoes || [];
+  var _prf = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin';
+  var totalCache = atracoes.reduce(function(s,a){ return s+(parseBRL(String(a.cache||''))||0); }, 0);
+
+  var html = '<div class="sh"><span class="sh-emoji">🎤</span>' +
+    '<div><h2>Atrações Musicais / Artísticas</h2>' +
+    '<p>Gerencie as atrações contratadas para o evento</p></div>' +
+    '<div class="sh-actions">' +
+    (podeEditar ? '<button class="add-btn" onclick="openModalAtracoes(null)">＋ Nova Atração</button>' : '') +
+    '</div></div><div class="content">';
+
+  html += '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px">' +
+    '<div style="flex:1;min-width:160px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px">' +
+      '<div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Total Atrações</div>' +
+      '<div style="font-size:22px;font-weight:800;color:var(--gd)">' + atracoes.length + '</div>' +
+    '</div>' +
+    '<div style="flex:1;min-width:160px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px">' +
+      '<div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Total Cachê</div>' +
+      '<div style="font-size:22px;font-weight:800;color:var(--gd)">' + (totalCache ? fmtBRL(totalCache) : '—') + '</div>' +
+    '</div></div>';
+
+  if (!atracoes.length) {
+    html += '<div style="text-align:center;padding:48px;color:#ccc">' +
+      '<div style="font-size:48px;margin-bottom:12px">🎤</div>' +
+      '<div style="font-size:13px">Nenhuma atração cadastrada</div>' +
+      (podeEditar ? '<div style="font-size:11px;margin-top:6px;color:#bbb">Clique em "+ Nova Atração" para começar</div>' : '') +
+    '</div>';
+  } else {
+    html += '<div class="tw"><table><thead><tr>' +
+      '<th>Artista / Grupo</th><th>Gênero</th><th>Tipo</th>' +
+      '<th>Data / Horário</th><th>Local</th><th>Cachê</th><th>ATA</th><th></th>' +
+    '</tr></thead><tbody>';
+    atracoes.forEach(function(a) {
+      html += '<tr>' +
+        '<td style="font-weight:700;color:var(--gd)">' + (a.nome||'—') + '</td>' +
+        '<td>' + (a.genero||'—') + '</td>' +
+        '<td><span class="tag t-ata">' + (a.tipo||'—') + '</span></td>' +
+        '<td><div>' + (a.data||'—') + '</div><div style="color:#888;font-size:10px">' + (a.horario||'') + (a.duracao?' · '+a.duracao:'') + '</div></td>' +
+        '<td style="font-size:11px">' + (a.local||'—') + '</td>' +
+        '<td class="val-r" style="font-weight:700">' + (a.cache ? fmtBRL(parseBRL(String(a.cache))||0) : '<span class="val-p">A definir</span>') + '</td>' +
+        '<td>' + (a.ata ? tagAta(a.ata) : '—') + '</td>' +
+        '<td><div class="abts">' +
+          (podeEditar ? '<button class="bobs" onclick="openModalAtracoes(' + a.id + ')" title="Editar">✏</button><button class="bdel" onclick="delAtracao(' + a.id + ')">✕</button>' : '') +
+        '</div></td>' +
+      '</tr>';
+    });
+    html += '<tr class="tot-tr"><td colspan="5" style="text-align:right">TOTAL CACHÊ</td>' +
+      '<td class="val-r" style="font-size:14px">' + (totalCache ? fmtBRL(totalCache) : '—') + '</td>' +
+      '<td colspan="2"></td></tr>';
+    html += '</tbody></table></div>';
+  }
+  return html + '</div>';
+}
+
+function openModalAtracoes(id) {
+  var e = ev();
+  var atracoes = e.atracoes || [];
+  var a = id ? atracoes.find(function(x){ return x.id === id; }) : null;
+  var ataOpts = '<option value="">— Selecione ou deixe em branco —</option>';
+  atasMestre.forEach(function(at) {
+    var val = at.numero + '/' + at.ano;
+    ataOpts += '<option value="' + val + '"' + (a && a.ata === val ? ' selected' : '') + '>' + val + ' — ' + at.fornecedor + '</option>';
+  });
+  modalCtx = { type: 'atracao', id: id };
+  document.getElementById('modal-inner').classList.remove('wide');
+  document.getElementById('mtitle').textContent = a ? '✏ Editar Atração' : '🎤 Nova Atração';
+  document.getElementById('msub').textContent = 'Dados da atração musical ou artística';
+  document.getElementById('mbody').innerHTML = '<div class="fg">' +
+    '<div class="field" style="grid-column:1/-1"><label>Nome do Artista / Grupo *</label>' +
+      '<input id="fat-nome" value="' + (a ? (a.nome||'').replace(/"/g,'&quot;') : '') + '" placeholder="ex: BANDA VITROLA" oninput="this.value=this.value.toUpperCase()"></div>' +
+    '<div class="field"><label>Gênero Musical</label>' +
+      '<input id="fat-genero" value="' + (a ? (a.genero||'').replace(/"/g,'&quot;') : '') + '" placeholder="ex: SERTANEJO, FORRÓ, MPB..." oninput="this.value=this.value.toUpperCase()"></div>' +
+    '<div class="field"><label>Tipo</label><select id="fat-tipo">' +
+      '<option value="SOLO"'+(a&&a.tipo==="SOLO"?" selected":"")+'>SOLO</option>' +
+      '<option value="DUPLA"'+(a&&a.tipo==="DUPLA"?" selected":"")+'>DUPLA</option>' +
+      '<option value="BANDA"'+(a&&a.tipo==="BANDA"?" selected":"")+'>BANDA</option>' +
+      '<option value="GRUPO"'+(a&&a.tipo==="GRUPO"?" selected":"")+'>GRUPO</option>' +
+      '<option value="DJ"'+(a&&a.tipo==="DJ"?" selected":"")+'>DJ</option>' +
+      '<option value="TEATRO"'+(a&&a.tipo==="TEATRO"?" selected":"")+'>TEATRO</option>' +
+      '<option value="OUTRO"'+(a&&a.tipo==="OUTRO"?" selected":"")+'>OUTRO</option>' +
+    '</select></div>' +
+    '<div class="field"><label>Data da Apresentação</label>' +
+      '<input id="fat-data" value="' + (a?a.data||'':'') + '" placeholder="ex: 24/04/2026" maxlength="10" oninput="fmtDateInput(this)"></div>' +
+    '<div class="field"><label>Horário</label>' +
+      '<input id="fat-horario" value="' + (a?a.horario||'':'') + '" placeholder="ex: 20:00" maxlength="5" oninput="fmtTimeInput(this)"></div>' +
+    '<div class="field"><label>Duração</label>' +
+      '<input id="fat-duracao" value="' + (a?(a.duracao||'').replace(/"/g,'&quot;'):'') + '" placeholder="ex: 45 min, 1h30"></div>' +
+    '<div class="field" style="grid-column:1/-1"><label>Local / Palco</label>' +
+      '<input id="fat-local" value="' + (a?(a.local||'').replace(/"/g,'&quot;'):'') + '" placeholder="ex: PALCO PRINCIPAL — PRAÇA XV" oninput="this.value=this.value.toUpperCase()"></div>' +
+    '<div class="field"><label>Cachê (R$)</label>' +
+      '<input id="fat-cache" value="' + (a?a.cache||'':'') + '" placeholder="ex: 5.000,00"></div>' +
+    '<div class="field"><label>ATA / Chamamento</label>' +
+      '<select id="fat-ata">' + ataOpts + '</select></div>' +
+    '<div class="field" style="grid-column:1/-1"><label>Rider Técnico / Observações</label>' +
+      '<textarea id="fat-rider" rows="3" placeholder="Ex: 2 microfones com fio, som P.A. 10k, backline com bateria...">' + (a?a.rider||'':'') + '</textarea></div>' +
+  '</div>';
+  window._atracaoEditId = id;
+  document.getElementById('modal').style.display = 'flex';
+}
+
+async function saveAtracao() {
+  var e = ev();
+  if (!e.atracoes) e.atracoes = [];
+  if (!e.nextAtracoes) e.nextAtracoes = 1;
+  var nome = document.getElementById('fat-nome').value.trim();
+  if (!nome) { alert('Informe o nome do artista ou grupo.'); return; }
+  var obj = {
+    nome:    nome,
+    genero:  document.getElementById('fat-genero').value.trim(),
+    tipo:    document.getElementById('fat-tipo').value,
+    data:    document.getElementById('fat-data').value.trim(),
+    horario: document.getElementById('fat-horario').value.trim(),
+    duracao: document.getElementById('fat-duracao').value.trim(),
+    local:   document.getElementById('fat-local').value.trim(),
+    cache:   document.getElementById('fat-cache').value.trim(),
+    ata:     document.getElementById('fat-ata').value,
+    rider:   document.getElementById('fat-rider').value.trim()
+  };
+  if (window._atracaoEditId) {
+    var idx = e.atracoes.findIndex(function(x){ return x.id === window._atracaoEditId; });
+    if (idx >= 0) { obj.id = window._atracaoEditId; e.atracoes[idx] = obj; }
+    toast('Atração atualizada!');
+  } else {
+    obj.id = e.nextAtracoes++;
+    e.atracoes.push(obj);
+    toast('Atração cadastrada!');
+  }
+  window._atracaoEditId = null;
+  closeModal(); await saveData(); render();
+}
+
+async function delAtracao(id) {
+  if (!confirm('Excluir esta atração?')) return;
+  var e = ev();
+  e.atracoes = (e.atracoes||[]).filter(function(a){ return a.id !== id; });
+  await saveData(); render(); toast('Atração excluída.');
+}
+
+
+function toggleAcordiao(id) {
+  var body = document.getElementById('ata-body-' + id);
+  var arrow = document.getElementById('ata-arrow-' + id);
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.textContent = open ? '▶' : '▼';
+}
+
+// ═══════════════════════════════════════════════
+//  ESCALA DE SERVIÇO — detalhamento operacional do Staff
+// ═══════════════════════════════════════════════
+function toggleEscalaItem(id) {
+  var body = document.getElementById('escala-body-' + id);
+  var arrow = document.getElementById('escala-arrow-' + id);
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.textContent = open ? '▶' : '▼';
+}
+
+function renderEscala() {
+  var e = ev();
+  var staffItems = e.staff || [];
+
+  var html = '<div class="sh"><span class="sh-emoji">🗓️</span>' +
+    '<div><h2>Escala de Trabalho</h2><p>Detalhe data, horário e quantidade de pessoas por turno — para repassar ao fornecedor</p></div>' +
+    '<div class="sh-actions"><button class="add-btn" style="background:#0d47a1" onclick="exportarEscalaFornecedor()">📄 Gerar PDF para Fornecedor</button></div>' +
+  '</div><div class="content">';
+
+  if (!staffItems.length) {
+    html += '<div class="tw"><div class="empty"><div class="ei">🗓️</div>Nenhum item de Staff cadastrado ainda.<br>' +
+      '<span style="font-size:11px;color:#aaa">Cadastre os itens na aba 👥 Staff primeiro, depois detalhe a escala aqui.</span></div></div>';
+    html += '</div>';
+    return html;
+  }
+
+  staffItems.forEach(function(it) {
+    var escala = it.escala || [];
+    var horasEscaladas = escala.reduce(function(s, x){ return s + (x.horas || 0); }, 0);
+    var horasContratadas = it.totalH || 0;
+    var pct = horasContratadas ? Math.min(100, Math.round(horasEscaladas / horasContratadas * 100)) : 0;
+    var completo = horasEscaladas >= horasContratadas && horasContratadas > 0;
+    var corBarra = completo ? 'var(--gm)' : (pct > 0 ? 'var(--gold)' : '#ddd');
+
+    var linhasEscala = escala.map(function(s, idx) {
+      return '<tr>' +
+        '<td style="font-size:11px">' + (s.data || '—') + '</td>' +
+        '<td style="font-size:11px;white-space:nowrap">' + (s.hrInicio || '—') + ' \u2013 ' + (s.hrFim || '—') + '</td>' +
+        '<td style="text-align:center;font-size:11px">' + (s.qtd || 1) + '</td>' +
+        '<td style="text-align:center;font-weight:700;color:var(--gd);font-size:11px">' + (s.horas || 0) + 'h</td>' +
+        '<td style="font-size:11px;color:var(--gd)">' + (s.local || '—') + '</td>' +
+        '<td style="font-size:10px;color:#888">' + (s.obs || '—') + '</td>' +
+        '<td><div class="abts"><button class="bobs" onclick="editarEscalaLinha(' + it.id + ',' + idx + ')" title="Editar">\u270f</button><button class="bdel" onclick="delEscalaLinha(' + it.id + ',' + idx + ')" title="Remover">\u2715</button></div></td>' +
+      '</tr>';
+    }).join('');
+
+    html += '<div style="background:#fff;border:1px solid var(--border);border-radius:9px;margin-bottom:10px;overflow:hidden">' +
+
+      // Cabeçalho clicável
+      '<div onclick="toggleEscalaItem(' + it.id + ')" style="display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;user-select:none;transition:background .15s" onmouseover="this.style.background=\'var(--gp)\'" onmouseout="this.style.background=\'\'">' +
+        '<span id="escala-arrow-' + it.id + '" style="font-size:11px;color:var(--gd);font-weight:700;width:14px;flex-shrink:0">\u25b6</span>' +
+        '<span style="font-weight:700;font-size:12px;color:var(--gd);flex:1;min-width:0">' + (it.descricao || '—') + '</span>' +
+        '<span style="font-size:10px;color:#aaa;white-space:nowrap">' + (it.fornecedor || 'sem fornecedor') + '</span>' +
+        '<div style="display:flex;align-items:center;gap:8px;min-width:160px">' +
+          '<div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden">' +
+            '<div style="width:' + pct + '%;height:100%;background:' + corBarra + ';transition:.3s"></div>' +
+          '</div>' +
+          '<span style="font-size:10px;font-weight:700;color:' + corBarra + ';white-space:nowrap">' + horasEscaladas + 'h / ' + horasContratadas + 'h</span>' +
+        '</div>' +
+        (completo ? '<span style="color:var(--gm);font-size:14px" title="Escala completa">\u2705</span>' : '') +
+      '</div>' +
+
+      // Corpo recolhido por padrão
+      '<div id="escala-body-' + it.id + '" style="display:none;border-top:1px solid var(--border);padding:16px">' +
+
+        (horasEscaladas > horasContratadas ?
+          '<div style="background:var(--red-l);border:1px solid #ef9a9a;border-radius:7px;padding:8px 12px;font-size:11px;color:var(--red);margin-bottom:12px">\u26a0\ufe0f Aten\u00e7\u00e3o: a escala j\u00e1 ultrapassa as horas contratadas (' + horasEscaladas + 'h de ' + horasContratadas + 'h).</div>'
+          : '') +
+
+        (escala.length ?
+          '<div class="tw" style="margin-bottom:10px"><table>' +
+            '<thead><tr><th>Data</th><th>Hor\u00e1rio</th><th style="text-align:center">Qtd</th><th style="text-align:center">Horas</th><th>Local</th><th>Observa\u00e7\u00f5es</th><th></th></tr></thead>' +
+            '<tbody>' + linhasEscala + '</tbody>' +
+          '</table></div>'
+          : '<div class="muted" style="padding:8px 0 14px">Nenhum lan\u00e7amento de escala ainda.</div>') +
+
+        '<div style="background:var(--gp);border:1px solid var(--border);border-radius:8px;padding:12px 14px">' +
+          '<div id="esc-form-titulo-' + it.id + '" style="font-size:10px;font-weight:700;color:var(--gd);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">\u2795 Adicionar lan\u00e7amento de escala</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 0.6fr 1.2fr 1.2fr auto;gap:8px;align-items:end">' +
+            '<div><label style="display:block;font-size:9px;color:#999;margin-bottom:3px">Data</label><input id="esc-data-' + it.id + '" placeholder="24/04/2026" maxlength="10" oninput="fmtDateInput(this)" style="width:100%;padding:6px 8px;border:1.5px solid #e0e0e0;border-radius:5px;font-size:11px;font-family:Sora,sans-serif"></div>' +
+            '<div><label style="display:block;font-size:9px;color:#999;margin-bottom:3px">Hora In\u00edcio</label><input id="esc-hi-' + it.id + '" placeholder="08:00" maxlength="5" oninput="fmtTimeInput(this)" style="width:100%;padding:6px 8px;border:1.5px solid #e0e0e0;border-radius:5px;font-size:11px;font-family:Sora,sans-serif"></div>' +
+            '<div><label style="display:block;font-size:9px;color:#999;margin-bottom:3px">Hora Fim</label><input id="esc-hf-' + it.id + '" placeholder="16:00" maxlength="5" oninput="fmtTimeInput(this)" style="width:100%;padding:6px 8px;border:1.5px solid #e0e0e0;border-radius:5px;font-size:11px;font-family:Sora,sans-serif"></div>' +
+            '<div><label style="display:block;font-size:9px;color:#999;margin-bottom:3px">Qtd</label><input type="number" id="esc-qtd-' + it.id + '" value="1" min="1" style="width:100%;padding:6px 8px;border:1.5px solid #e0e0e0;border-radius:5px;font-size:11px;font-family:Sora,sans-serif"></div>' +
+            '<div><label style="display:block;font-size:9px;color:#999;margin-bottom:3px">Local</label><input id="esc-local-' + it.id + '" placeholder="ex: Teatro Municipal" style="width:100%;padding:6px 8px;border:1.5px solid #e0e0e0;border-radius:5px;font-size:11px;font-family:Sora,sans-serif"></div>' +
+            '<div><label style="display:block;font-size:9px;color:#999;margin-bottom:3px">Observa\u00e7\u00f5es</label><input id="esc-obs-' + it.id + '" placeholder="opcional" style="width:100%;padding:6px 8px;border:1.5px solid #e0e0e0;border-radius:5px;font-size:11px;font-family:Sora,sans-serif"></div>' +
+            '<button id="esc-form-btn-' + it.id + '" onclick="addEscalaLinha(' + it.id + ')" style="background:var(--gm);color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif;white-space:nowrap">+ Add</button>' +
+          '</div>' +
+        '</div>' +
+
+      '</div>' +
+    '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+function addEscalaLinha(staffId) {
+  var e = ev();
+  var it = e.staff.find(function(x){ return x.id === staffId; });
+  if (!it) return;
+
+  var data  = document.getElementById('esc-data-' + staffId).value.trim();
+  var hi    = document.getElementById('esc-hi-' + staffId).value.trim();
+  var hf    = document.getElementById('esc-hf-' + staffId).value.trim();
+  var qtd   = parseFloat(document.getElementById('esc-qtd-' + staffId).value) || 1;
+  var local = document.getElementById('esc-local-' + staffId).value.trim();
+  var obs   = document.getElementById('esc-obs-' + staffId).value.trim();
+
+  if (!data || !hi || !hf) { alert('Preencha data, hor\u00e1rio de in\u00edcio e fim.'); return; }
+  if (!/^\d{2}:\d{2}$/.test(hi) || !/^\d{2}:\d{2}$/.test(hf)) { alert('Hor\u00e1rio inv\u00e1lido. Use o formato HH:MM.'); return; }
+
+  var p1 = hi.split(':'), p2 = hf.split(':');
+  var m1 = parseInt(p1[0])*60 + parseInt(p1[1]);
+  var m2 = parseInt(p2[0])*60 + parseInt(p2[1]);
+  var diff = m2 - m1;
+  if (diff <= 0) diff += 24*60;
+  var horasPorPessoa = Math.round(diff / 60 * 100) / 100;
+  var horasTotal = Math.round(horasPorPessoa * qtd * 100) / 100;
+
+  if (!it.escala) it.escala = [];
+  var novaLinha = { data: data, hrInicio: hi, hrFim: hf, qtd: qtd, horas: horasTotal, local: local, obs: obs };
+
+  var editKey = 'esc-edit-' + staffId;
+  var editIdx = window[editKey];
+  if (editIdx !== undefined && editIdx !== null) {
+    it.escala[editIdx] = novaLinha;
+    window[editKey] = null;
+    toast('Lan\u00e7amento atualizado!');
+  } else {
+    it.escala.push(novaLinha);
+    toast('Lan\u00e7amento adicionado \u00e0 escala!');
+  }
+
+  saveData();
+  render();
+}
+
+function editarEscalaLinha(staffId, idx) {
+  var e = ev();
+  var it = e.staff.find(function(x){ return x.id === staffId; });
+  if (!it || !it.escala || !it.escala[idx]) return;
+  var s = it.escala[idx];
+
+  var body = document.getElementById('escala-body-' + staffId);
+  if (body) body.style.display = 'block';
+  var arrow = document.getElementById('escala-arrow-' + staffId);
+  if (arrow) arrow.textContent = '\u25bc';
+
+  window['esc-edit-' + staffId] = idx;
+
+  setTimeout(function() {
+    var fData  = document.getElementById('esc-data-' + staffId);  if (fData)  fData.value  = s.data || '';
+    var fHi    = document.getElementById('esc-hi-' + staffId);    if (fHi)    fHi.value    = s.hrInicio || '';
+    var fHf    = document.getElementById('esc-hf-' + staffId);    if (fHf)    fHf.value    = s.hrFim || '';
+    var fQtd   = document.getElementById('esc-qtd-' + staffId);   if (fQtd)   fQtd.value   = s.qtd || 1;
+    var fLocal = document.getElementById('esc-local-' + staffId); if (fLocal) fLocal.value = s.local || '';
+    var fObs   = document.getElementById('esc-obs-' + staffId);   if (fObs)   fObs.value   = s.obs || '';
+    var titulo = document.getElementById('esc-form-titulo-' + staffId);
+    if (titulo) titulo.textContent = '\u270f Editando lan\u00e7amento \u2014 clique em Atualizar para salvar';
+    var btn = document.getElementById('esc-form-btn-' + staffId);
+    if (btn) { btn.textContent = '\u2713 Atualizar'; btn.style.background = 'var(--or)'; }
+    if (fData) fData.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 50);
+}
+
+function delEscalaLinha(staffId, idx) {
+  var e = ev();
+  var it = e.staff.find(function(x){ return x.id === staffId; });
+  if (!it || !it.escala) return;
+  if (!confirm('Remover este lan\u00e7amento de escala?')) return;
+  it.escala.splice(idx, 1);
+  saveData();
+  render();
+  toast('Lan\u00e7amento removido.');
+}
+
+// ── PDF de Escala por Fornecedor ──
+function exportarEscalaFornecedor() {
+  var e = ev();
+  var staffItems = (e.staff || []).filter(function(it){ return (it.escala || []).length > 0; });
+
+  if (!staffItems.length) { alert('Nenhum item tem lan\u00e7amentos de escala ainda.'); return; }
+
+  // Agrupar por fornecedor
+  var grupos = {};
+  staffItems.forEach(function(it) {
+    var forn = it.fornecedor || 'SEM FORNECEDOR DEFINIDO';
+    if (!grupos[forn]) grupos[forn] = [];
+    grupos[forn].push(it);
+  });
+
+  var fornecedores = Object.keys(grupos);
+  var fornEscolhido = fornecedores.length === 1 ? fornecedores[0] : null;
+
+  if (!fornEscolhido) {
+    var opts = fornecedores.map(function(f, i){ return (i+1) + '. ' + f; }).join('\n');
+    var escolha = prompt('Escolha o fornecedor (digite o n\u00famero):\n\n' + opts);
+    var idx = parseInt(escolha) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= fornecedores.length) return;
+    fornEscolhido = fornecedores[idx];
+  }
+
+  var itensForn = grupos[fornEscolhido];
+  var now = new Date().toLocaleDateString('pt-BR');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Escala de Trabalho \u2014 ' + fornEscolhido + '</title><style>' +
+    'body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;padding:24px}' +
+    'h1{color:#1a4731;font-size:17px;border-bottom:3px solid #f9a825;padding-bottom:8px;margin-bottom:4px}' +
+    'h2{color:#1a4731;font-size:13px;margin:18px 0 6px;padding:6px 10px;background:#e8f4ea;border-left:4px solid #2e7d4f}' +
+    'table{width:100%;border-collapse:collapse;margin-bottom:10px}' +
+    'th{background:#1a4731;color:#fff;padding:6px 8px;text-align:left;font-size:10px}' +
+    'td{padding:5px 8px;border-bottom:1px solid #eee;font-size:10.5px}' +
+    'tr:nth-child(even) td{background:#f7faf8}' +
+    '.tot td{background:#fff3cd!important;font-weight:700}' +
+    '.info{font-size:10px;color:#666;margin-bottom:16px}' +
+    '@media print{@page{margin:1.5cm;size:A4 portrait}body{padding:0}}' +
+  '</style></head><body>';
+
+  html += '<h1>\ud83d\udcc4 Escala de Trabalho</h1>';
+  html += '<p class="info"><strong>Fornecedor:</strong> ' + fornEscolhido + ' &nbsp;|&nbsp; <strong>Evento:</strong> ' + e.name + ' &nbsp;|&nbsp; <strong>Emitido em:</strong> ' + now + '</p>';
+
+  itensForn.forEach(function(it) {
+    var escala = it.escala || [];
+    var totalHorasItem = escala.reduce(function(s,x){ return s + (x.horas||0); }, 0);
+    html += '<h2>' + it.descricao + ' \u2014 ' + totalHorasItem + 'h de ' + (it.totalH||0) + 'h contratadas</h2>';
+    html += '<table><tr><th>Data</th><th>Hor\u00e1rio</th><th style="text-align:center">Qtd. Pessoas</th><th style="text-align:center">Horas</th><th>Local</th><th>Observa\u00e7\u00f5es</th></tr>';
+    escala.forEach(function(s) {
+      html += '<tr><td>' + (s.data||'\u2014') + '</td><td>' + (s.hrInicio||'\u2014') + ' \u2013 ' + (s.hrFim||'\u2014') + '</td>' +
+        '<td style="text-align:center">' + (s.qtd||1) + '</td>' +
+        '<td style="text-align:center;font-weight:700">' + (s.horas||0) + 'h</td>' +
+        '<td>' + (s.local||'\u2014') + '</td>' +
+        '<td>' + (s.obs||'\u2014') + '</td></tr>';
+    });
+    html += '<tr class="tot"><td colspan="3" style="text-align:right">TOTAL DO ITEM</td><td style="text-align:center">' + totalHorasItem + 'h</td><td colspan="2"></td></tr>';
+    html += '</table>';
+  });
+
+  var totalGeral = itensForn.reduce(function(s,it){ return s + (it.escala||[]).reduce(function(s2,x){ return s2+(x.horas||0); },0); }, 0);
+  html += '<table style="margin-top:14px"><tr class="tot" style="font-size:12px"><td style="text-align:right;padding:8px">TOTAL GERAL DE HORAS \u2014 ' + fornEscolhido + '</td><td style="text-align:center;padding:8px">' + totalGeral + 'h</td></tr></table>';
+
+  html += '<p style="font-size:9px;color:#aaa;text-align:right;margin-top:16px">Gerado em ' + now + ' \u00b7 Sistema de Gerenciamento de Eventos \u2014 SMCT S\u00e3o Carlos</p>';
+  html += '</body></html>';
+
+  var w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 600);
+}
+
+
 function renderAtas() {
   let ataCards = '';
   if (!atasMestre.length) {
@@ -1078,6 +1747,9 @@ function renderAtas() {
   } else {
     atasMestre.forEach(ata => {
       const arquivos = ata.arquivos || [];
+      const nItens = (ata.itens||[]).length;
+      const nArqs  = arquivos.length;
+
       let itensHtml = (ata.itens||[]).map(it => `
         <div class="ata-item-row">
           <span class="item-nome">${it.desc} <span style="color:#aaa;font-size:10px">(${it.unidade})</span></span>
@@ -1097,44 +1769,52 @@ function renderAtas() {
           </div>`).join('');
 
       ataCards += `
-      <div class="ata-card">
-        <div class="ata-card-header">
-          <span class="ata-badge">ATA ${ata.numero}/${ata.ano}</span>
-          <span class="ata-fornecedor">${ata.fornecedor}</span>
-          <div class="abts" style="margin-left:auto">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:9px;margin-bottom:10px;overflow:hidden">
+
+        <!-- CABEÇALHO CLICÁVEL -->
+        <div onclick="toggleAcordiao(${ata.id})" style="display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;user-select:none;transition:background .15s" onmouseover="this.style.background='var(--gp)'" onmouseout="this.style.background=''">
+          <span id="ata-arrow-${ata.id}" style="font-size:11px;color:var(--gd);font-weight:700;width:14px;flex-shrink:0">▶</span>
+          <span class="ata-badge" style="flex-shrink:0">ATA ${ata.numero}/${ata.ano}</span>
+          <span style="font-weight:700;font-size:12px;color:var(--gd);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ata.fornecedor}</span>
+          <span style="font-size:10px;color:#aaa;white-space:nowrap;margin-left:8px">${nItens} item(s) · ${nArqs} doc(s)</span>
+          ${ata.valorGlobal ? `<span style="font-family:monospace;font-size:11px;font-weight:700;color:var(--gd);white-space:nowrap;margin-left:8px">R$ ${ata.valorGlobal}</span>` : ''}
+          <div style="display:flex;gap:6px;margin-left:12px" onclick="event.stopPropagation()">
             <button class="add-btn" style="padding:4px 10px;font-size:10px;margin:0" onclick="openModalAta(${ata.id})">✏ Editar</button>
             <button class="bdel" onclick="delAta(${ata.id})" style="width:28px;height:28px" title="Excluir ATA">✕</button>
           </div>
         </div>
-        <div class="ata-info-grid">
-          <div class="ata-info-item"><label>CNPJ</label><span>${ata.cnpj||'—'}</span></div>
-          <div class="ata-info-item"><label>Contato</label><span>${ata.contato||'—'}</span></div>
-          <div class="ata-info-item"><label>E-mail</label><span>${ata.email||'—'}</span></div>
-          <div class="ata-info-item"><label>Vigência</label><span>${ata.vigencia||'—'}</span></div>
-          ${ata.valorGlobal?`<div class="ata-info-item"><label>Valor Global</label><span>R$ ${ata.valorGlobal}</span></div>`:''}
-          ${ata.processo?`<div class="ata-info-item"><label>Processo</label><span>${ata.processo}</span></div>`:''}
-          ${ata.representante?`<div class="ata-info-item"><label>Representante</label><span>${ata.representante}</span></div>`:''}
-          ${ata.endereco?`<div class="ata-info-item" style="grid-column:1/-1"><label>Endereço</label><span>${ata.endereco}</span></div>`:''}
-          <div class="ata-info-item" style="grid-column:1/-1"><label>Objeto</label><span>${ata.objeto||'—'}</span></div>
+
+        <!-- CORPO RECOLHIDO POR PADRÃO -->
+        <div id="ata-body-${ata.id}" style="display:none;border-top:1px solid var(--border);padding:16px">
+          <div class="ata-info-grid">
+            <div class="ata-info-item"><label>CNPJ</label><span>${ata.cnpj||'—'}</span></div>
+            <div class="ata-info-item"><label>Contato</label><span>${ata.contato||'—'}</span></div>
+            <div class="ata-info-item"><label>E-mail</label><span>${ata.email||'—'}</span></div>
+            <div class="ata-info-item"><label>Vigência</label><span>${ata.vigencia||'—'}</span></div>
+            ${ata.valorGlobal?`<div class="ata-info-item"><label>Valor Global</label><span>R$ ${ata.valorGlobal}</span></div>`:''}
+            ${ata.processo?`<div class="ata-info-item"><label>Processo</label><span>${ata.processo}</span></div>`:''}
+            ${ata.representante?`<div class="ata-info-item"><label>Representante</label><span>${ata.representante}</span></div>`:''}
+            ${ata.endereco?`<div class="ata-info-item" style="grid-column:1/-1"><label>Endereço</label><span>${ata.endereco}</span></div>`:''}
+            <div class="ata-info-item" style="grid-column:1/-1"><label>Objeto</label><span>${ata.objeto||'—'}</span></div>
+          </div>
+
+          <div class="ata-itens-title">📦 Itens da ATA (${nItens} itens)</div>
+          ${itensHtml || '<div class="muted" style="padding:6px 0">Nenhum item cadastrado.</div>'}
+          <button class="add-btn" style="padding:5px 12px;font-size:10px;margin-top:8px;margin-left:0" onclick="openModalAtaItem(${ata.id})">＋ Adicionar Item</button>
+
+          <div class="ata-itens-title" style="margin-top:14px">📎 Documentos desta ATA</div>
+          <div class="upload-area" style="padding:14px;margin-bottom:8px"
+            onclick="document.getElementById('upload-ata-${ata.id}').click()"
+            ondragover="event.preventDefault();this.classList.add('dragover')"
+            ondragleave="this.classList.remove('dragover')"
+            ondrop="handleDropAta(event,${ata.id})">
+            <div class="ui" style="font-size:20px">📂</div>
+            <p style="font-size:11px"><strong>Clique ou arraste</strong> o arquivo da ATA aqui (PDF, imagem)</p>
+          </div>
+          <input type="file" id="upload-ata-${ata.id}" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple onchange="handleFileUpload(this.files,${ata.id})">
+          <div>${arquivosHtml}</div>
         </div>
 
-        <div class="ata-itens-title">📦 Itens da ATA (${(ata.itens||[]).length} itens)</div>
-        ${itensHtml || '<div class="muted" style="padding:6px 0">Nenhum item cadastrado.</div>'}
-        <button class="add-btn" style="padding:5px 12px;font-size:10px;margin-top:8px;margin-left:0" onclick="openModalAtaItem(${ata.id})">＋ Adicionar Item</button>
-
-        <div class="ata-itens-title" style="margin-top:14px">📎 Documentos desta ATA</div>
-        <div
-          class="upload-area" style="padding:14px;margin-bottom:8px"
-          onclick="document.getElementById('upload-ata-${ata.id}').click()"
-          ondragover="event.preventDefault();this.classList.add('dragover')"
-          ondragleave="this.classList.remove('dragover')"
-          ondrop="handleDropAta(event,${ata.id})"
-        >
-          <div class="ui" style="font-size:20px">📂</div>
-          <p style="font-size:11px"><strong>Clique ou arraste</strong> o arquivo da ATA aqui (PDF, imagem)</p>
-        </div>
-        <input type="file" id="upload-ata-${ata.id}" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple onchange="handleFileUpload(this.files,${ata.id})">
-        <div>${arquivosHtml}</div>
       </div>`;
     });
   }
@@ -1291,14 +1971,14 @@ function openModalAtaItem(ataId) {
 function delAta(id) {
   if (!confirm('Excluir esta ATA do cadastro mestre? Todos os eventos que a referenciam não serão alterados.')) return;
   atasMestre = atasMestre.filter(a=>a.id!==id);
-  toast('ATA excluída do cadastro mestre.'); render();
+  toast('ATA excluída do cadastro mestre.'); saveAtasImediato(); render();
 }
 
 function delAtaItem(ataId, itemId) {
   const ata = atasMestre.find(a=>a.id===ataId);
   if (!ata) return;
   ata.itens = ata.itens.filter(i=>i.id!==itemId);
-  toast('Item removido.'); render();
+  toast('Item removido.'); saveAtasImediato(); render();
 }
 
 // ── FILE UPLOAD ──
@@ -1396,7 +2076,8 @@ function renderResumo() {
   // ── Totals ──
   const totalStaffVal  = totalStaff();
   const totalEstVal    = totalEst();
-  const totalGeral     = totalStaffVal + totalEstVal + totalHosp();
+  const totalAtracoes   = (e.atracoes||[]).reduce(function(s,a){ return s+(parseBRL(String(a.cache||''))||0); },0);
+  const totalGeral     = totalStaffVal + totalEstVal + totalHosp() + totalAtracoes;
   const totalStaffH    = e.staff.reduce(function(s,x){ return s+(x.totalH||0); },0);
   const totalStaffQtd  = e.staff.reduce(function(s,x){ return s+(x.qtd||0); },0);
   const totalEstItens  = e.estrutura.length;
@@ -1416,11 +2097,7 @@ function renderResumo() {
         var bg = i%2===0 ? '' : 'background:#f7faf8';
         return '<tr style="'+bg+'">' +
           '<td style="font-size:10px;font-weight:600;color:var(--gd);min-width:140px">'+(it.descricao||'—')+'</td>' +
-          '<td>'+(it.turno||'—')+'</td>' +
-          '<td style="font-size:10px;white-space:nowrap">'+(it.dtInicio||'—')+(it.dtFim&&it.dtFim!==it.dtInicio?' a '+it.dtFim:'')+'</td>' +
-          '<td style="white-space:nowrap;font-size:10px">'+(it.hrInicio||'—')+' – '+(it.hrFim||'—')+'</td>' +
           '<td style="text-align:center">'+(it.qtd||'—')+'</td>' +
-          '<td style="text-align:center">'+(it.chInd||'—')+'h</td>' +
           '<td style="text-align:center;font-weight:600;color:var(--gm)">'+(it.totalH||0)+'h</td>' +
           '<td class="val-r">'+(it.vlrH ? fmtV(it.vlrH)+'/h' : '—')+'</td>' +
           '<td class="val-r" style="font-weight:700">'+(it.custo ? fmtV(it.custo) : '—')+'</td>' +
@@ -1436,12 +2113,12 @@ function renderResumo() {
         '</div>' +
         '<div class="tw" style="margin-top:0;border-radius:0 0 6px 6px;margin-bottom:14px"><table>' +
           '<thead><tr>' +
-            '<th>Descrição</th><th>Turno</th><th>Período</th><th>Horário</th>' +
-            '<th style="text-align:center">Qtd</th><th style="text-align:center">CH Ind.</th><th style="text-align:center">Total H</th>' +
+            '<th>Descrição</th>' +
+            '<th style="text-align:center">Qtd</th><th style="text-align:center">Total H</th>' +
             '<th>Vlr/Hora</th><th>Custo</th><th>ATA</th><th>Fornecedor</th><th>Observações</th>' +
           '</tr></thead>' +
           '<tbody>'+rows+
-            '<tr class="sub-tr"><td colspan="8" style="text-align:right;padding-right:12px">Subtotal — '+sec+'</td>' +
+            '<tr class="sub-tr"><td colspan="5" style="text-align:right;padding-right:12px">Subtotal — '+sec+'</td>' +
             '<td class="val-r">'+fmtV(subTotal)+'</td><td colspan="3"></td></tr>' +
           '</tbody>' +
         '</table></div>';
@@ -1587,10 +2264,11 @@ function renderResumo() {
 
     // ── CARDS TOTAIS ──
     '<div class="cards resumo-cards" style="margin-bottom:20px">' +
-      '<div class="card gold"><div class="card-lbl">Total Geral do Evento</div><div class="card-val">'+fmtV(totalGeral)+'</div><div class="card-sub">Staff + Estrutura contratados</div></div>' +
+      '<div class="card gold"><div class="card-lbl">Total Geral do Evento</div><div class="card-val">'+fmtV(totalGeral)+'</div><div class="card-sub">Staff · Estrutura · Hospedagem · Atrações</div></div>' +
       (e.modules.staff ? '<div class="card"><div class="card-lbl">Total Staff</div><div class="card-val">'+fmtV(totalStaffVal)+'</div><div class="card-sub">'+totalStaffQtd+' pessoas · '+totalStaffH+'h</div></div>' : '') +
       (e.modules.estrutura ? '<div class="card"><div class="card-lbl">Total Estrutura</div><div class="card-val">'+fmtV(totalEstVal)+'</div><div class="card-sub">'+totalEstItens+' item(s) contratados</div></div>' : '') +
       (e.modules.hospedagem ? '<div class="card blue"><div class="card-lbl">Hospedagem</div><div class="card-val">'+(totalHosp()?fmtV(totalHosp()):totalHospGrupos+' grupo(s)')+'</div><div class="card-sub">'+(totalHosp()?totalHospGrupos+' grupo(s) · pensão completa':'valor a cotar')+'</div></div>' : '') +
+      (e.modules.atracoes && (e.atracoes||[]).length ? '<div class="card" style="border-top:3px solid var(--pur)"><div class="card-lbl">Atrações</div><div class="card-val">'+fmtV(totalAtracoes)+'</div><div class="card-sub">'+(e.atracoes||[]).length+' atração(ões) contratada(s)</div></div>' : '') +
     '</div>' +
 
     // ── STAFF ──
@@ -1605,6 +2283,28 @@ function renderResumo() {
     (e.modules.hospedagem && e.hospedagem.length ?
       '<div class="grp">🛏️ HOSPEDAGEM — DETALHAMENTO</div>' + hospHtml : '') +
 
+    // ── ATRAÇÕES ──
+    (e.modules.atracoes && (e.atracoes||[]).length ?
+      '<div class="grp">🎤 ATRAÇÕES — DETALHAMENTO</div>' + (function(){
+        var rows = (e.atracoes||[]).map(function(a,i){
+          var bg = i%2===0?'':'background:#f7faf8';
+          return '<tr style="'+bg+'">'+
+            '<td style="font-weight:700;color:var(--gd)">'+(a.nome||'—')+'</td>'+
+            '<td>'+(a.genero||'—')+'</td>'+
+            '<td><span class="tag t-ata">'+(a.tipo||'—')+'</span></td>'+
+            '<td>'+(a.data||'—')+(a.horario?' · '+a.horario:'')+'</td>'+
+            '<td>'+(a.local||'—')+'</td>'+
+            '<td class="val-r" style="font-weight:700">'+(a.cache?fmtBRL(parseBRL(String(a.cache))||0):'<span class="val-p">A definir</span>')+'</td>'+
+            '<td>'+(a.ata?tagAta(a.ata):'—')+'</td>'+
+          '</tr>';
+        }).join('');
+        return '<div class="tw"><table>'+
+          '<thead><tr><th>Artista</th><th>Gênero</th><th>Tipo</th><th>Data / Horário</th><th>Local</th><th>Cachê</th><th>ATA</th></tr></thead>'+
+          '<tbody>'+rows+
+          '<tr class="tot-tr"><td colspan="5" style="text-align:right">TOTAL CACHÊ</td>'+
+          '<td class="val-r">'+fmtBRL(totalAtracoes)+'</td><td></td></tr>'+
+          '</tbody></table></div>';
+      })() : '') +
 
     '<p style="font-size:10px;color:#aaa;text-align:right;margin-top:6px">Gerado em '+now+' · Sistema de Gerenciamento de Eventos</p>' +
   '</div>';
@@ -1629,7 +2329,7 @@ function renderStaff() {
       html += buildSecaoBlock('staff', sec, sub, items);
     });
     html += '<div class="tw" style="margin-top:6px"><table><tbody><tr class="tot-tr">' +
-      '<td colspan="8" style="padding:12px;font-size:13px;font-weight:800;text-align:right">TOTAL GERAL — STAFF</td>' +
+      '<td colspan="4" style="padding:12px;font-size:13px;font-weight:800;text-align:right">TOTAL GERAL — STAFF</td>' +
       '<td class="val-r" style="font-size:15px;font-weight:800;padding-right:12px">' + (fmt(totalStaff())||'R$ 0,00') + '</td>' +
       '<td colspan="5"></td></tr></tbody></table></div>';
   }
@@ -1645,13 +2345,13 @@ function renderStaff() {
 
 function buildSecaoBlock(mod, sec, subtotal, items) {
   var secEsc = (sec||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  var cols = mod==='staff' ? 15 : mod==='estrutura' ? 10 : 12;
+  var cols = mod==='staff' ? 10 : mod==='estrutura' ? 10 : 12;
   var tabLabel = mod==='staff' ? 'staff' : mod==='estrutura' ? 'estrutura' : 'hospedagem';
 
   var thead = '';
   if (mod === 'staff') {
-    thead = '<th>Descri&ccedil;&atilde;o</th><th>Turno</th><th>Data In&iacute;cio</th><th>Data Fim</th><th>Hor&aacute;rio</th>' +
-      '<th>Qtd.<br>Pessoas</th><th>C.H.<br>Individual</th><th>Total<br>de Horas</th>' +
+    thead = '<th>Descri&ccedil;&atilde;o</th>' +
+      '<th>Qtd.<br>Pessoas</th><th>Total<br>de Horas</th>' +
       '<th>Valor/Hora</th><th>Custo Total</th><th>N&ordm; ATA</th><th>Fornecedor</th>' +
       '<th>Contato</th><th>Observa&ccedil;&otilde;es</th><th></th>';
   } else if (mod === 'estrutura') {
@@ -1692,7 +2392,7 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
         var grpTotalH = grpItems.reduce(function(s,x){ return s+(x.totalH||0); }, 0);
         // Group header row
         rows += '<tr style="background:linear-gradient(90deg,rgba(26,71,49,.09),rgba(46,125,79,.04));border-top:2px solid rgba(46,125,79,.25)">' +
-          '<td colspan="15" style="padding:7px 14px">' +
+          '<td colspan="10" style="padding:7px 14px">' +
             '<div style="display:flex;align-items:center;justify-content:space-between">' +
               '<span style="font-weight:800;font-size:12px;color:var(--gd);letter-spacing:.4px">▸ ' + desc + '</span>' +
               '<span style="font-size:10px;color:#888;font-family:monospace">' +
@@ -1705,31 +2405,22 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
           var bg = i % 2 === 0 ? '' : 'background:#fafafa';
           rows += '<tr style="' + bg + '">' +
             '<td style="font-weight:600;color:var(--gd);font-size:11px;min-width:130px;padding-left:20px">' + edCell('staff',it.id,'descricao',it.descricao||'','text',120) + '</td>' +
-            '<td>' + edCell('staff',it.id,'turno',it.turno,'text',80) + '</td>' +
-            '<td style="font-size:11px">' + edCell('staff',it.id,'dtInicio',it.dtInicio,'text',90) + '</td>' +
-            '<td style="font-size:11px">' + edCell('staff',it.id,'dtFim',it.dtFim,'text',90) + '</td>' +
-            '<td><div style="display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap">' +
-              edCell('staff',it.id,'hrInicio',it.hrInicio,'text',52) +
-              '<span style="color:#aaa">&ndash;</span>' +
-              edCell('staff',it.id,'hrFim',it.hrFim,'text',52) +
-            '</div></td>' +
             '<td style="text-align:center">' + edCell('staff',it.id,'qtd',it.qtd,'number',36) + '</td>' +
             '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:2px">' +
-              edCell('staff',it.id,'chInd',it.chInd,'number',36) +
+              edCell('staff',it.id,'totalH',it.totalH,'number',44) +
               '<span style="color:#aaa;font-size:10px">h</span></div></td>' +
-            '<td style="text-align:center;font-weight:600;color:var(--gm)">' + it.totalH + 'h</td>' +
             '<td class="val-r">' + edCell('staff',it.id,'vlrH',it.vlrH,'number',60) + '</td>' +
             '<td class="val-r" style="font-weight:700;color:var(--gd)">' + (fmt(it.custo)||'&mdash;') + '</td>' +
             '<td style="font-size:10px">' + edCell('staff',it.id,'ata',normalizeAta(it.ata),'text',80) + '</td>' +
             '<td style="font-size:10px">' + edCell('staff',it.id,'fornecedor',it.fornecedor,'text',160) + '</td>' +
             '<td style="font-size:10px">' + edCell('staff',it.id,'contato',it.contato,'text',100) + '</td>' +
             '<td style="max-width:200px">' + edCell('staff',it.id,'obs',it.obs||'','textarea',180) + '</td>' +
-            '<td><div class="abts"><button class="bdel" onclick="delItem(\x27staff\x27,' + it.id + ')">&#x2715;</button></div></td>' +
+            '<td><div class="abts"><button class="bobs" onclick="editarItemStaff(' + it.id + ')" title="Editar">&#x270F;</button><button class="bdel" onclick="delItem(\x27staff\x27,' + it.id + ')">&#x2715;</button></div></td>' +
             '</tr>';
         });
         // Subtotal row per function (always show, even for 1 item — helps readability)
         rows += '<tr style="background:rgba(46,125,79,.07);border-bottom:2px solid rgba(46,125,79,.18)">' +
-          '<td colspan="9" style="text-align:right;padding:5px 12px;font-size:10px;font-weight:700;color:var(--gd);font-family:monospace;letter-spacing:.3px">' +
+          '<td colspan="4" style="text-align:right;padding:5px 12px;font-size:10px;font-weight:700;color:var(--gd);font-family:monospace;letter-spacing:.3px">' +
             'Subtotal — ' + desc +
           '</td>' +
           '<td class="val-r" style="font-weight:800;color:var(--gd);font-size:11px;padding:5px 8px">' + (grpTotal ? fmtV(grpTotal) : '—') + '</td>' +
@@ -1749,7 +2440,7 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
           '<td style="font-size:10px">' + edCell('estrutura',it.id,'fornecedor',it.fornecedor,'text',160) + '</td>' +
           '<td style="font-size:10px">' + edCell('estrutura',it.id,'contato',it.contato,'text',110) + '</td>' +
           '<td style="max-width:220px">' + edCell('estrutura',it.id,'obs',it.obs||'','textarea',200) + '</td>' +
-          '<td><div class="abts"><button class="bdel" onclick="delItem(\x27estrutura\x27,' + it.id + ')">&#x2715;</button></div></td>' +
+          '<td><div class="abts"><button class="bobs" onclick="editarItemEstrutura(' + it.id + ')" title="Editar">&#x270F;</button><button class="bdel" onclick="delItem(\x27estrutura\x27,' + it.id + ')">&#x2715;</button></div></td>' +
           '</tr>';
       });
     } else {
@@ -1769,7 +2460,7 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
           '<td class="val-r">' + edCell('hospedagem',it.id,'vlrDiaria',it.vlrDiaria,'number',80) + '</td>' +
           '<td class="val-r" style="font-weight:700;color:var(--gd)">' + (it.custoHosp ? fmtV(it.custoHosp) : '<span class="val-p">A cotar</span>') + '</td>' +
           '<td>' + edCell('hospedagem',it.id,'ata',normalizeAta(it.ata),'text',120) + '</td>' +
-          '<td><div class="abts"><button class="bdel" onclick="delItem(\x27hospedagem\x27,' + it.id + ')">&#x2715;</button></div></td>' +
+          '<td><div class="abts"><button class="bobs" onclick="editarItemHospedagem(' + it.id + ')" title="Editar">&#x270F;</button><button class="bdel" onclick="delItem(\x27hospedagem\x27,' + it.id + ')">&#x2715;</button></div></td>' +
           '</tr>';
       });
     }
@@ -1777,7 +2468,7 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
 
   var subRow = '';
   if (mod === 'staff' && subtotal) {
-    subRow = '<tr class="sub-tr"><td colspan="9" style="text-align:right;padding-right:12px">Subtotal &mdash; ' + sec + '</td>' +
+    subRow = '<tr class="sub-tr"><td colspan="4" style="text-align:right;padding-right:12px">Subtotal &mdash; ' + sec + '</td>' +
       '<td class="val-r">' + (fmt(subtotal)||'&mdash;') + '</td><td colspan="5"></td></tr>';
   } else if (mod === 'estrutura' && subtotal) {
     subRow = '<tr class="sub-tr"><td colspan="4" style="text-align:right;padding-right:12px">Subtotal &mdash; ' + sec + '</td>' +
@@ -1827,7 +2518,7 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
     '</table></div>';
 }
 
-function deleteBloco(mod, secao, event) {
+async function deleteBloco(mod, secao, event) {
   if (event) event.stopPropagation();
   const arr = mod==='staff' ? ev().staff : mod==='estrutura' ? ev().estrutura : ev().hospedagem;
   const count = arr.filter(function(x){ return (x.secao||'Geral')===secao; }).length;
@@ -1846,7 +2537,7 @@ function deleteBloco(mod, secao, event) {
     ev().secoesHosp = (ev().secoesHosp||[]).filter(function(s){ return s!==secao; });
   }
   toast('Bloco "' + secao + '" removido.');
-  render();
+  await saveData(); render();
 }
 
 // Keep old name as alias
@@ -1856,7 +2547,7 @@ function openNovoBloco(mod) {
   const label = mod==='staff' ? 'Staff' : mod==='estrutura' ? 'Estrutura' : 'Hospedagem';
   const name = prompt('Nome do novo bloco de ' + label + ' (ex: Vigilância, Geradores, Expositores A...)');
   if (!name || !name.trim()) return;
-  const n = name.trim();
+  const n = name.trim().toUpperCase();
   if (mod==='staff') {
     if (!(ev().secoes||[]).includes(n)) { ev().secoes = [...(ev().secoes||[]), n]; }
   } else if (mod==='estrutura') {
@@ -1986,8 +2677,7 @@ function startEdit(el) {
     item[field] = v;
     // Recalculate staff custo
     if (tab==='staff') {
-      item.totalH = (item.qtd||0) * (item.chInd||0);
-      item.custo  = item.totalH * (item.vlrH||0) || null;
+      item.custo = (item.totalH||0) * (item.vlrH||0) || null;
     }
     // Recalculate estrutura custo
     if (tab==='estrutura') {
@@ -1998,7 +2688,7 @@ function startEdit(el) {
       item.custoHosp = (item.quartos && item.totalDiarias && item.vlrDiaria)
         ? item.quartos * item.totalDiarias * item.vlrDiaria : null;
     }
-    render();
+    saveData(); render();
   }
 
   inp.addEventListener('blur', commit);
@@ -2011,14 +2701,15 @@ function startEdit(el) {
 // ═══════════════════════════════════════════════
 //  MODAL — ADD ITEM
 // ═══════════════════════════════════════════════
-function openModal(tab, preselectedBloco) {
-  modalCtx = { tab };
+function openModal(tab, preselectedBloco, editItem) {
+  modalCtx = { tab, editId: editItem ? editItem.id : null };
   document.getElementById('modal-inner').classList.remove('wide');
   const e = ev();
 
-  document.getElementById('mtitle').textContent =
-    tab==='staff' ? 'Novo Item de Staff' :
-    tab==='estrutura' ? 'Novo Item de Estrutura' : 'Novo Grupo de Hospedagem';
+  document.getElementById('mtitle').textContent = editItem ?
+    (tab==='staff' ? 'Editar Item de Staff' : tab==='estrutura' ? 'Editar Item de Estrutura' : 'Editar Grupo de Hospedagem') :
+    (tab==='staff' ? 'Novo Item de Staff' :
+    tab==='estrutura' ? 'Novo Item de Estrutura' : 'Novo Grupo de Hospedagem');
 
   // ── STAFF MODAL ──
   if (tab === 'staff') {
@@ -2083,15 +2774,7 @@ function openModal(tab, preselectedBloco) {
       // ── 3. DADOS DO ITEM ──
       '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Dados do Item</div>' +
       '<div class="field" style="grid-column:1/-1"><label>Descrição do Serviço / Função <span style="color:var(--gm);font-size:9px">(ex: Recepcionista, Mestre de Cerimônia, Vigia)</span></label><input id="f-descricao" placeholder="ex: Recepcionista" oninput="this.value=this.value.toUpperCase()"></div>' +
-      '<div class="field"><label>Tipo de Turno</label>' +
-        '<select id="f-turno"><option>Diurno</option><option>Noturno</option><option>Diurno/Noturno</option></select>' +
-      '</div>' +
-      '<div class="field"><label>Data Início</label><input id="f-dtInicio" placeholder="23/04/2026" maxlength="10" oninput="fmtDateInput(this)"></div>' +
-      '<div class="field"><label>Data Fim</label><input id="f-dtFim" placeholder="24/04/2026" maxlength="10" oninput="fmtDateInput(this)"></div>' +
-      '<div class="field"><label>Horário Início</label><input id="f-hrInicio" placeholder="20:00" maxlength="5" oninput="fmtTimeInput(this)"></div>' +
-      '<div class="field"><label>Horário Fim</label><input id="f-hrFim" placeholder="08:00" maxlength="5" oninput="fmtTimeInput(this)" onchange="fmtTimeInput(this)"></div>' +
-      '<div class="field"><label>Quantidade de Pessoas</label><input type="number" id="f-qtd" min="1" placeholder="ex: 4" oninput="calcStaffCusto()"></div>' +
-      '<div class="field"><label>C.H. Individual (h) <span style="color:var(--gm);font-size:9px">calculado automaticamente</span></label><input type="number" id="f-chInd" min="0.5" step="0.5" placeholder="auto" oninput="this._manuallyEdited=true;calcStaffCusto()"></div>' +
+      '<div class="field"><label>Total de Horas Contratadas <span style="color:var(--gm);font-size:9px">(carga hor\u00e1ria total do item)</span></label><input type="number" id="f-totalHoras" min="0.5" step="0.5" placeholder="ex: 30" oninput="calcStaffCusto()"></div>' +
       '<div class="field"><label>Valor por Hora (R$)</label><input type="number" id="f-vlrH" step="0.01" placeholder="ex: 30" oninput="calcStaffCusto()"></div>' +
       '<div class="field" id="f-custo-preview" style="display:none;background:var(--gp);border-radius:6px;padding:8px 12px">' +
         '<label style="color:var(--gm)">Custo Calculado</label>' +
@@ -2110,6 +2793,39 @@ function openModal(tab, preselectedBloco) {
     document.getElementById('mbody').innerHTML = body;
     // Init tipo vínculo
     window._tipoVinculo = 'ata';
+
+    // Pré-preenche campos se for edição (síncrono, logo após inserir o HTML)
+    if (editItem) {
+      var fSecao = document.getElementById('f-secao'); if (fSecao) fSecao.value = editItem.secao || '';
+      var fDesc  = document.getElementById('f-descricao'); if (fDesc) fDesc.value = editItem.descricao || '';
+      var fTotalH = document.getElementById('f-totalHoras'); if (fTotalH) fTotalH.value = editItem.totalH || '';
+      var fVlrH  = document.getElementById('f-vlrH'); if (fVlrH) fVlrH.value = editItem.vlrH || '';
+      var fObs   = document.getElementById('f-obs'); if (fObs) fObs.value = editItem.obs || '';
+      var ataVal = editItem.ata || '';
+      if (ataVal) {
+        var ataInfo = findAtaMestre(ataVal);
+        if (ataInfo) {
+          var fAta = document.getElementById('f-ata');
+          if (fAta) fAta.value = ataVal;
+          var fF = document.getElementById('f-fornecedor'); if (fF) fF.value = ataInfo.fornecedor || '';
+          var fC = document.getElementById('f-contato'); if (fC) fC.value = ataInfo.contato || '';
+        } else {
+          window._tipoVinculo = 'contrato';
+          var bAta = document.getElementById('btn-tipo-ata');
+          var bCd  = document.getElementById('btn-tipo-contrato');
+          var wAta = document.getElementById('wrap-ata');
+          var wCd  = document.getElementById('wrap-contrato');
+          if (wAta) wAta.style.display = 'none';
+          if (wCd)  { wCd.style.display = 'grid'; wCd.style.gridTemplateColumns = '1fr 1fr'; wCd.style.gap = '10px'; }
+          if (bAta) { bAta.style.background = '#fff'; bAta.style.color = '#666'; bAta.style.borderColor = '#e0e0e0'; }
+          if (bCd)  { bCd.style.background = 'var(--or)'; bCd.style.color = '#fff'; bCd.style.borderColor = 'var(--or)'; }
+          var fRef = document.getElementById('f-ref-cd'); if (fRef) fRef.value = ataVal;
+          var fFornCd = document.getElementById('f-forn-cd'); if (fFornCd) fFornCd.value = editItem.fornecedor || '';
+          var fContCd = document.getElementById('f-cont-cd'); if (fContCd) fContCd.value = editItem.contato || '';
+        }
+      }
+      calcStaffCusto();
+    }
 
   } else if (tab === 'estrutura') {
     const blocoEst = [...new Set([...(e.secoesEst||[]), ...e.estrutura.map(x=>x.secao||'Geral')])];
@@ -2183,6 +2899,39 @@ function openModal(tab, preselectedBloco) {
     document.getElementById('mbody').innerHTML = body;
     window._tipoVinculo = 'ata';
 
+    // Pré-preenche campos se for edição de estrutura
+    if (editItem) {
+      var fSecaoE = document.getElementById('f-secao-est'); if (fSecaoE) fSecaoE.value = editItem.secao || '';
+      var fItem   = document.getElementById('f-item');      if (fItem)   fItem.value   = editItem.item || '';
+      var fQtdE   = document.getElementById('f-qtd');       if (fQtdE)   fQtdE.value   = editItem.qtd || '';
+      var fUnid   = document.getElementById('f-unidade');   if (fUnid)   fUnid.value   = editItem.unidade || '';
+      var fVlrU   = document.getElementById('f-vlrUnit');   if (fVlrU)   fVlrU.value   = editItem.vlrUnit || '';
+      var fObsE   = document.getElementById('f-obs');       if (fObsE)   fObsE.value   = editItem.obs || '';
+      var ataValE = editItem.ata || '';
+      if (ataValE) {
+        var ataInfoE = findAtaMestre(ataValE);
+        if (ataInfoE) {
+          var fAtaE = document.getElementById('f-ata'); if (fAtaE) fAtaE.value = ataValE;
+          var fFE = document.getElementById('f-fornecedor'); if (fFE) fFE.value = ataInfoE.fornecedor || '';
+          var fCE = document.getElementById('f-contato');    if (fCE) fCE.value = ataInfoE.contato || '';
+        } else {
+          window._tipoVinculo = 'contrato';
+          var bAtaE = document.getElementById('btn-tipo-ata');
+          var bCdE  = document.getElementById('btn-tipo-contrato');
+          var wAtaE = document.getElementById('wrap-ata');
+          var wCdE  = document.getElementById('wrap-contrato');
+          if (wAtaE) wAtaE.style.display = 'none';
+          if (wCdE)  { wCdE.style.display = 'grid'; wCdE.style.gridTemplateColumns = '1fr 1fr'; wCdE.style.gap = '10px'; }
+          if (bAtaE) { bAtaE.style.background = '#fff'; bAtaE.style.color = '#666'; bAtaE.style.borderColor = '#e0e0e0'; }
+          if (bCdE)  { bCdE.style.background = 'var(--or)'; bCdE.style.color = '#fff'; bCdE.style.borderColor = 'var(--or)'; }
+          var fRefE = document.getElementById('f-ref-cd');   if (fRefE)   fRefE.value   = ataValE;
+          var fFCdE = document.getElementById('f-forn-cd');  if (fFCdE)   fFCdE.value   = editItem.fornecedor || '';
+          var fCCdE = document.getElementById('f-cont-cd');  if (fCCdE)   fCCdE.value   = editItem.contato || '';
+        }
+      }
+      calcEstCusto();
+    }
+
   } else {
     // hospedagem
     const blocoHosp = [...new Set([...(e.secoesHosp||[]), ...e.hospedagem.map(x=>x.secao||'Hospedagem')])];
@@ -2222,6 +2971,26 @@ function openModal(tab, preselectedBloco) {
     '</div>';
 
     document.getElementById('mbody').innerHTML = body;
+
+    // Pré-preenche campos se for edição de hospedagem
+    if (editItem) {
+      var fSecaoH = document.getElementById('f-secao-hosp'); if (fSecaoH) fSecaoH.value = editItem.secao || '';
+      var fGrupo  = document.getElementById('f-grupo');      if (fGrupo)  fGrupo.value  = editItem.grupo || '';
+      var fCid    = document.getElementById('f-qtdCidades'); if (fCid)    fCid.value    = editItem.qtdCidades || '';
+      var fPess   = document.getElementById('f-pessoas');    if (fPess)   fPess.value   = editItem.pessoas || '';
+      var fQto    = document.getElementById('f-quartos');    if (fQto)    fQto.value    = editItem.quartos || '';
+      var fCi     = document.getElementById('f-checkin');    if (fCi)     fCi.value     = editItem.checkin || '';
+      var fCo     = document.getElementById('f-checkout');   if (fCo)     fCo.value     = editItem.checkout || '';
+      var fDia    = document.getElementById('f-totalDiarias'); if (fDia)  fDia.value    = editItem.totalDiarias || '';
+      var fCaf    = document.getElementById('f-cafes');      if (fCaf)    fCaf.value    = editItem.cafes || '';
+      var fAlm    = document.getElementById('f-almocos');    if (fAlm)    fAlm.value    = editItem.almocos || '';
+      var fJan    = document.getElementById('f-jantares');   if (fJan)    fJan.value    = editItem.jantares || '';
+      var fVlrD   = document.getElementById('f-vlrDiaria');  if (fVlrD)  fVlrD.value   = editItem.vlrDiaria || '';
+      var fAtaH   = document.getElementById('f-ata');        if (fAtaH)   fAtaH.value   = editItem.ata || '';
+      var fStat   = document.getElementById('f-status');     if (fStat)   fStat.value   = editItem.status || '';
+      var fObsH   = document.getElementById('f-obs');        if (fObsH)   fObsH.value   = editItem.obs || '';
+      calcHospCusto();
+    }
   }
 
   document.getElementById('modal').style.display = 'flex';
@@ -2250,19 +3019,17 @@ function setTipoVinculo(tipo) {
 
 // Live custo calculation in modal
 function calcStaffCusto() {
-  var qtd   = parseFloat(document.getElementById('f-qtd')?.value)   || 0;
-  var chInd = parseFloat(document.getElementById('f-chInd')?.value) || 0;
-  var vlrH  = parseFloat(document.getElementById('f-vlrH')?.value)  || 0;
+  var totalH   = parseFloat(document.getElementById('f-totalHoras')?.value) || 0;
+  var vlrH     = parseFloat(document.getElementById('f-vlrH')?.value)       || 0;
   var prev  = document.getElementById('f-custo-preview');
   var val   = document.getElementById('f-custo-val');
   var det   = document.getElementById('f-custo-det');
   if (!prev) return;
-  if (qtd && chInd && vlrH) {
-    var totalH = qtd * chInd;
-    var custo  = totalH * vlrH;
+  if (totalH && vlrH) {
+    var custo = totalH * vlrH;
     prev.style.display = 'block';
     val.textContent = custo.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-    if (det) det.textContent = qtd + ' pessoas × ' + chInd + 'h = ' + totalH + 'h × R$ ' + vlrH + '/h';
+    if (det) det.textContent = totalH + 'h × R$ ' + vlrH + '/h';
   } else {
     prev.style.display = 'none';
   }
@@ -2306,12 +3073,15 @@ function gv(id) {
   return el ? el.value.trim() : '';
 }
 
-function saveItem() {
+async function saveItem() {
   const ctx = modalCtx;
   if (!ctx) return;
   const tab  = ctx.tab;
   const type = ctx.type;
   const e    = ev();
+
+  // ── Save Atração ──
+  if (type === 'atracao') { saveAtracao(); return; }
 
   // ── Save ATA ──
   if (type === 'ata') {
@@ -2328,6 +3098,7 @@ function saveItem() {
         ata.objeto=up(gv('f-objeto')); ata.processo=up(gv('f-processo'));
         ata.itens=itensFinais;
       }
+      saveAtasImediato();
       toast('ATA atualizada!');
     } else {
       atasMestre.push({ id:nextAtaMestre++, numero:gv('f-numero'), ano:gv('f-ano'),
@@ -2337,7 +3108,9 @@ function saveItem() {
         itens:itensFinais, arquivos:[] });
       toast('ATA cadastrada!');
     }
-    window._modalItens=null; closeModal(); render(); return;
+    window._modalItens=null; closeModal();
+    saveAtasImediato();
+    render(); return;
   }
 
   // ── Save ATA Item ──
@@ -2376,18 +3149,24 @@ function saveItem() {
     // Ensure secao exists in event.secoes
     if (!(e.secoes||[]).includes(secao)) e.secoes = [...(e.secoes||[]), secao];
 
-    const qtd   = parseFloat(gv('f-qtd'))   || 0;
-    const chInd = parseFloat(gv('f-chInd')) || 0;
-    const vlrH  = parseFloat(gv('f-vlrH'))  || 0;
-    const totalH = qtd * chInd;
-    const custo  = totalH * vlrH || null;
-    e.staff.push({ id:e.nextStaff++, secao:up(secao), descricao:up(gv('f-descricao')), turno:up(gv('f-turno')),
-      dtInicio:gv('f-dtInicio'), dtFim:gv('f-dtFim'),
-      hrInicio:gv('f-hrInicio'), hrFim:gv('f-hrFim'),
-      qtd, chInd, totalH, vlrH: vlrH||null, custo,
-      ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:up(gv('f-obs')) });
+    const totalH  = parseFloat(gv('f-totalHoras')) || 0;
+    const vlrH    = parseFloat(gv('f-vlrH'))       || 0;
+    const custo   = totalH * vlrH || null;
+    if (modalCtx.editId) {
+      const item = e.staff.find(x => x.id === modalCtx.editId);
+      if (item) {
+        Object.assign(item, { secao:up(secao), descricao:up(gv('f-descricao')),
+          totalH, vlrH: vlrH||null, custo,
+          ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:gv('f-obs') });
+      }
+      toast('Item atualizado!');
+      closeModal(); await saveData(); render(); return;
+    }
+    e.staff.push({ id:e.nextStaff++, secao:up(secao), descricao:up(gv('f-descricao')),
+      qtd:1, totalH, vlrH: vlrH||null, custo,
+      ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:gv('f-obs') });
     toast('Item adicionado ao bloco "' + secao + '"!');
-    closeModal(); render(); return;
+    closeModal(); await saveData(); render(); return;
   }
 
   // ── Save Estrutura ──
@@ -2401,11 +3180,19 @@ function saveItem() {
     const qtd    = parseFloat(gv('f-qtd'))    || null;
     const vlrUnit= parseBRL(gv('f-vlrUnit')) || null;
     const custo  = qtd && vlrUnit ? qtd * vlrUnit : null;
-    e.estrutura.push({ id:e.nextEstrutura++, secao:up(secao), item:up(gv('f-item')),
+    const estObj = { secao:up(secao), item:up(gv('f-item')),
       qtd, unidade:up(gv('f-unidade')), vlrUnit, custo,
-      ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:up(gv('f-obs')) });
-    toast('Item adicionado ao bloco "' + secao + '"!');
-    closeModal(); render(); return;
+      ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:gv('f-obs') };
+    if (modalCtx.editId) {
+      const idx = e.estrutura.findIndex(x => x.id === modalCtx.editId);
+      if (idx >= 0) { estObj.id = modalCtx.editId; e.estrutura[idx] = estObj; }
+      toast('Item atualizado!');
+    } else {
+      estObj.id = e.nextEstrutura++;
+      e.estrutura.push(estObj);
+      toast('Item adicionado ao bloco "' + secao + '"!');
+    }
+    closeModal(); await saveData(); render(); return;
   }
 
   // ── Save Hospedagem ──
@@ -2416,17 +3203,25 @@ function saveItem() {
       if (!secao) { alert('Informe o nome do novo bloco.'); return; }
     }
     if (!(e.secoesHosp||[]).includes(secao)) e.secoesHosp = [...(e.secoesHosp||[]), secao];
-    e.hospedagem.push({ id:e.nextHospedagem++, secao:up(secao), grupo:up(gv('f-grupo')),
+    const hospObj = { secao:up(secao), grupo:up(gv('f-grupo')),
       qtdCidades:parseFloat(gv('f-qtdCidades'))||null, pessoas:parseFloat(gv('f-pessoas'))||null,
       quartos:parseFloat(gv('f-quartos'))||null, checkin:gv('f-checkin'), checkout:gv('f-checkout'),
       totalDiarias:parseFloat(gv('f-totalDiarias'))||null,
       cafes:parseFloat(gv('f-cafes'))||null, almocos:parseFloat(gv('f-almocos'))||null,
-      jantares:parseFloat(gv('f-jantares'))||null, ata:up(gv('f-ata')), status:gv('f-status'), obs:up(gv('f-obs')),
+      jantares:parseFloat(gv('f-jantares'))||null, ata:up(gv('f-ata')), status:gv('f-status'), obs:gv('f-obs'),
       vlrDiaria: parseBRL(gv('f-vlrDiaria')),
       custoHosp: (function(){ var q=parseFloat(gv('f-quartos'))||0, d=parseFloat(gv('f-totalDiarias'))||0, v=parseBRL(gv('f-vlrDiaria'))||0; return q&&d&&v ? q*d*v : null; })()
-    });
-    toast('Grupo adicionado ao bloco "' + secao + '"!');
-    closeModal(); render(); return;
+    };
+    if (modalCtx.editId) {
+      const idx = e.hospedagem.findIndex(x => x.id === modalCtx.editId);
+      if (idx >= 0) { hospObj.id = modalCtx.editId; e.hospedagem[idx] = hospObj; }
+      toast('Grupo atualizado!');
+    } else {
+      hospObj.id = e.nextHospedagem++;
+      e.hospedagem.push(hospObj);
+      toast('Grupo adicionado ao bloco "' + secao + '"!');
+    }
+    closeModal(); await saveData(); render(); return;
   }
 }
 
@@ -2434,7 +3229,9 @@ function saveItem() {
 function updateModalButtons() {
   const btn = document.getElementById('btn-salvar-mais');
   if (!btn || !modalCtx) return;
-  btn.style.display = (modalCtx.tab === 'staff' || modalCtx.tab === 'estrutura') ? 'inline-block' : 'none';
+  btn.style.display = (!modalCtx.editId && (modalCtx.tab === 'staff' || modalCtx.tab === 'estrutura')) ? 'inline-block' : 'none';
+  const btnSalvar = document.querySelector('.mfoot .bsave:not(#btn-salvar-mais)');
+  if (btnSalvar) btnSalvar.textContent = modalCtx.editId ? '✓ Atualizar' : '✓ Salvar';
 }
 
 // Save current item and reopen modal pre-filled with same ATA/bloco
@@ -2482,13 +3279,35 @@ function closeModal() {
   modalCtx = null;
 }
 
+function closeModalOut(event) {
+  if (event.target === document.getElementById('modal')) closeModal();
+}
 
-function delItem(tab, id) {
+
+async function delItem(tab, id) {
   if (!confirm('Excluir este item?')) return;
   if (tab==='staff')      ev().staff      = ev().staff.filter(x=>x.id!==id);
   if (tab==='estrutura')  ev().estrutura  = ev().estrutura.filter(x=>x.id!==id);
   if (tab==='hospedagem') ev().hospedagem = ev().hospedagem.filter(x=>x.id!==id);
-  render();
+  await saveData(); render();
+}
+
+function editarItemStaff(id) {
+  var item = ev().staff.find(function(x){ return x.id === id; });
+  if (!item) return;
+  openModal('staff', item.secao, item);
+}
+
+function editarItemEstrutura(id) {
+  var item = ev().estrutura.find(function(x){ return x.id === id; });
+  if (!item) return;
+  openModal('estrutura', item.secao, item);
+}
+
+function editarItemHospedagem(id) {
+  var item = ev().hospedagem.find(function(x){ return x.id === id; });
+  if (!item) return;
+  openModal('hospedagem', item.secao, item);
 }
 
 
@@ -2556,11 +3375,60 @@ async function extractAtaFromPdf(file) {
     for (let p=1;p<=pdf.numPages;p++) {
       const page=await pdf.getPage(p);
       const tc=await page.getTextContent();
-      fullText+='\n--- Página '+p+' ---\n'+tc.items.map(function(i){return i.str;}).join(' ');
+      // Reconstrói o texto preservando proximidade espacial dos fragmentos
+      // Isso evita que valores como "6" e ",25" fiquem separados por espaço
+      let pageText = '';
+      let lastX = null, lastY = null;
+      tc.items.forEach(function(item) {
+        if (!item.str) return;
+        const x = item.transform ? item.transform[4] : null;
+        const y = item.transform ? item.transform[5] : null;
+        // Nova linha se Y mudou significativamente
+        if (lastY !== null && y !== null && Math.abs(y - lastY) > 3) {
+          pageText += '\n';
+        } else if (lastX !== null && x !== null && (x - lastX) > 15) {
+          // Espaço entre palavras distantes
+          pageText += ' ';
+        }
+        pageText += item.str;
+        lastX = x !== null ? x + (item.width || 0) : null;
+        lastY = y;
+      });
+      fullText += '\n--- Página ' + p + ' ---\n' + pageText;
     }
     if (!fullText.trim()||fullText.trim().length<100) throw new Error('Não foi possível extrair texto. O PDF pode ser uma imagem escaneada.');
+    // Salva texto para debug e pré-extrai valores monetários
+    window._lastFullText = fullText;
+    var valoresHint = '';
+    try {
+      var _vals = [];
+      // Tenta vários padrões: "R$ 6,25", "6,25", "6.25", números com decimais não redondos
+      var _patterns = [
+        /R\$\s*(\d{1,3}(?:\.\d{3})*[,]\d{2})/g,  // R$ 1.234,56
+        /R\$\s*(\d+[,]\d{2})/g,                    // R$ 6,25
+        /R\$\s*(\d+[.]\d{2})/g,                    // R$ 6.25
+      ];
+      _patterns.forEach(function(re) {
+        var _m2;
+        while ((_m2 = re.exec(fullText)) !== null) {
+          var _v = _m2[1].replace('.', ',');
+          // Só inclui se não termina em ,00 (valores redondos são suspeitos)
+          if (_vals.indexOf(_v) === -1) _vals.push(_v);
+        }
+      });
+      // Também captura padrões de tabela: número isolado com vírgula decimal (ex: "6,25")
+      var _reIsolado = /(\d+,\d{2})/g;
+      var _m3;
+      while ((_m3 = _reIsolado.exec(fullText)) !== null) {
+        var _v2 = _m3[1];
+        if (_vals.indexOf(_v2) === -1) _vals.push(_v2);
+      }
+      console.log('[ATA Debug] Valores encontrados via regex:', _vals);
+      if (_vals.length) valoresHint = 'VALORES MONETÁRIOS EXTRAÍDOS AUTOMATICAMENTE DO DOCUMENTO (copie exatamente, sem arredondar): ' + _vals.join(' | ');
+    } catch(e) { console.warn('regex error', e); }
+
     setAiStatus('loading','🤖 Analisando com IA ('+Math.round(fullText.length/1000)+'k caracteres)...');
-    const prompt = 'Você é especialista em licitações públicas brasileiras. Analise o texto de uma ATA de Registro de Preços e retorne SOMENTE um JSON válido sem markdown:\n{"numero":"","ano":"","vigencia":"","valorGlobal":"","processo":"","objeto":"","fornecedor":{"razaoSocial":"","cnpj":"","endereco":"","telefone":"","email":"","representante":""},"itens":[{"numero":"","descricao":"","unidade":"","quantidade":"","valorUnitario":""}],"orgaoGerenciador":""}\nUse null para campos não encontrados. Extraia TODOS os itens.\n\nTEXTO:\n'+fullText.substring(0,28000);
+    var prompt = 'Você é especialista em licitações públicas brasileiras. Analise o texto de uma ATA de Registro de Preços e retorne SOMENTE um JSON válido sem markdown.\n\nREGRA ABSOLUTA SOBRE VALORES:\n- Os valores corretos já foram extraídos automaticamente do documento e estão listados abaixo\n- Use APENAS esses valores para preencher valorUnitario e valorGlobal\n- NUNCA arredonde, NUNCA invente, NUNCA complete decimais\n- Se o documento tem 6,25 o JSON deve ter "6,25" — nunca "6,00"\n\n'+valoresHint+'\n\nFormato JSON (retorne APENAS o JSON, sem markdown):\n{"numero":"","ano":"","vigencia":"","valorGlobal":"","processo":"","objeto":"","fornecedor":{"razaoSocial":"","cnpj":"","endereco":"","telefone":"","email":"","representante":""},"itens":[{"numero":"","descricao":"","unidade":"","quantidade":"","valorUnitario":""}],"orgaoGerenciador":""}\n\nTEXTO DO DOCUMENTO:\n'+fullText.substring(0,28000);
     const response = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
@@ -2737,8 +3605,8 @@ function exportExcel() {
   }
   const secoes=[...new Set([...(e.secoes||[]),...e.staff.map(function(x){return x.secao;})])];
   const staffRows=[];
-  secoes.forEach(function(sec){ e.staff.filter(function(x){return x.secao===sec;}).forEach(function(it){ staffRows.push([sec,it.turno,it.dtInicio,it.dtFim,it.hrInicio+'-'+it.hrFim,it.qtd,it.chInd,it.totalH,it.vlrH,it.custo,it.ata,it.fornecedor,it.contato,it.obs]); }); });
-  addSheet('Staff',['Seção','Turno','Dt.Início','Dt.Fim','Horário','Qtd','CH Ind','Total H','Vlr/H','Custo','ATA','Fornecedor','Contato','Observações'],staffRows,[20,12,12,12,14,8,8,10,10,12,14,30,16,40]);
+  secoes.forEach(function(sec){ e.staff.filter(function(x){return x.secao===sec;}).forEach(function(it){ staffRows.push([sec,it.descricao,it.qtd,it.totalH,it.vlrH,it.custo,it.ata,it.fornecedor,it.contato,it.obs]); }); });
+  addSheet('Staff',['Seção','Descrição','Qtd','Total H','Vlr/H','Custo','ATA','Fornecedor','Contato','Observações'],staffRows,[20,30,8,10,10,12,14,30,16,40]);
   const secoesEst=[...new Set([...(e.secoesEst||[]),...e.estrutura.map(function(x){return x.secao||'Geral';}) ])];
   const estRows=[];
   secoesEst.forEach(function(sec){ e.estrutura.filter(function(x){return (x.secao||'Geral')===sec;}).forEach(function(it){ estRows.push([sec,it.item,it.qtd,it.unidade,it.vlrUnit,it.custo,it.ata,it.fornecedor,it.obs]); }); });
@@ -2806,7 +3674,7 @@ function exportPDF() {
       if (!items.length) return;
       const secTotal = items.reduce(function(s,x){return s+(x.custo||0);},0);
       html += '<h3>'+sec+' — '+fmtR(secTotal)+'</h3>';
-      html += '<table><tr><th>Descrição</th><th>Turno</th><th>Data</th><th>Horário</th><th>Qtd</th><th>CH</th><th>Total H</th><th>Vlr/H</th><th>Custo Total</th><th>Nº ATA</th><th>Fornecedor</th></tr>';
+      html += '<table><tr><th>Descrição</th><th>Qtd</th><th>Total H</th><th>Vlr/H</th><th>Custo Total</th><th>Nº ATA</th><th>Fornecedor</th></tr>';
       // Group by descrição
       var descOrder = [], descGroups = {};
       items.forEach(function(it){
@@ -2817,15 +3685,11 @@ function exportPDF() {
       descOrder.forEach(function(desc){
         var grp = descGroups[desc];
         var grpTotal = grp.reduce(function(s,x){return s+(x.custo||0);},0);
-        html += '<tr class="grp-hdr"><td colspan="11">▸ '+desc+' &nbsp;·&nbsp; '+grp.length+' item(s) &nbsp;·&nbsp; '+fmtR(grpTotal)+'</td></tr>';
+        html += '<tr class="grp-hdr"><td colspan="7">▸ '+desc+' &nbsp;·&nbsp; '+grp.length+' item(s) &nbsp;·&nbsp; '+fmtR(grpTotal)+'</td></tr>';
         grp.forEach(function(it){
           html += '<tr>' +
             '<td>'+desc+'</td>' +
-            '<td>'+(it.turno||'—')+'</td>' +
-            '<td style="white-space:nowrap">'+(it.dtInicio||'—')+(it.dtFim&&it.dtFim!==it.dtInicio?' a '+it.dtFim:'')+'</td>' +
-            '<td>'+(it.hrInicio||'—')+'-'+(it.hrFim||'—')+'</td>' +
             '<td style="text-align:center">'+(it.qtd||'—')+'</td>' +
-            '<td style="text-align:center">'+(it.chInd||'—')+'h</td>' +
             '<td style="text-align:center;font-weight:700">'+(it.totalH||0)+'h</td>' +
             '<td class="val">'+(it.vlrH!=null?fmtN(it.vlrH):'—')+'</td>' +
             '<td class="val" style="font-weight:700">'+fmtR(it.custo)+'</td>' +
@@ -2833,12 +3697,12 @@ function exportPDF() {
             '<td style="font-size:9px">'+(it.fornecedor||'—')+'</td>' +
           '</tr>';
         });
-        html += '<tr class="sub"><td colspan="8" style="text-align:right">Subtotal — '+desc+'</td><td class="val">'+fmtR(grpTotal)+'</td><td colspan="2"></td></tr>';
+        html += '<tr class="sub"><td colspan="3" style="text-align:right">Subtotal — '+desc+'</td><td class="val">'+fmtR(grpTotal)+'</td><td colspan="2"></td></tr>';
       });
-      html += '<tr class="sub"><td colspan="8" style="text-align:right">Subtotal — '+sec+'</td><td class="val">'+fmtR(secTotal)+'</td><td colspan="2"></td></tr>';
+      html += '<tr class="sub"><td colspan="3" style="text-align:right">Subtotal — '+sec+'</td><td class="val">'+fmtR(secTotal)+'</td><td colspan="2"></td></tr>';
       html += '</table>';
     });
-    html += '<table><tr class="tot"><td colspan="8" style="text-align:right;padding:5px 8px">TOTAL STAFF</td><td class="val" style="color:#f9a825;font-size:11px">'+fmtR(totalStaffVal)+'</td><td colspan="2"></td></tr></table>';
+    html += '<table><tr class="tot"><td colspan="3" style="text-align:right;padding:5px 8px">TOTAL STAFF</td><td class="val" style="color:#f9a825;font-size:11px">'+fmtR(totalStaffVal)+'</td><td colspan="2"></td></tr></table>';
   }
 
   // ── ESTRUTURA ──
@@ -2882,114 +3746,237 @@ function exportPDF() {
 }
 
 // ═══════════════════════════════════════════════
-//  PERSISTENCE — Supabase (tempo real)
+//  PERSISTENCE — Supabase (primário) + localStorage (cache offline)
 // ═══════════════════════════════════════════════
-const STORAGE_KEY = 'gerenciador_eventos_v2';
-const SUPABASE_URL = window.SMCT_SUPABASE_URL || 'https://uhalxchwpspupvfmpixq.supabase.co';
-const SUPABASE_KEY = window.SMCT_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYWx4Y2h3cHNwdXB2Zm1waXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODcwOTIsImV4cCI6MjA4OTI2MzA5Mn0.kVlk3z8__heq3bRbAMmra_LiNDmRs0wuMFkLtokSL6M';
-let _sb=null;
-function getSB(){if(!_sb&&window.supabase)_sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);return _sb;}
-function showSync(ok){var e=document.getElementById('_sync');if(!e){e=document.createElement('div');e.id='_sync';e.style.cssText='position:fixed;bottom:52px;right:20px;background:#1a4731;color:#4cd98a;font-size:11px;font-family:monospace;padding:7px 16px;border-radius:20px;box-shadow:0 3px 12px rgba(0,0,0,.25);opacity:0;transition:opacity .5s;pointer-events:none;z-index:9999;font-weight:700';document.body.appendChild(e);}e.textContent=ok?'✓ Sincronizado com a equipe':'↻ Sincronizando...';e.style.opacity='1';if(ok)setTimeout(function(){e.style.opacity='0';},2000);}
+const API_URL_LOCAL = null; // Modo Supabase
+const STORAGE_KEY  = 'gerenciador_eventos_v2';
+const SB_URL_GE   = 'https://dbnjnigxgukqlrxmyefg.supabase.co';
+const SB_KEY_GE   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRibmpuaWd4Z3VrcWxyeG15ZWZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDc4NjIsImV4cCI6MjA5NzY4Mzg2Mn0.Nf5vgufAkW8qzosERhmypTQNqkqgAIu6uAxC8zBU3Ko';
+const SB_TABLE_GE = 'app_data';
+const SB_CHAVE_EV = 'gerenciador_events_v2';
+const SB_CHAVE_AT = 'gerenciador_atas_v2';
 
-function saveData() {
-  try {
-    var payload = { events, curEventId, atasMestre, nextAtaMestre };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    var ind = document.getElementById('save-indicator');
-    if(ind){ind.style.opacity='1';clearTimeout(window._saveTimer);window._saveTimer=setTimeout(function(){ind.style.opacity='0';},1500);}
-    var sb=getSB();
-    if(sb){showSync(false);sb.from('modulos').upsert({nome:STORAGE_KEY,dados:JSON.stringify(payload),atualizado_em:new Date().toISOString()},{onConflict:'nome'}).then(function(r){if(!r.error)showSync(true);});}
-  } catch(e) { console.warn('Erro ao salvar:', e); }
+function setSyncIndicator(status) {
+  var ind = document.getElementById('save-indicator');
+  if (!ind) return;
+  var msgs = { saving:'⏳ Sincronizando...', saved:'☁ Salvo na nuvem', offline:'💾 Salvo localmente', error:'⚠ Erro ao salvar' };
+  var colors = { saving:'#1a4731', saved:'#1a6b3a', offline:'#7a6010', error:'#8b1a1a' };
+  ind.textContent = msgs[status] || '';
+  ind.style.background = colors[status] || '#1a4731';
+  ind.style.opacity = '1';
+  clearTimeout(window._saveTimer);
+  if (status === 'saved' || status === 'offline')
+    window._saveTimer = setTimeout(function(){ ind.style.opacity='0'; }, 2500);
 }
 
-function _applyData(d) {
-  if (!d || !d.events || !d.events.length) return false;
-  events       = d.events;
-  curEventId   = d.curEventId || d.events[0].id;
-  atasMestre   = d.atasMestre  || [];
-  nextAtaMestre= d.nextAtaMestre || (atasMestre.length ? Math.max.apply(null,atasMestre.map(function(a){return a.id;}))+1 : 1);
-  events.forEach(function(e) {
+function migrateEvents(evList) {
+  evList.forEach(function(e) {
     if (!e.secoes)     e.secoes     = [];
     if (!e.secoesEst)  e.secoesEst  = [];
     if (!e.secoesHosp) e.secoesHosp = [];
     e.staff      = e.staff      || [];
     e.estrutura  = e.estrutura  || [];
     e.hospedagem = e.hospedagem || [];
-    e.staff.forEach(function(it){ if(!it.secao) it.secao='Geral'; if(it.ata) it.ata=normalizeAta(it.ata); });
+    e.staff.forEach(function(it){ if(!it.secao) it.secao='Geral'; if(it.ata) it.ata=normalizeAta(it.ata); if(!it.escala) it.escala=[]; });
     e.estrutura.forEach(function(it){ if(!it.secao) it.secao='Geral'; if(it.ata) it.ata=normalizeAta(it.ata); });
     e.hospedagem.forEach(function(it){ if(!it.secao) it.secao='Hospedagem'; if(it.ata) it.ata=normalizeAta(it.ata); });
     if (!e.consolidado) e.consolidado = [];
+    if (!e.atracoes) e.atracoes = [];
+    if (!e.nextAtracoes) e.nextAtracoes = 1;
+    if (e.modules && e.modules.atracoes === undefined) e.modules.atracoes = false;
+    // Migrar NFs antigas do evento para o array global
+    if (e.notasFiscais && e.notasFiscais.length) {
+      e.notasFiscais.forEach(function(nf) {
+        if (!notasFiscais.find(function(x){ return x.id === nf.id; })) {
+          if (!nf.eventoId) { nf.eventoId = e.id; nf.eventoNome = e.name || ''; }
+          notasFiscais.push(nf);
+        }
+      });
+      delete e.notasFiscais;
+    }
   });
-  return true;
 }
 
-function loadData() {
-  try { var d=JSON.parse(localStorage.getItem(STORAGE_KEY)); return _applyData(d); } catch(e) {}
+function saveLocal_ge() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ events, curEventId, atasMestre, nextAtaMestre })); } catch(e) {}
+}
+
+async function saveSupabase_ge() {
+  try {
+    var resp = await fetch(SB_URL_GE + '/rest/v1/app_data', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE,
+                 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ chave: 'gerenciador_events_v2', valor: { events: events, curEventId: curEventId } })
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    setSyncIndicator('saved');
+    console.log('[Save] eventos:', events.length);
+  } catch(e) { console.warn('Save error:', e); setSyncIndicator('offline'); }
+}
+
+// Save imediato das NFs globais
+// Save direto de NFs — simples e confiável
+function saveNotasImediato() {
+  var nfsSemPdf = notasFiscais.map(function(nf) {
+    var c = Object.assign({}, nf); delete c.pdfData; return c;
+  });
+  var data = JSON.stringify({ chave: 'gerenciador_nfs_v2', valor: { notasFiscais: nfsSemPdf, nextNF: nextNF } });
+  console.log('[NF save] enviando', notasFiscais.length, 'NFs');
+  return fetch(SB_URL_GE + '/rest/v1/app_data', {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE,
+               'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+    body: data
+  }).then(function(r){ console.log('[NF save] ok:', r.ok); setSyncIndicator('saved'); })
+    .catch(function(e){ console.warn('[NF save] erro:', e.message); setSyncIndicator('offline'); });
+}
+
+function saveNFPdf(nfId, pdfData, pdfNome) {
+  if (!pdfData) return Promise.resolve();
+  var chave = 'nf_pdf_' + nfId;
+  return fetch(SB_URL_GE + '/rest/v1/app_data', {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE,
+               'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ chave: chave, valor: { pdfData: pdfData, pdfNome: pdfNome } })
+  }).catch(function(e){ console.warn('[PDF save] erro:', e); });
+}
+
+async function loadNFPdf(nfId) {
+  try {
+    var r = await fetch(SB_URL_GE + '/rest/v1/app_data?chave=eq.nf_pdf_' + nfId + '&select=valor',
+      { headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE } });
+    if (!r.ok) return null;
+    var d = await r.json();
+    return (d && d[0]) ? d[0].valor : null;
+  } catch(e) { return null; }
+}
+
+// Save imediato só das ATAs — sem debounce, não pode ser cancelado
+function saveAtasImediato() {
+  return fetch(SB_URL_GE + '/rest/v1/app_data', {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE,
+               'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ chave: 'gerenciador_atas_v2', valor: { atasMestre: atasMestre, nextAtaMestre: nextAtaMestre } })
+  }).then(function(r){ setSyncIndicator('saved'); })
+    .catch(function(e){ console.warn('Erro ao salvar ATAs:', e); });
+}
+
+async function saveData() {
+  // Save imediato e aguardável
+  setSyncIndicator('saving');
+  try {
+    await saveSupabase_ge();
+  } catch(e) {
+    setSyncIndicator('offline');
+  }
+}
+
+async function loadSupabase_ge() {
+  try {
+    const headers = { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE };
+    var r1 = await fetch(SB_URL_GE + "/rest/v1/app_data?chave=eq.gerenciador_events_v2&select=valor", { headers });
+    var r2 = await fetch(SB_URL_GE + "/rest/v1/app_data?chave=eq.gerenciador_atas_v2&select=valor", { headers });
+    var r3 = await fetch(SB_URL_GE + "/rest/v1/app_data?chave=eq.gerenciador_nfs_v2&select=valor", { headers }).catch(function(){return null;});
+    var d1 = r1.ok ? await r1.json() : []; var ev  = d1[0] ? d1[0].valor : null;
+    var d2 = r2.ok ? await r2.json() : []; var ata = d2[0] ? d2[0].valor : null;
+    var d3 = (r3&&r3.ok) ? await r3.json().catch(function(){return [];}) : []; var nfs = d3[0] ? d3[0].valor : null;
+    var loaded = false;
+    if (ev && ev.events && ev.events.length) {
+      events     = ev.events;
+      curEventId = ev.curEventId || ev.events[0].id;
+      loaded = true;
+    }
+    if (ata && ata.atasMestre) {
+      atasMestre    = ata.atasMestre    || [];
+      nextAtaMestre = ata.nextAtaMestre || 1;
+      loaded = true;
+    }
+    if (nfs && !nfs.error && Array.isArray(nfs.notasFiscais)) {
+      notasFiscais = nfs.notasFiscais;
+      nextNF       = nfs.nextNF || (notasFiscais.length ? Math.max.apply(null, notasFiscais.map(function(n){return n.id||0;})) + 1 : 1);
+      console.log('[load] NFs carregadas do banco:', notasFiscais.length);
+    } else {
+      console.log('[load] NFs: chave nao existe ou vazia', nfs);
+    }
+    migrateEvents(events);
+    return loaded;
+  } catch(e) { console.warn('API load error:', e); return false; }
+}
+
+function loadLocal_ge() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    var d = JSON.parse(raw);
+    if (d.events && d.events.length) {
+      events = d.events; curEventId = d.curEventId || d.events[0].id;
+      atasMestre = d.atasMestre || []; nextAtaMestre = d.nextAtaMestre || 1;
+      migrateEvents(events);
+      return true;
+    }
+  } catch(e) {}
   return false;
 }
 
-async function loadDataRemote() {
-  var sb=getSB();
-  if(sb){try{var r=await sb.from('modulos').select('dados').eq('nome',STORAGE_KEY).single();if(r.data){return _applyData(JSON.parse(r.data.dados));}}catch(e){}}
-  return loadData();
-}
-
-function listenRealtime(){
-  var sb=getSB();if(!sb)return;
-  sb.channel('gv-realtime').on('postgres_changes',{event:'UPDATE',schema:'public',table:'modulos',filter:'nome=eq.'+STORAGE_KEY},function(payload){
-    try{if(_applyData(JSON.parse(payload.new.dados))){render();showSync(true);}}catch(e){}
-  }).subscribe();
-}
-
-function clearData() {
+async function clearData() {
   if (!confirm('Apagar TODOS os dados salvos e começar do zero? Esta ação não pode ser desfeita.')) return;
   localStorage.removeItem(STORAGE_KEY);
+  try {
+    await fetch(SB_URL_GE + '/rest/v1/' + SB_TABLE_GE + '?chave=in.(' + SB_CHAVE_EV + ',' + SB_CHAVE_AT + ')', {
+      method: 'DELETE', headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE }
+    });
+  } catch(e) {}
   location.reload();
 }
 
 function exportBackup() {
-  const data = { events, curEventId, atasMestre, nextAtaMestre, exportedAt: new Date().toISOString() };
+  const data = { events, curEventId, atasMestre, nextAtaMestre, notasFiscais, nextNF, exportedAt: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'backup_eventos_' + new Date().toISOString().slice(0,10) + '.json';
-  a.click();
-  toast('Backup exportado com sucesso!');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'backup_eventos_' + new Date().toISOString().slice(0,10) + '.json'; a.click();
+  toast('Backup exportado! Eventos: ' + events.length + ' · ATAs: ' + atasMestre.length + ' · NFs: ' + (notasFiscais||[]).length);
 }
 
 function importBackup(input) {
-  const file = input.files[0];
-  if (!file) return;
+  const file = input.files[0]; if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     try {
       const d = JSON.parse(e.target.result);
       if (!d.events || !d.events.length) { alert('Arquivo de backup inválido.'); return; }
-      if (!confirm('Importar backup? Os dados atuais serão substituídos.')) return;
-      events        = d.events;
-      curEventId    = d.curEventId || d.events[0].id;
-      atasMestre    = d.atasMestre  || [];
-      nextAtaMestre = d.nextAtaMestre || (atasMestre.length ? Math.max(...atasMestre.map(function(a){return a.id;}))+1 : 1);
-      saveData();
-      render();
-      toast('Backup importado! ' + events.length + ' evento(s) restaurado(s).');
+      if (!confirm('Importar backup? Os dados atuais serão substituídos.\n\n' + d.events.length + ' evento(s) · ' + (d.atasMestre||[]).length + ' ATA(s) · ' + (d.notasFiscais||[]).length + ' NF(s)')) return;
+      events = d.events; curEventId = d.curEventId || d.events[0].id;
+      atasMestre = d.atasMestre || []; nextAtaMestre = d.nextAtaMestre || 1;
+      notasFiscais = d.notasFiscais || []; nextNF = d.nextNF || 1;
+      migrateEvents(events); saveData(); saveAtasImediato(); saveNotasImediato(); render();
+      toast('Backup importado! ' + events.length + ' evento(s) · ' + atasMestre.length + ' ATA(s) · ' + notasFiscais.length + ' NF(s)');
     } catch(err) { alert('Erro ao importar: ' + err.message); }
   };
   reader.readAsText(file);
 }
 
-// Auto-save after every render
-const _origRender = render;
-render = function() { _origRender(); saveData(); };
+// Auto-save REMOVIDO do render — saveData() chamado apenas em ações do usuário
 
 // ═══════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════
-(async function init() {
-  const loaded = await loadDataRemote();
-  if (!loaded) { events = [seed]; curEventId = seed.id; }
-  listenRealtime();
+(async function() {
+  var ind = document.getElementById('save-indicator');
+  if (ind) { ind.textContent = '⏳ Carregando dados...'; ind.style.opacity='1'; }
+  // Sempre busca do MySQL — limpa localStorage para evitar dados desatualizados
+  localStorage.removeItem('gerenciador_eventos_v2');
+  var ok = await loadSupabase_ge();
+  if (!ok) {
+    events = [seed]; curEventId = seed.id;
+    setSyncIndicator('offline');
+    if (ind) { ind.textContent = '⚠ Sem conexão com servidor'; ind.style.opacity='1'; }
+    setTimeout(function(){ if(ind) ind.style.opacity='0'; }, 3000);
+  }
   render();
+  renderEventSelect();
 })();
 </script>
 <div id="save-indicator" style="position:fixed;bottom:20px;right:20px;background:#1a4731;color:#fff;font-size:11px;font-family:monospace;padding:7px 16px;border-radius:20px;box-shadow:0 3px 12px rgba(0,0,0,.25);opacity:0;transition:opacity .5s;pointer-events:none;z-index:9999">&#x2713; Salvo automaticamente</div>
