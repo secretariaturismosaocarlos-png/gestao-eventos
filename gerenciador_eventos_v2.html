@@ -1300,9 +1300,15 @@ function gerarRelatorioNF() {
       'body{font-family:Arial,sans-serif;font-size:10px;color:#222;margin:0;padding:20px}' +
       'h1{color:#1a4731;font-size:16px;border-bottom:3px solid #f9a825;padding-bottom:6px;margin-bottom:4px}' +
       'h2{font-size:12px;color:#1a4731;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.5px;border-left:4px solid #f9a825;padding-left:8px}' +
-      'table{width:100%;border-collapse:collapse;margin-bottom:6px}' +
-      'td{padding:4px 7px;border-bottom:1px solid #eee;vertical-align:middle}' +
+      'h3{font-size:10px;color:#555;margin:8px 0 3px}' +
+      'table{width:100%;border-collapse:collapse;margin-bottom:8px}' +
+      'th{background:#1a4731;color:#fff;padding:5px 8px;text-align:left;font-size:9px;font-weight:700}' +
+      'td{padding:4px 8px;border-bottom:1px solid #eee;vertical-align:middle;font-size:9.5px}' +
       'tr:nth-child(even) td{background:#f9f9f9}' +
+      '.grp-hdr td{background:#e8f4ea;font-weight:700;color:#1a4731;font-size:9px}' +
+      '.sub td{background:#f0f7f2;font-size:8.5px;color:#555}' +
+      '.tot td{background:#fff3cd;font-weight:800;font-size:10px}' +
+      '.val{text-align:right;font-family:monospace}' +
       '.cards{display:flex;gap:12px;margin:12px 0 20px;flex-wrap:wrap}' +
       '.card{flex:1;min-width:120px;border:2px solid #ddd;border-radius:8px;padding:10px 14px}' +
       '.card-lbl{font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
@@ -2331,7 +2337,7 @@ function renderStaff() {
     html += '<div class="tw" style="margin-top:6px"><table><tbody><tr class="tot-tr">' +
       '<td colspan="4" style="padding:12px;font-size:13px;font-weight:800;text-align:right">TOTAL GERAL — STAFF</td>' +
       '<td class="val-r" style="font-size:15px;font-weight:800;padding-right:12px">' + (fmt(totalStaff())||'R$ 0,00') + '</td>' +
-      '<td colspan="5"></td></tr></tbody></table></div>';
+      '<td colspan="4"></td></tr></tbody></table></div>';
   }
 
   return '<div class="sh"><span class="sh-emoji">👥</span>' +
@@ -2345,14 +2351,14 @@ function renderStaff() {
 
 function buildSecaoBlock(mod, sec, subtotal, items) {
   var secEsc = (sec||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  var cols = mod==='staff' ? 10 : mod==='estrutura' ? 10 : 12;
+  var cols = mod==='staff' ? 9 : mod==='estrutura' ? 10 : 12;
   var tabLabel = mod==='staff' ? 'staff' : mod==='estrutura' ? 'estrutura' : 'hospedagem';
 
   var thead = '';
   if (mod === 'staff') {
     thead = '<th>Descri&ccedil;&atilde;o</th>' +
-      '<th>Qtd.<br>Pessoas</th><th>Total<br>de Horas</th>' +
-      '<th>Valor/Hora</th><th>Custo Total</th><th>N&ordm; ATA</th><th>Fornecedor</th>' +
+      '<th style="text-align:center">Total H</th>' +
+      '<th style="text-align:right">Valor/Hora</th><th style="text-align:right">Custo Total</th><th>N&ordm; ATA</th><th>Fornecedor</th>' +
       '<th>Contato</th><th>Observa&ccedil;&otilde;es</th><th></th>';
   } else if (mod === 'estrutura') {
     thead = '<th>Item / Servi&ccedil;o</th><th>Qtd</th><th>Unid.</th><th>Vlr.Unit.</th>' +
@@ -2392,20 +2398,13 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
         var grpTotalH = grpItems.reduce(function(s,x){ return s+(x.totalH||0); }, 0);
         // Group header row
         rows += '<tr style="background:linear-gradient(90deg,rgba(26,71,49,.09),rgba(46,125,79,.04));border-top:2px solid rgba(46,125,79,.25)">' +
-          '<td colspan="10" style="padding:7px 14px">' +
-            '<div style="display:flex;align-items:center;justify-content:space-between">' +
-              '<span style="font-weight:800;font-size:12px;color:var(--gd);letter-spacing:.4px">▸ ' + desc + '</span>' +
-              '<span style="font-size:10px;color:#888;font-family:monospace">' +
-                grpItems.length + ' item(s) &nbsp;·&nbsp; ' + grpTotalH + 'h &nbsp;·&nbsp; ' +
-                '<strong style="color:var(--gd)">' + (grpTotal ? fmtV(grpTotal) : 'a cotar') + '</strong>' +
-              '</span>' +
-            '</div>' +
+          '<td colspan="9" style="padding:7px 14px">' +
+            '<span style="font-weight:800;font-size:12px;color:var(--gd);letter-spacing:.4px">▸ ' + desc + '</span>' +
           '</td></tr>';
         grpItems.forEach(function(it, i) {
           var bg = i % 2 === 0 ? '' : 'background:#fafafa';
           rows += '<tr style="' + bg + '">' +
             '<td style="font-weight:600;color:var(--gd);font-size:11px;min-width:130px;padding-left:20px">' + edCell('staff',it.id,'descricao',it.descricao||'','text',120) + '</td>' +
-            '<td style="text-align:center">' + edCell('staff',it.id,'qtd',it.qtd,'number',36) + '</td>' +
             '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:2px">' +
               edCell('staff',it.id,'totalH',it.totalH,'number',44) +
               '<span style="color:#aaa;font-size:10px">h</span></div></td>' +
@@ -2414,17 +2413,11 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
             '<td style="font-size:10px">' + edCell('staff',it.id,'ata',normalizeAta(it.ata),'text',80) + '</td>' +
             '<td style="font-size:10px">' + edCell('staff',it.id,'fornecedor',it.fornecedor,'text',160) + '</td>' +
             '<td style="font-size:10px">' + edCell('staff',it.id,'contato',it.contato,'text',100) + '</td>' +
-            '<td style="max-width:200px">' + edCell('staff',it.id,'obs',it.obs||'','textarea',180) + '</td>' +
+            '<td style="max-width:180px;font-size:10px;color:#888">' + (it.obs||'—') + '</td>' +
             '<td><div class="abts"><button class="bobs" onclick="editarItemStaff(' + it.id + ')" title="Editar">&#x270F;</button><button class="bdel" onclick="delItem(\x27staff\x27,' + it.id + ')">&#x2715;</button></div></td>' +
             '</tr>';
         });
-        // Subtotal row per function (always show, even for 1 item — helps readability)
-        rows += '<tr style="background:rgba(46,125,79,.07);border-bottom:2px solid rgba(46,125,79,.18)">' +
-          '<td colspan="4" style="text-align:right;padding:5px 12px;font-size:10px;font-weight:700;color:var(--gd);font-family:monospace;letter-spacing:.3px">' +
-            'Subtotal — ' + desc +
-          '</td>' +
-          '<td class="val-r" style="font-weight:800;color:var(--gd);font-size:11px;padding:5px 8px">' + (grpTotal ? fmtV(grpTotal) : '—') + '</td>' +
-          '<td colspan="5" style="background:rgba(46,125,79,.04)"></td></tr>';
+        // Subtotal por função removido
       });
 
     } else if (mod === 'estrutura') {
@@ -2468,8 +2461,7 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
 
   var subRow = '';
   if (mod === 'staff' && subtotal) {
-    subRow = '<tr class="sub-tr"><td colspan="4" style="text-align:right;padding-right:12px">Subtotal &mdash; ' + sec + '</td>' +
-      '<td class="val-r">' + (fmt(subtotal)||'&mdash;') + '</td><td colspan="5"></td></tr>';
+    subRow = ''; // Subtotal por bloco removido
   } else if (mod === 'estrutura' && subtotal) {
     subRow = '<tr class="sub-tr"><td colspan="4" style="text-align:right;padding-right:12px">Subtotal &mdash; ' + sec + '</td>' +
       '<td class="val-r">' + (fmt(subtotal)||'&mdash;') + '</td><td colspan="5"></td></tr>';
@@ -3631,27 +3623,29 @@ function exportPDF() {
   const totalGeral    = totalStaffVal + totalEstVal + totalHospVal;
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+e.name+'</title><style>' +
-    'body{font-family:Arial,sans-serif;font-size:10px;color:#222;margin:0;padding:16px}' +
-    'h1{color:#1a4731;font-size:16px;border-bottom:3px solid #f9a825;padding-bottom:6px;margin-bottom:4px}' +
-    'h2{color:#1a4731;font-size:11px;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.5px}' +
-    'h3{color:#2e7d4f;font-size:10px;margin:8px 0 2px;font-weight:700}' +
-    'table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:9.5px}' +
-    'th{background:#1a4731;color:#fff;padding:4px 6px;text-align:left;font-size:9px}' +
-    'td{padding:3px 6px;border-bottom:1px solid #eee}' +
+    '@page{size:A4 landscape;margin:1.5cm 1.2cm}' +
+    'body{font-family:Arial,sans-serif;font-size:9px;color:#222;margin:0;padding:0}' +
+    'h1{color:#1a4731;font-size:15px;border-bottom:3px solid #f9a825;padding-bottom:5px;margin-bottom:8px}' +
+    'h2{color:#fff;font-size:10px;margin:14px 0 0;text-transform:uppercase;letter-spacing:.5px;background:#1a4731;padding:5px 10px;border-left:4px solid #f9a825}' +
+    'h3{color:#1a4731;font-size:9px;margin:6px 0 2px;font-weight:700;padding:3px 8px;background:#e8f4ea}' +
+    'table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed}' +
+    'th{background:#2e5c3e;color:#fff;padding:5px 8px;text-align:left;font-size:8.5px;font-weight:700;white-space:nowrap}' +
+    'td{padding:4px 8px;border-bottom:1px solid #e8e8e8;font-size:8.5px;vertical-align:middle;overflow:hidden}' +
+    'tr:hover td{background:#f0f7f2}' +
     'tr:nth-child(even) td{background:#f7faf8}' +
-    '.sub td{background:#ddeee5!important;font-weight:700;font-size:9px}' +
-    '.grp-hdr td{background:#e8f4ea!important;font-weight:800;color:#1a4731;font-size:10px;padding:5px 8px;border-top:2px solid #2e7d4f}' +
-    '.tot{background:#1a4731!important;color:#fff!important;font-weight:700;font-size:10px}' +
-    '.val{text-align:right;font-family:monospace}' +
-    '.cards{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}' +
-    '.card{flex:1;min-width:120px;border:1px solid #ddd;border-radius:6px;padding:8px 12px;background:#f9f9f9}' +
-    '.card-lbl{font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
-    '.card-val{font-size:14px;font-weight:800;color:#1a4731;margin:2px 0}' +
-    '.card-sub{font-size:8px;color:#aaa}' +
-    '.gold{background:linear-gradient(135deg,#1a4731,#2e7d4f);color:#fff;border:none}' +
-    '.gold .card-lbl,.gold .card-val,.gold .card-sub{color:#fff}' +
-    '.gold .card-val{color:#f9a825}' +
-    '@media print{@page{margin:1.2cm;size:A4 landscape}body{padding:0}}' +
+    '.grp-hdr td{background:#c8e6c9!important;font-weight:800;color:#1a4731;font-size:9px;padding:5px 10px;border-top:2px solid #2e7d4f;border-bottom:1px solid #2e7d4f}' +
+    '.sub td{background:#e8f5e9!important;font-weight:700;font-size:8.5px;color:#1a4731;text-align:right;padding:3px 8px}' +
+    '.tot td{background:#1a4731!important;color:#fff!important;font-weight:800;font-size:10px;padding:6px 10px}' +
+    '.val{text-align:right;font-family:monospace;white-space:nowrap}' +
+    '.ctr{text-align:center}' +
+    '.cards{display:flex;gap:12px;margin-bottom:14px}' +
+    '.card{flex:1;border:1.5px solid #ddd;border-radius:6px;padding:8px 14px;background:#fafafa}' +
+    '.card-lbl{font-size:7.5px;color:#888;text-transform:uppercase;letter-spacing:.6px;font-weight:700}' +
+    '.card-val{font-size:14px;font-weight:800;color:#1a4731;margin:3px 0}' +
+    '.card-sub{font-size:7.5px;color:#aaa}' +
+    '.gold{background:linear-gradient(135deg,#1a4731,#2e7d4f)!important;border-color:#2e7d4f!important}' +
+    '.gold .card-lbl,.gold .card-sub{color:rgba(255,255,255,.7)!important}' +
+    '.gold .card-val{color:#f9a825!important}' +
     '</style></head><body>';
 
   html += '<h1>'+e.name+'</h1>';
@@ -3673,36 +3667,30 @@ function exportPDF() {
       const items = e.staff.filter(function(x){return x.secao===sec;});
       if (!items.length) return;
       const secTotal = items.reduce(function(s,x){return s+(x.custo||0);},0);
-      html += '<h3>'+sec+' — '+fmtR(secTotal)+'</h3>';
-      html += '<table><tr><th>Descrição</th><th>Qtd</th><th>Total H</th><th>Vlr/H</th><th>Custo Total</th><th>Nº ATA</th><th>Fornecedor</th></tr>';
-      // Group by descrição
-      var descOrder = [], descGroups = {};
+      html += '<h3>' + sec + ' &nbsp;·&nbsp; ' + fmtR(secTotal) + '</h3>';
+      html += '<table style="table-layout:fixed"><colgroup>' +
+        '<col style="width:32%"><col style="width:9%"><col style="width:9%"><col style="width:12%"><col style="width:14%"><col style="width:24%">' +
+        '</colgroup><tr>' +
+        '<th>Descrição</th>' +
+        '<th style="text-align:center">Total H</th>' +
+        '<th style="text-align:right">Vlr/H</th>' +
+        '<th style="text-align:right">Custo Total</th>' +
+        '<th>Nº ATA</th>' +
+        '<th>Fornecedor</th>' +
+        '</tr>';
       items.forEach(function(it){
-        var k = (it.descricao||'(sem descrição)').toUpperCase();
-        if (!descGroups[k]) { descGroups[k]=[]; descOrder.push(k); }
-        descGroups[k].push(it);
+        html += '<tr>' +
+          '<td style="font-weight:600">'+(it.descricao||'—')+'</td>' +
+          '<td style="text-align:center;font-weight:700">'+(it.totalH||0)+'h</td>' +
+          '<td style="text-align:right;font-family:monospace">'+(it.vlrH!=null?fmtN(it.vlrH):'—')+'</td>' +
+          '<td style="text-align:right;font-weight:700;font-family:monospace">'+fmtR(it.custo)+'</td>' +
+          '<td>'+fmtAta(it.ata)+'</td>' +
+          '<td style="font-size:8.5px">'+(it.fornecedor||'—')+'</td>' +
+        '</tr>';
       });
-      descOrder.forEach(function(desc){
-        var grp = descGroups[desc];
-        var grpTotal = grp.reduce(function(s,x){return s+(x.custo||0);},0);
-        html += '<tr class="grp-hdr"><td colspan="7">▸ '+desc+' &nbsp;·&nbsp; '+grp.length+' item(s) &nbsp;·&nbsp; '+fmtR(grpTotal)+'</td></tr>';
-        grp.forEach(function(it){
-          html += '<tr>' +
-            '<td>'+desc+'</td>' +
-            '<td style="text-align:center">'+(it.qtd||'—')+'</td>' +
-            '<td style="text-align:center;font-weight:700">'+(it.totalH||0)+'h</td>' +
-            '<td class="val">'+(it.vlrH!=null?fmtN(it.vlrH):'—')+'</td>' +
-            '<td class="val" style="font-weight:700">'+fmtR(it.custo)+'</td>' +
-            '<td>'+fmtAta(it.ata)+'</td>' +
-            '<td style="font-size:9px">'+(it.fornecedor||'—')+'</td>' +
-          '</tr>';
-        });
-        html += '<tr class="sub"><td colspan="3" style="text-align:right">Subtotal — '+desc+'</td><td class="val">'+fmtR(grpTotal)+'</td><td colspan="2"></td></tr>';
-      });
-      html += '<tr class="sub"><td colspan="3" style="text-align:right">Subtotal — '+sec+'</td><td class="val">'+fmtR(secTotal)+'</td><td colspan="2"></td></tr>';
       html += '</table>';
     });
-    html += '<table><tr class="tot"><td colspan="3" style="text-align:right;padding:5px 8px">TOTAL STAFF</td><td class="val" style="color:#f9a825;font-size:11px">'+fmtR(totalStaffVal)+'</td><td colspan="2"></td></tr></table>';
+    html += '<table><tr class="tot"><td colspan="3" style="text-align:right;padding:5px 8px">TOTAL STAFF</td><td style="text-align:right;font-family:monospace;color:#f9a825;font-size:11px;padding:5px 8px">'+fmtR(totalStaffVal)+'</td><td colspan="2"></td></tr></table>';
   }
 
   // ── ESTRUTURA ──
@@ -3713,28 +3701,36 @@ function exportPDF() {
       const items = e.estrutura.filter(function(x){return (x.secao||'Geral')===sec;});
       if (!items.length) return;
       const secTotal = items.reduce(function(s,x){return s+(x.custo||0);},0);
-      html += '<h3>'+sec+' — '+fmtR(secTotal)+'</h3>';
-      html += '<table><tr><th>Item / Serviço</th><th>Qtd</th><th>Unid.</th><th>Vlr. Unit.</th><th>Custo Total</th><th>Nº ATA</th><th>Fornecedor</th><th>Observações</th></tr>';
+      html += '<h3>' + sec + ' &nbsp;·&nbsp; ' + fmtR(secTotal) + '</h3>';
+      html += '<table style="table-layout:fixed"><colgroup>' +
+        '<col style="width:30%"><col style="width:6%"><col style="width:10%"><col style="width:11%"><col style="width:13%"><col style="width:13%"><col style="width:17%">' +
+        '</colgroup><tr>' +
+        '<th>Item / Serviço</th>' +
+        '<th style="text-align:center">Qtd</th>' +
+        '<th>Unid.</th>' +
+        '<th style="text-align:right">Vlr. Unit.</th>' +
+        '<th style="text-align:right">Custo Total</th>' +
+        '<th>Nº ATA</th>' +
+        '<th>Fornecedor</th>' +
+        '</tr>';
       items.forEach(function(it){
         html += '<tr>' +
-          '<td>'+(it.item||'—')+'</td>' +
+          '<td style="font-size:8.5px">'+(it.item||'—')+'</td>' +
           '<td style="text-align:center">'+(it.qtd!=null?it.qtd:'—')+'</td>' +
-          '<td>'+(it.unidade||'—')+'</td>' +
-          '<td class="val">'+(it.vlrUnit!=null?fmtN(it.vlrUnit):'—')+'</td>' +
-          '<td class="val" style="font-weight:700">'+fmtR(it.custo)+'</td>' +
-          '<td>'+fmtAta(it.ata)+'</td>' +
-          '<td style="font-size:9px">'+(it.fornecedor||'—')+'</td>' +
-          '<td style="font-size:8px;color:#777">'+(it.obs||'—')+'</td>' +
+          '<td style="font-size:8px">'+(it.unidade||'—')+'</td>' +
+          '<td style="text-align:right;font-family:monospace">'+(it.vlrUnit!=null?fmtN(it.vlrUnit):'—')+'</td>' +
+          '<td style="text-align:right;font-weight:700;font-family:monospace">'+fmtR(it.custo)+'</td>' +
+          '<td style="font-size:8px">'+fmtAta(it.ata)+'</td>' +
+          '<td style="font-size:8px">'+(it.fornecedor||'—')+'</td>' +
         '</tr>';
       });
-      html += '<tr class="sub"><td colspan="4" style="text-align:right">Subtotal — '+sec+'</td><td class="val">'+fmtR(secTotal)+'</td><td colspan="3"></td></tr>';
       html += '</table>';
     });
-    html += '<table><tr class="tot"><td colspan="4" style="text-align:right;padding:5px 8px">TOTAL ESTRUTURA</td><td class="val" style="color:#f9a825;font-size:11px">'+fmtR(totalEstVal)+'</td><td colspan="3"></td></tr></table>';
+    html += '<table><tr class="tot"><td colspan="4" style="text-align:right;padding:5px 8px">TOTAL ESTRUTURA</td><td style="text-align:right;font-family:monospace;color:#f9a825;font-size:11px;padding:5px 8px">'+fmtR(totalEstVal)+'</td><td colspan="2"></td></tr></table>';
   }
 
   // ── TOTAL GERAL FINAL ──
-  html += '<table style="margin-top:12px"><tr class="tot" style="font-size:12px"><td colspan="8" style="text-align:right;padding:8px 12px;font-size:13px;letter-spacing:.5px">💰 TOTAL GERAL DO EVENTO</td><td class="val" style="color:#f9a825;font-size:15px;font-weight:900">'+fmtR(totalGeral)+'</td></tr></table>';
+  html += '<table style="margin-top:12px"><tr class="tot" style="font-size:12px"><td colspan="5" style="text-align:right;padding:8px 12px;font-size:13px;letter-spacing:.5px">💰 TOTAL GERAL DO EVENTO</td><td style="text-align:right;font-family:monospace;color:#f9a825;font-size:15px;font-weight:900;padding:8px 12px">'+fmtR(totalGeral)+'</td><td colspan="1"></td></tr></table>';
 
   html += '<p style="font-size:9px;color:#aaa;text-align:right;margin-top:8px">Gerado em '+new Date().toLocaleDateString('pt-BR')+' · Sistema de Gerenciamento de Eventos</p>';
   html += '</body></html>';
