@@ -4,189 +4,484 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🌸 Gestão de Eventos — São Carlos</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;background:#0f1923;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
-/* ── Login ── */
-#login-screen{width:100%;max-width:400px;text-align:center}
-#login-screen h2{color:#fff;font-size:22px;margin-bottom:6px}
-#login-screen p{color:#8a9bb0;font-size:13px;margin-bottom:28px}
-.login-box{background:#1a2535;border:1px solid #2a3a50;border-radius:16px;padding:32px 28px}
-.login-box label{display:block;text-align:left;font-size:11px;color:#8a9bb0;margin-bottom:5px;margin-top:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
-.login-box input{width:100%;background:#0f1923;border:1px solid #2a3a50;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;font-family:Arial,sans-serif;outline:none}
-.login-box input:focus{border-color:#3a7bd5}
-.btn-login{width:100%;margin-top:22px;padding:13px;background:#3a7bd5;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif}
-.btn-login:hover{background:#4a8be5}
-.login-box input:focus{border-color:#3a7bd5;box-shadow:0 0 0 2px rgba(58,123,213,.2)}
-#login-error{color:#f07a7a;font-size:12px;margin-top:10px;min-height:18px}
-/* ── Portal ── */
-#portal{display:none;width:100%;max-width:1100px}
-.header{text-align:center;margin-bottom:40px}
-.header-icon{font-size:42px;margin-bottom:10px}
-.header h1{font-size:26px;color:#fff;margin-bottom:6px}
-.header p{font-size:12px;color:#8a9bb0}
-.cards{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
-.card{display:block;background:#1a2535;border:1px solid #2a3a50;border-radius:20px;padding:36px 32px;width:320px;text-decoration:none;transition:all .25s;position:relative;overflow:hidden;cursor:pointer}
+body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
+.login-box{background:#1a2535;border:1px solid #2a3a50;border-radius:20px;padding:40px 36px;width:100%;max-width:400px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .icon{font-size:40px;margin-bottom:10px}
+.login-logo h1{font-family:'DM Serif Display',serif;font-size:24px;color:#fff;margin-bottom:4px}
+.login-logo p{font-size:12px;color:#8a9bb0}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:11px;font-weight:700;color:#8a9bb0;margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px}
+.fg input,.fg select{width:100%;padding:11px 14px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:10px;color:#fff;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s}
+.fg input:focus,.fg select:focus{border-color:#2e7d4f}
+.fg select option{background:#1a2535}
+.btn-primary{width:100%;padding:13px;background:#2e7d4f;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;margin-top:4px}
+.btn-primary:hover{background:#3a9e65}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.alert{border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:14px;display:none}
+.alert.error{background:#2a1a1a;border:1px solid #6b2a2a;color:#f08080}
+.alert.success{background:#1a3a2a;border:1px solid #2e7d4f;color:#4cd98a}
+.tabs{display:flex;gap:0;margin-bottom:24px;background:#0f1923;border-radius:10px;padding:4px}
+.tab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;border-radius:8px;color:#5a6a7a;transition:.2s}
+.tab.active{background:#1a2535;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.link-btn{text-align:center;margin-top:10px;font-size:11px;color:#4a8a6a;cursor:pointer}
+.login-info{text-align:center;margin-top:10px;font-size:11px;color:#3a4a5a}
+.painel{display:none;flex-direction:column;align-items:center;width:100%;max-width:1100px}
+.topbar{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:36px;flex-wrap:wrap;gap:12px}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{font-size:28px}
+.topbar-info h2{font-family:'DM Serif Display',serif;font-size:20px;color:#fff}
+.topbar-info p{font-size:11px;color:#8a9bb0}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.user-chip{background:#1a2535;border:1px solid #2a3a50;border-radius:20px;padding:7px 14px;display:flex;align-items:center;gap:8px;font-size:11px;color:#aec6d8}
+.user-chip .dot{width:8px;height:8px;border-radius:50%;background:#2e7d4f;flex-shrink:0}
+.btn-sm{padding:7px 14px;border-radius:20px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;border:1px solid}
+.btn-logout{background:transparent;border-color:#3a4a5a;color:#8a9bb0}
+.btn-logout:hover{border-color:#c84a4a;color:#f08080}
+.btn-admin{background:#1a2a4a;border-color:#2a3a6a;color:#7ab3f0}
+.btn-admin:hover{background:#2a3a6a}
+.cards{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;width:100%}
+.card{background:#1a2535;border:1px solid #2a3a50;border-radius:20px;padding:36px 32px;width:320px;text-decoration:none;transition:all .25s ease;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .25s;border-radius:20px}
 .card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.5);border-color:transparent}
-.card.green:hover{border-color:#2e7d4f44}
-.card.gold:hover{border-color:#c9a84c44}
-.card.blue:hover{border-color:#3a7bd544}
-.card-icon{font-size:36px;margin-bottom:16px;display:block}
-.card-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:8px}
-.card-desc{font-size:12px;color:#8a9bb0;line-height:1.7;margin-bottom:22px}
-.card-features{list-style:none;margin-bottom:26px}
-.card-features li{font-size:11px;color:#aec6d8;padding:3px 0 3px 14px;position:relative}
+.card.green::before{background:linear-gradient(135deg,rgba(46,125,79,.15),rgba(26,75,49,.1))}
+.card.gold::before{background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(180,140,50,.1))}
+.card.blue::before{background:linear-gradient(135deg,rgba(58,123,213,.15),rgba(30,80,160,.1))}
+.card.green:hover{border-color:#2e7d4f44}.card.green:hover::before{opacity:1}
+.card.gold:hover{border-color:#c9a84c44}.card.gold:hover::before{opacity:1}
+.card.blue:hover{border-color:#3a7bd544}.card.blue:hover::before{opacity:1}
+.card-icon{font-size:38px;margin-bottom:18px;display:block}
+.card-title{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;margin-bottom:8px}
+.card-desc{font-size:12px;color:#8a9bb0;line-height:1.7;margin-bottom:24px}
+.card-features{list-style:none;margin-bottom:28px}
+.card-features li{font-size:11px;color:#aec6d8;padding:4px 0 4px 16px;position:relative}
 .card-features li::before{content:'→';position:absolute;left:0;font-weight:700}
 .card.green .card-features li::before{color:#4a9a6a}
-.card.gold  .card-features li::before{color:#c9a84c}
-.card.blue  .card-features li::before{color:#3a7bd5}
-.card-btn{display:block;text-align:center;width:100%;padding:12px;border-radius:10px;font-size:12px;font-weight:700;font-family:Arial,sans-serif}
-.card.green .card-btn{background:#2e7d4f;color:#fff}
-.card.gold  .card-btn{background:#c9a84c;color:#1a1a0a}
-.card.blue  .card-btn{background:#3a7bd5;color:#fff}
+.card.gold .card-features li::before{color:#c9a84c}
+.card.blue .card-features li::before{color:#3a7bd5}
+.card-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:.2s}
+.card.green .card-btn{background:#2e7d4f;color:#fff}.card.green .card-btn:hover{background:#3a9e65}
+.card.gold .card-btn{background:#c9a84c;color:#1a1a0a}.card.gold .card-btn:hover{background:#dbb85a}
+.card.blue .card-btn{background:#3a7bd5;color:#fff}.card.blue .card-btn:hover{background:#4a8be5}
 .badge{display:inline-block;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;margin-bottom:12px;letter-spacing:.8px;text-transform:uppercase}
 .card.green .badge{background:#1e4d30;color:#4cd98a}
-.card.gold  .badge{background:#3d2e0a;color:#f0c060}
-.card.blue  .badge{background:#0a1a3a;color:#7ab3f0}
-.topbar-user{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-bottom:20px;font-size:12px;color:#8a9bb0}
-.topbar-user span{color:#aec6d8;font-weight:600}
-.btn-logout{background:transparent;border:1px solid #2a3a50;color:#8a9bb0;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-family:Arial,sans-serif}
-.btn-logout:hover{border-color:#3a7bd5;color:#7ab3f0}
-.footer{margin-top:40px;text-align:center;font-size:11px;color:#3a4a5a;line-height:1.8}
-@media(max-width:700px){.card{width:100%}}
+.card.gold .badge{background:#3d2e0a;color:#f0c060}
+.card.blue .badge{background:#0a1a3a;color:#7ab3f0}
+.no-access{text-align:center;padding:60px 20px;color:#3a4a5a;width:100%}
+.no-access .ico{font-size:48px;margin-bottom:16px}
+.admin-panel{display:none;width:100%;max-width:960px;margin-top:40px;background:#1a2535;border:1px solid #2a3a50;border-radius:16px;overflow:hidden}
+.admin-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #2a3a50}
+.admin-hdr h3{font-family:'DM Serif Display',serif;font-size:18px;color:#fff}
+.btn-add{padding:8px 16px;background:#2e7d4f;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-add:hover{background:#3a9e65}
+.role-pill{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:800}
+.role-pill.admin{background:#1a3a6a;color:#7ab3f0}
+.role-pill.editor{background:#2a2a1a;color:#c9a84c}
+.role-pill.visualizador,.role-pill.usuario{background:#1a3a2a;color:#4aaa6a}
+.ck{display:flex;align-items:center;justify-content:center}
+.ck input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#2e7d4f}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:999}
+.modal-bx{background:#1a2535;border:1px solid #2a3a50;border-radius:16px;padding:32px;width:100%;max-width:440px}
+.modal-title{font-family:'DM Serif Display',serif;font-size:18px;color:#fff;margin-bottom:20px}
+.perms-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px}
+.pt{background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:.2s}
+.pt.on{border-color:#2e7d4f;background:#1a3a2a}
+.pt-ico{font-size:20px;margin-bottom:4px}
+.pt-lbl{font-size:10px;font-weight:700;color:#8a9bb0}
+.pt.on .pt-lbl{color:#4aaa6a}
+.mfooter{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.btn-cancel{padding:9px 18px;background:transparent;border:1px solid #3a4a5a;border-radius:8px;color:#8a9bb0;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.loading{text-align:center;color:#5a6a7a;padding:20px}
+.spin{display:inline-block;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast-el{position:fixed;bottom:24px;right:24px;background:#1a3a2a;border:1px solid #2e7d4f;color:#4cd98a;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999}
+@media(max-width:700px){.card{width:100%}.perms-grid{grid-template-columns:1fr}.topbar{flex-direction:column;align-items:flex-start}}
 </style>
 </head>
 <body>
+<div id="loading" class="loading" style="font-size:14px"><span class="spin">⚙</span> Verificando sessão...</div>
 
-<!-- ── TELA DE LOGIN ── -->
-<div id="login-screen">
-  <div class="login-box">
-    <div style="font-size:36px;margin-bottom:14px">🌸</div>
-    <h2>Gestão de Eventos</h2>
-    <p>Prefeitura de São Carlos · SMCT<br>Acesso restrito à equipe autorizada</p>
-    <label>E-mail</label>
-    <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
-    <label>Senha</label>
-    <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password"
-      onkeydown="if(event.key==='Enter')fazerLogin()">
-    <button class="btn-login" onclick="fazerLogin()">Entrar</button>
-    <div id="login-error"></div>
-    <div style="margin-top:16px;font-size:11px;color:#3a4a5a">
-      Não tem acesso? Solicite ao administrador.
+<div id="login-box" class="login-box" style="display:none">
+  <div class="login-logo">
+    <div class="icon">🌸</div>
+    <h1>Gestão de Eventos</h1>
+    <p>Prefeitura Municipal de São Carlos · SMCT</p>
+  </div>
+  <div class="tabs">
+    <div class="tab active" id="t-in" onclick="switchTab('in')">Entrar</div>
+    <div class="tab" id="t-up" onclick="switchTab('up')">Criar conta</div>
+  </div>
+  <div class="alert" id="alert"></div>
+  <div class="fg"><label>E-mail</label><input type="email" id="f-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')auth()"></div>
+  <div class="fg" id="fg-nome" style="display:none"><label>Nome completo</label><input type="text" id="f-nome" placeholder="Seu nome"></div>
+  <div class="fg"><label>Senha</label><input type="password" id="f-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')auth()"></div>
+  <div class="fg" id="fg-pw2" style="display:none"><label>Confirmar senha</label><input type="password" id="f-pw2" placeholder="••••••••"></div>
+  <button class="btn-primary" id="btn-auth" onclick="auth()">Entrar</button>
+  <div class="link-btn" id="link-forgot" onclick="forgot()">Esqueci minha senha</div>
+  <div class="login-info" id="login-hint">Acesso restrito à equipe da SMCT</div>
+</div>
+
+<div id="painel" class="painel">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">🌸</div>
+      <div class="topbar-info">
+        <h2>Gestão de Eventos</h2>
+        <p>Prefeitura de São Carlos · Secretaria Municipal de Cultura e Turismo</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip"><span class="dot"></span><span id="chip-email">—</span></div>
+      <button class="btn-sm btn-admin" id="btn-admin" onclick="toggleAdmin()" style="display:none">⚙ Usuários <span id="badge-pendentes" style="display:none;background:#c84a4a;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;margin-left:4px">0</span></button>
+      <button class="btn-sm btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </div>
+  <div class="cards" id="cards"></div>
+  <div class="admin-panel" id="admin-panel">
+    <div class="admin-hdr">
+      <h3>👥 Gerenciamento de Usuários</h3>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;background:#0f1923;border:1px solid #2a3a50;border-radius:8px;padding:6px 12px">
+          <span style="font-size:11px;color:#5a6a7a;white-space:nowrap">📞 Contato admin:</span>
+          <input id="inp-contato-admin" type="text" placeholder="Fabiana Ferreira — SMCT"
+            onchange="localStorage.setItem('smct_contato_admin',this.value)"
+            style="background:transparent;border:none;color:#e0e8f0;font-size:11px;font-family:inherit;outline:none;width:200px">
+        </div>
+        <button class="btn-add" onclick="openAddUser()">＋ Adicionar Usuário</button>
+      </div>
+    </div>
+    <div id="users-tb" style="padding:12px 16px"><div style="text-align:center;padding:20px;color:#3a4a5a">Carregando...</div></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-user" style="display:none">
+  <div class="modal-bx">
+    <div class="modal-title">➕ Adicionar Usuário</div>
+    <div class="fg"><label>E-mail</label><input type="email" id="nu-email" placeholder="email@dominio.com"></div>
+    <div class="fg"><label>Nome</label><input type="text" id="nu-nome" placeholder="Nome completo"></div>
+    <div class="fg"><label>Senha inicial</label><input type="password" id="nu-pw" placeholder="Mínimo 6 caracteres"></div>
+    <div class="fg"><label>Função</label>
+      <select id="nu-role"><option value="visualizador">Visualizador</option><option value="editor">Editor</option></select>
+    </div>
+    <div class="fg"><label>Acessos</label>
+      <div class="perms-grid">
+        <div class="pt" id="pt-g" onclick="tp('g')"><div class="pt-ico">📁</div><div class="pt-lbl">Gerenciador</div></div>
+        <div class="pt" id="pt-c" onclick="tp('c')"><div class="pt-ico">🎭</div><div class="pt-lbl">Chamamento</div></div>
+        <div class="pt" id="pt-e" onclick="tp('e')"><div class="pt-ico">💰</div><div class="pt-lbl">Emendas</div></div>
+      </div>
+    </div>
+    <div class="mfooter">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" style="width:auto;margin:0" onclick="saveUser()">Criar Usuário</button>
     </div>
   </div>
 </div>
 
-<!-- ── PORTAL PRINCIPAL ── -->
-<div id="portal">
-  <div class="topbar-user">
-    <span id="user-email-display">—</span>
-    <button class="btn-logout" onclick="fazerLogout()">Sair</button>
-  </div>
-  <div class="header">
-    <div class="header-icon">🌸</div>
-    <h1>Gestão de Eventos</h1>
-    <p>Prefeitura Municipal de São Carlos · Secretaria Municipal de Cultura e Turismo</p>
-  </div>
-  <div class="cards">
-    <a class="card green" href="gerenciador_eventos_v2.html">
-      <span class="badge">Gerenciador</span>
-      <span class="card-icon">📁</span>
-      <div class="card-title">Gerenciador de Eventos</div>
-      <p class="card-desc">Gestão completa de produção: staff, estrutura, hospedagem, contratos e resumo executivo.</p>
-      <ul class="card-features">
-        <li>Staff detalhado por bloco e função</li>
-        <li>Estrutura e equipamentos por seção</li>
-        <li>Hospedagem com cálculo automático</li>
-        <li>Atas & Contratos com extração por IA</li>
-        <li>Resumo executivo consolidado</li>
-      </ul>
-      <span class="card-btn">📂 Abrir Gerenciador</span>
-    </a>
-    <a class="card gold" href="artistas_chamamento.html">
-      <span class="badge">Chamamento Público</span>
-      <span class="card-icon">🎭</span>
-      <div class="card-title">Artistas · Chamamento</div>
-      <p class="card-desc">Banco de artistas do chamamento público com fila, programação, cachês e resumo artístico.</p>
-      <ul class="card-features">
-        <li>188 artistas pré-cadastrados do D.O.</li>
-        <li>Fila com Stand By e penalidade</li>
-        <li>Detecção de conflito de horário</li>
-        <li>Tabela de cachês por área e categoria</li>
-        <li>Edições por vigência com histórico</li>
-      </ul>
-      <span class="card-btn">🎤 Abrir Chamamento</span>
-    </a>
-    <a class="card blue" href="emendas_parlamentares.html">
-      <span class="badge">Parlamentar</span>
-      <span class="card-icon">💰</span>
-      <div class="card-title">Emendas Parlamentares</div>
-      <p class="card-desc">Gestão das emendas LOA com vinculação a eventos, processos e controle de saldo em tempo real.</p>
-      <ul class="card-features">
-        <li>Emendas LOA 2026 pré-carregadas</li>
-        <li>Vinculação com nº de processo</li>
-        <li>Saldo atualizado em tempo real</li>
-        <li>Relatórios por vereador e evento</li>
-        <li>Histórico por exercício fiscal (LOA)</li>
-      </ul>
-      <span class="card-btn">💰 Abrir Emendas</span>
-    </a>
-  </div>
-  <div class="footer">
-    Dados sincronizados em tempo real com toda a equipe.<br>
-    <span style="color:#4a6a7a">Todos os acessos são registrados · Uso restrito à equipe SMCT</span>
-  </div>
-</div>
+<div class="toast-el" id="toast"></div>
 
 <script>
-// ── Configuração Supabase ────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://uhalxchwpspupvfmpixq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYWx4Y2h3cHNwdXB2Zm1waXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODcwOTIsImV4cCI6MjA4OTI2MzA5Mn0.kVlk3z8__heq3bRbAMmra_LiNDmRs0wuMFkLtokSL6M';
+const SB_URL  = 'https://dbnjnigxgukqlrxmyefg.supabase.co';
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRibmpuaWd4Z3VrcWxyeG15ZWZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDc4NjIsImV4cCI6MjA5NzY4Mzg2Mn0.Nf5vgufAkW8qzosERhmypTQNqkqgAIu6uAxC8zBU3Ko';
+const SB_REST = SB_URL + '/rest/v1';
+const SB_H    = () => ({ 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' });
+const ADMIN_EMAIL = 'fabiana.ferreira@saocarlos.sp.gov.br';
+let _curUser = null, _np = {g:false,c:false,e:false};
 
-// Expõe as credenciais para os módulos filhos via sessionStorage
-window.SMCT_SUPABASE_URL = SUPABASE_URL;
-window.SMCT_SUPABASE_KEY = SUPABASE_KEY;
-sessionStorage.setItem('smct_url', SUPABASE_URL);
-sessionStorage.setItem('smct_key', SUPABASE_KEY);
+async function sbGet(table, filter='') {
+  const r = await fetch(SB_REST + '/' + table + '?' + filter, { headers: SB_H() });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function sbPost(table, data, prefer='return=minimal') {
+  const r = await fetch(SB_REST + '/' + table, {
+    method: 'POST', headers: { ...SB_H(), 'Prefer': prefer },
+    body: JSON.stringify(data)
+  });
+  return r;
+}
+async function sbPatch(table, filter, data) {
+  const r = await fetch(SB_REST + '/' + table + '?' + filter, {
+    method: 'PATCH', headers: SB_H(), body: JSON.stringify(data)
+  });
+  return r;
+}
+async function sbDelete(table, filter) {
+  return fetch(SB_REST + '/' + table + '?' + filter, { method: 'DELETE', headers: SB_H() });
+}
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ── Login ────────────────────────────────────────────────────────────────────
-async function fazerLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const senha = document.getElementById('login-senha').value;
-  const errEl = document.getElementById('login-error');
-  errEl.textContent = '';
-  if (!email || !senha) { errEl.textContent = 'Preencha e-mail e senha.'; return; }
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
-  if (error) {
-    errEl.textContent = error.message.includes('Invalid') ? 'E-mail ou senha incorretos.' : error.message;
+(async function(){
+  const perfil = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  if (perfil.email) {
+    await showPainel({ email: perfil.email });
   } else {
-    mostrarPortal(data.user);
-  }
-}
-
-async function fazerLogout() {
-  await sb.auth.signOut();
-  document.getElementById('portal').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'block';
-  document.getElementById('login-senha').value = '';
-}
-
-function mostrarPortal(user) {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('portal').style.display = 'block';
-  document.getElementById('user-email-display').textContent = user.email;
-}
-
-// ── Verificar sessão existente ───────────────────────────────────────────────
-(async function() {
-  const { data } = await sb.auth.getSession();
-  if (data.session) {
-    mostrarPortal(data.session.user);
+    hide('loading'); show('login-box');
   }
 })();
+
+function switchTab(t) {
+  document.getElementById('t-in').classList.toggle('active', t==='in');
+  document.getElementById('t-up').classList.toggle('active', t==='up');
+  document.getElementById('fg-nome').style.display  = t==='up' ? '' : 'none';
+  document.getElementById('fg-pw2').style.display   = t==='up' ? '' : 'none';
+  document.getElementById('link-forgot').style.display = t==='in' ? '' : 'none';
+  document.getElementById('btn-auth').textContent   = t==='up' ? 'Criar conta' : 'Entrar';
+  document.getElementById('login-hint').textContent = t==='up' ? 'Após criar conta, aguarde liberação do administrador.' : 'Acesso restrito à equipe da SMCT';
+  clearAlert();
+}
+
+async function auth() {
+  const email = gv('f-email'), pw = gv('f-pw');
+  const isUp = document.getElementById('t-up').classList.contains('active');
+  if (!email || !pw) { showAlert('Preencha e-mail e senha.'); return; }
+  setLoading(true);
+  try {
+    if (isUp) {
+      const nome = gv('f-nome'), pw2 = gv('f-pw2');
+      if (pw !== pw2) { showAlert('As senhas não conferem.'); setLoading(false); return; }
+      if (pw.length < 6) { showAlert('Senha com pelo menos 6 caracteres.'); setLoading(false); return; }
+      // Criar usuário inativo
+      await sbPost('usuarios_permissoes', {
+        email, nome: nome||email, role:'visualizador',
+        acesso_gerenciador:false, acesso_chamamento:false, acesso_emendas:false, ativo:false
+      });
+      // Salvar senha via RPC
+      await fetch(SB_URL + '/rest/v1/rpc/definir_senha', {
+        method: 'POST', headers: SB_H(),
+        body: JSON.stringify({ p_email: email, p_senha: pw })
+      });
+      showAlert('✅ Conta criada! Aguarde liberação pelo administrador.', true);
+    } else {
+      // Login via RPC verificar_senha
+      const r = await fetch(SB_URL + '/rest/v1/rpc/verificar_senha', {
+        method: 'POST', headers: SB_H(),
+        body: JSON.stringify({ p_email: email, p_senha: pw })
+      });
+      const ok = await r.json();
+      if (!ok) { showAlert('E-mail ou senha incorretos.'); setLoading(false); return; }
+      const users = await sbGet('usuarios_permissoes', 'email=eq.' + encodeURIComponent(email) + '&ativo=eq.true');
+      if (!users.length) { showAlert('Usuário inativo. Aguarde liberação.'); setLoading(false); return; }
+      localStorage.setItem('smct_session', JSON.stringify({ email, nome: users[0].nome }));
+      await showPainel({ email });
+    }
+  } catch(e) { showAlert('Erro: ' + e.message); }
+  setLoading(false);
+}
+
+async function forgot() {
+  showAlert('Para redefinir sua senha, solicite ao administrador: ' + (localStorage.getItem('smct_contato_admin') || 'Fabiana Ferreira — SMCT'));
+}
+
+async function logout() {
+  localStorage.removeItem('smct_perfil');
+  _curUser = null;
+  document.getElementById('painel').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'none';
+  document.getElementById('cards').innerHTML = '';
+  document.getElementById('chip-email').textContent = '—';
+  document.getElementById('btn-admin').style.display = 'none';
+  document.getElementById('f-email').value = '';
+  document.getElementById('f-pw').value = '';
+  clearAlert();
+  document.getElementById('login-box').style.display = 'block';
+  document.getElementById('loading').style.display = 'none';
+  localStorage.removeItem('smct_session');
+}
+
+async function showPainel(user) {
+  _curUser = user;
+  hide('loading'); hide('login-box');
+  document.getElementById('chip-email').textContent = user.email;
+  const isAdminFixed = user.email === ADMIN_EMAIL;
+  let perms = isAdminFixed
+    ? { role:'admin', acesso_gerenciador:true, acesso_chamamento:true, acesso_emendas:true, ativo:true, nome:'Fabiana Ferreira' }
+    : null;
+  if (!isAdminFixed) {
+    try {
+      const rows = await sbGet('usuarios_permissoes', 'email=eq.' + encodeURIComponent(user.email));
+      if (rows.length) perms = rows[0];
+    } catch(e) {}
+  }
+  const isAdmin = isAdminFixed || perms?.role === 'admin_temp';
+  if (isAdmin) { document.getElementById('btn-admin').style.display = ''; checkPendentes(); }
+  const contatoAdmin = localStorage.getItem('smct_contato_admin') || 'Fabiana Ferreira — SMCT';
+  const perfilSessao = {
+    email: user.email,
+    nome: perms?.nome || user.email,
+    role: isAdmin ? 'admin' : (perms?.role || 'visualizador'),
+    acesso_gerenciador: isAdmin || (perms?.acesso_gerenciador && perms?.ativo),
+    acesso_chamamento:  isAdmin || (perms?.acesso_chamamento  && perms?.ativo),
+    acesso_emendas:     isAdmin || (perms?.acesso_emendas     && perms?.ativo),
+    isAdmin, contatoAdmin
+  };
+  localStorage.setItem('smct_perfil', JSON.stringify(perfilSessao));
+  renderCards(perms, isAdmin);
+  document.getElementById('painel').style.display = 'flex';
+}
+
+function renderCards(perms, isAdmin) {
+  const el = document.getElementById('cards');
+  const g = isAdmin || (perms?.acesso_gerenciador && perms?.ativo);
+  const c = isAdmin || (perms?.acesso_chamamento  && perms?.ativo);
+  const e = isAdmin || (perms?.acesso_emendas     && perms?.ativo);
+  if (!perms && !isAdmin) {
+    el.innerHTML = `<div class="no-access"><div class="ico">⏳</div><p style="color:#8a9bb0;font-size:15px;font-family:'DM Serif Display',serif">Aguardando liberação de acesso</p><p style="color:#5a6a7a;font-size:12px;margin-top:8px">Sua conta foi criada. Um administrador precisa liberar seu acesso.</p></div>`;
+    return;
+  }
+  let html = '';
+  if (g) html += mkCard('green','Gerenciador','📁','Gerenciador de Eventos','Gestão completa de produção: staff, estrutura, hospedagem, contratos e resumo executivo consolidado.',['Staff detalhado por bloco e função','Estrutura e equipamentos por seção','Hospedagem com cálculo automático','Atas & Contratos com extração por IA','Exportação Excel e PDF'],'gerenciador_eventos_v2.html','📂 Abrir Gerenciador');
+  if (c) html += mkCard('gold','Chamamento Público','🎭','Artistas · Chamamento','Banco de artistas do chamamento público com programação, cachês e fila rotativa.',['188 artistas pré-cadastrados','Fila rotativa com regras de reoferta','Detecção de conflito de horário','Confirmação e status','Geração de PDF'],'artistas_chamamento.html','🎤 Abrir Chamamento');
+  if (e) html += mkCard('blue','Parlamentar','💰','Emendas Parlamentares','Gestão das emendas LOA 2026 dos vereadores com vinculação a eventos.',['23 emendas pré-carregadas','Filtro por vereador, evento ou status','Vinculação emenda → evento → artista','Painel com totais','Exportação em PDF'],'emendas_parlamentares.html','💰 Abrir Emendas');
+  if (!html) {
+    el.innerHTML = `<div class="no-access"><div class="ico">🔒</div><p style="color:#8a9bb0;font-size:15px;font-family:'DM Serif Display',serif">Sem acessos liberados</p><p style="color:#5a6a7a;font-size:12px;margin-top:8px">Fale com o administrador para solicitar acesso.</p></div>`;
+    return;
+  }
+  el.innerHTML = html;
+}
+
+function mkCard(cor, badge, icon, titulo, desc, features, href, btn) {
+  return `<a class="card ${cor}" href="${href}">
+    <span class="badge">${badge}</span><span class="card-icon">${icon}</span>
+    <div class="card-title">${titulo}</div>
+    <p class="card-desc">${desc}</p>
+    <ul class="card-features">${features.map(f=>`<li>${f}</li>`).join('')}</ul>
+    <button class="card-btn" onclick="event.preventDefault();location.href='${href}'">${btn}</button>
+  </a>`;
+}
+
+async function checkPendentes() {
+  try {
+    const rows = await sbGet('usuarios_permissoes', 'ativo=eq.false&select=id');
+    const n = rows.length;
+    const badge = document.getElementById('badge-pendentes');
+    if (badge) { badge.textContent = n; badge.style.display = n > 0 ? '' : 'none'; }
+  } catch(e) {}
+}
+
+async function toggleAdmin() {
+  const p = document.getElementById('admin-panel');
+  const open = p.style.display === 'block';
+  p.style.display = open ? 'none' : 'block';
+  if (!open) {
+    const inp = document.getElementById('inp-contato-admin');
+    if (inp) inp.value = localStorage.getItem('smct_contato_admin') || 'Fabiana Ferreira — SMCT';
+    await loadUsers();
+  }
+}
+
+async function loadUsers() {
+  var tb = document.getElementById('users-tb');
+  tb.innerHTML = '<div style="text-align:center;padding:16px;color:#3a4a5a"><span class="spin">⚙</span> Carregando...</div>';
+  try {
+    var users = await sbGet('usuarios_permissoes', 'order=criado_em.asc');
+    if (!users.length) { tb.innerHTML = '<div style="text-align:center;padding:24px;color:#5a6a7a">Nenhum usuário cadastrado.</div>'; return; }
+    users.sort(function(a,b){ return (a.ativo===b.ativo)?0:a.ativo?1:-1; });
+    var nPend = users.filter(function(u){ return !u.ativo; }).length;
+    var bp = document.getElementById('badge-pendentes');
+    if (bp) { if (nPend>0){bp.textContent=nPend;bp.style.display='';}else{bp.style.display='none';} }
+    tb.innerHTML = users.map(renderUserCard).join('');
+  } catch(e) {
+    tb.innerHTML = '<div style="text-align:center;padding:24px;color:#f08080">Erro ao carregar usuários.</div>';
+  }
+}
+
+function renderUserCard(u) {
+  var id = u.id, isPend = !u.ativo;
+  var bg = isPend ? '#1a1525' : '#1e2d40', bd = isPend ? '#5a2a4a' : '#2a3a50';
+  var roleOpts = [
+    '<option value="visualizador"'+(u.role==='visualizador'||u.role==='usuario'?' selected':'')+'>Visualizador</option>',
+    '<option value="editor"'+(u.role==='editor'?' selected':'')+'>Editor</option>',
+    '<option value="admin_temp"'+(u.role==='admin_temp'?' selected':'')+'>⚡ Admin Temporário</option>',
+    u.role==='admin' ? '<option value="admin" selected>Admin</option>' : ''
+  ].join('');
+  function perm(campo, icon, label, color) {
+    var ativo = u[campo];
+    return '<label style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;background:#0f1923;border:1.5px solid '+(ativo?color:'#2a3a50')+';border-radius:8px;padding:8px 12px;min-width:80px">'+
+      '<span style="font-size:18px">'+icon+'</span>'+
+      '<span style="font-size:9px;font-weight:700;color:'+(ativo?color:'#5a6a7a')+';text-transform:uppercase">'+label+'</span>'+
+      '<input type="checkbox"'+(ativo?' checked':'')+' onchange="savePerm(\''+id+'\',\''+campo+'\',this.checked)" style="accent-color:'+color+';width:14px;height:14px;cursor:pointer">'+
+      '</label>';
+  }
+  return '<div style="background:'+bg+';border:1.5px solid '+bd+';border-radius:12px;padding:16px 18px;margin-bottom:10px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">'+
+    '<div style="min-width:200px;flex:1">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
+        '<span style="font-weight:700;color:#e0e8f0;font-size:13px">'+(u.nome||'—')+'</span>'+
+        (isPend?'<span style="background:#4a1a2a;color:#f08080;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px">⏳ PENDENTE</span>':'')+
+      '</div>'+
+      '<div style="font-size:11px;color:#5a6a7a">'+u.email+'</div>'+
+    '</div>'+
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:100px">'+
+      '<div style="font-size:9px;color:#5a6a7a;text-transform:uppercase;letter-spacing:.6px;font-weight:700">Função</div>'+
+      '<select onchange="savePerm(\''+id+'\',\'role\',this.value)" style="background:#0f1923;border:1px solid #2a3a50;border-radius:6px;color:#aec6d8;font-size:11px;padding:4px 8px;cursor:pointer;font-family:inherit">'+roleOpts+'</select>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      perm('acesso_gerenciador','📁','Gerenciador','#2e7d4f')+
+      perm('acesso_chamamento','🎭','Chamamento','#c9a84c')+
+      perm('acesso_emendas','💰','Emendas','#3a7bd5')+
+    '</div>'+
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:8px">'+
+      '<button onclick="toggleAtivo(\''+id+'\','+u.ativo+')" style="padding:7px 14px;border-radius:8px;border:1.5px solid '+(u.ativo?'#2e7d4f':'#5a2a2a')+';background:'+(u.ativo?'#1a3a2a':'#2a1a1a')+';color:'+(u.ativo?'#4cd98a':'#f08080')+';font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">'+
+        (u.ativo?'✅ Ativo':'❌ Inativo')+
+      '</button>'+
+      '<button onclick="delUser(\''+id+'\',\''+u.email+'\')" style="padding:5px 12px;border-radius:6px;border:1px solid #4a2a2a;background:transparent;color:#f08080;font-size:10px;cursor:pointer;font-family:inherit">✕ Remover</button>'+
+    '</div>'+
+  '</div>';
+}
+
+async function toggleAtivo(id, ativo) {
+  await savePerm(id, 'ativo', !ativo);
+}
+
+async function savePerm(id, campo, val) {
+  try {
+    const payload = {};
+    if (campo === 'role') payload.role = val;
+    else if (['acesso_gerenciador','acesso_chamamento','acesso_emendas','ativo'].includes(campo)) payload[campo] = val === true || val === 'true';
+    else payload[campo] = val;
+    await sbPatch('usuarios_permissoes', 'id=eq.' + id, payload);
+    toast('✅ Salvo!');
+    await loadUsers();
+  } catch(e) { toast('❌ Erro ao salvar.'); }
+}
+
+async function delUser(id, email) {
+  if (!confirm('Remover ' + email + '?')) return;
+  try { await sbDelete('usuarios_permissoes', 'id=eq.' + id); await loadUsers(); toast('✅ Removido!'); }
+  catch(e) { toast('❌ Erro.'); }
+}
+
+function openAddUser() {
+  _np = {g:false,c:false,e:false};
+  ['g','c','e'].forEach(x => document.getElementById('pt-'+x).classList.remove('on'));
+  ['nu-email','nu-nome','nu-pw'].forEach(x => document.getElementById(x).value='');
+  document.getElementById('nu-role').value = 'visualizador';
+  document.getElementById('modal-user').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal-user').style.display='none'; }
+function tp(x) { _np[x]=!_np[x]; document.getElementById('pt-'+x).classList.toggle('on',_np[x]); }
+
+async function saveUser() {
+  const email = gv('nu-email'), nome = gv('nu-nome'), pw = gv('nu-pw'), role = document.getElementById('nu-role').value || 'visualizador';
+  if (!email||!pw) { alert('Preencha e-mail e senha.'); return; }
+  if (pw.length<6) { alert('Senha com pelo menos 6 caracteres.'); return; }
+  try {
+    await sbPost('usuarios_permissoes', { email, nome, role, acesso_gerenciador:_np.g, acesso_chamamento:_np.c, acesso_emendas:_np.e, ativo:true });
+    await fetch(SB_URL + '/rest/v1/rpc/definir_senha', {
+      method:'POST', headers: SB_H(), body: JSON.stringify({ p_email: email, p_senha: pw })
+    });
+    closeModal(); await loadUsers(); toast('✅ Usuário criado!');
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+function gv(id) { return document.getElementById(id).value.trim(); }
+function show(id) { document.getElementById(id).style.display='block'; }
+function hide(id) { document.getElementById(id).style.display='none'; }
+function showAlert(msg, ok) { const a=document.getElementById('alert'); a.textContent=msg; a.className='alert '+(ok?'success':'error'); a.style.display='block'; }
+function clearAlert() { document.getElementById('alert').style.display='none'; }
+function setLoading(v) { const b=document.getElementById('btn-auth'); b.disabled=v; b.textContent=v?'Aguarde...':(document.getElementById('t-up').classList.contains('active')?'Criar conta':'Entrar'); }
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.style.opacity='1'; clearTimeout(window._tt); window._tt=setTimeout(()=>t.style.opacity='0',2500); }
 </script>
 </body>
 </html>
