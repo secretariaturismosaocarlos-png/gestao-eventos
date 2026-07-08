@@ -1147,7 +1147,7 @@ function renderNF() {
       })
     : _todasNfs;
   var _prf = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
-  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin';
+  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin' || _prf.role === 'admin_temp' || !!_prf.email;
   const totalPago    = _todasNfs.filter(n=>n.status==='pago').reduce((s,n)=>s+(n.valor||0),0);
   const totalPendente= _todasNfs.filter(n=>n.status==='pendente').reduce((s,n)=>s+(n.valor||0),0);
   const totalGeral   = _todasNfs.reduce((s,n)=>s+(n.valor||0),0);
@@ -1168,7 +1168,7 @@ function renderNF() {
     html += `<div style="background:#1a2535;border:1px solid #2a3a50;border-radius:12px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0f1923"><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Nº NF</th><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Data</th><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Fornecedor</th><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Processo</th><th style="padding:10px 14px;text-align:left;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">AF / Empenho</th><th style="padding:10px 14px;text-align:right;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Valor</th><th style="padding:10px 14px;text-align:center;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Status</th><th style="padding:10px 14px;text-align:center;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">Data Pgto.</th><th style="padding:10px 14px;text-align:center;font-size:10px;color:#5a6a7a;font-weight:700;text-transform:uppercase;border-bottom:1px solid #2a3a50">PDF</th><th style="border-bottom:1px solid #2a3a50"></th></tr></thead><tbody id="nf-tbody">`;
     nfs.forEach(function(nf) {
       const sc=nf.status==='pago'?'#4cd98a':'#f0c060',sb=nf.status==='pago'?'#1a3a2a':'#3a2a1a',sd=nf.status==='pago'?'#2e7d4f':'#8a6a2a';
-      html+=`<tr style="border-bottom:1px solid #1e2d40" onmouseover="this.style.background='#1e2d4080'" onmouseout="this.style.background=''"><td style="padding:11px 14px;font-size:12px;color:#e0e8f0;font-weight:600">${nf.numero||'—'}</td><td style="padding:11px 14px;font-size:12px;color:#aec6d8">${nf.dataEmissao?fmtData(nf.dataEmissao):'—'}</td><td style="padding:11px 14px;font-size:12px;color:#aec6d8;max-width:200px"><div style="font-weight:600;color:#e0e8f0">${nf.fornecedor||'—'}</div><div style="font-size:10px;color:#5a6a7a">${nf.descricao||''}</div>${nf.eventoNome?'<div style="font-size:10px;color:#c9a84c;margin-top:2px">📅 '+nf.eventoNome+'</div>':''}</td><td style="padding:11px 14px;font-size:11px;color:#e0e8f0;font-weight:600">${nf.processo||'—'}</td><td style="padding:11px 14px;font-size:11px;color:#8a9bb0">${nf.af?'<div>AF: <strong>'+nf.af+'</strong></div>':''}${nf.empenho?'<div>Emp: <strong>'+nf.empenho+'</strong></div>':''}${!nf.af&&!nf.empenho?'—':''}</td><td style="padding:11px 14px;font-size:13px;color:#4cd98a;font-weight:700;text-align:right">${fmtBRL(nf.valor||0)}</td><td style="padding:11px 14px;text-align:center">${podeEditar?`<button onclick="toggleStatusNF(${nf.id})" style="background:${sb};border:1px solid ${sd};color:${sc};padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${nf.status==='pago'?'✅ Pago':'⏳ Pendente'}</button>`:`<span style="background:${sb};border:1px solid ${sd};color:${sc};padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700">${nf.status==='pago'?'✅ Pago':'⏳ Pendente'}</span>`}</td><td style="padding:11px 14px;text-align:center;font-size:11px;color:#aec6d8">${nf.dataPagamento?fmtData(nf.dataPagamento):'<span style="color:#3a4a5a">—</span>'}</td><td style="padding:11px 14px;text-align:center">${(nf.pdfData||nf.pdfNome)?`<button onclick="verPdfNF(${nf.id})" style="background:#1a2a4a;border:1px solid #2a3a6a;color:#7ab3f0;padding:5px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">📄 Ver PDF</button>`:'<span style="color:#3a4a5a;font-size:10px">—</span>'}</td><td style="padding:11px 14px;text-align:right">${podeEditar?`<div style="display:flex;gap:6px;justify-content:flex-end"><button onclick="openModalNF(${nf.id})" style="background:transparent;border:1px solid #2a3a50;color:#8a9bb0;padding:4px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">✏</button><button onclick="delNF(${nf.id})" style="background:transparent;border:1px solid #4a2a2a;color:#f08080;padding:4px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">✕</button></div>`:''}</td></tr>`;
+      html+=`<tr style="border-bottom:1px solid #1e2d40" onmouseover="this.style.background='#1e2d4080'" onmouseout="this.style.background=''"><td style="padding:11px 14px;font-size:12px;color:#e0e8f0;font-weight:600">${nf.numero||'—'}</td><td style="padding:11px 14px;font-size:12px;color:#aec6d8">${nf.dataEmissao?fmtData(nf.dataEmissao):'—'}</td><td style="padding:11px 14px;font-size:12px;color:#aec6d8;max-width:200px"><div style="font-weight:600;color:#e0e8f0">${nf.fornecedor||'—'}</div><div style="font-size:10px;color:#5a6a7a">${nf.descricao||''}</div>${nf.eventoNome?'<div style="font-size:10px;color:#c9a84c;margin-top:2px">📅 '+nf.eventoNome+'</div>':''}</td><td style="padding:11px 14px;font-size:11px;color:#e0e8f0;font-weight:600">${nf.processo||'—'}</td><td style="padding:11px 14px;font-size:11px;color:#8a9bb0">${nf.af?'<div>AF: <strong>'+nf.af+'</strong></div>':''}${nf.empenho?'<div>Emp: <strong>'+nf.empenho+'</strong></div>':''}${!nf.af&&!nf.empenho?'—':''}</td><td style="padding:11px 14px;font-size:13px;color:#4cd98a;font-weight:700;text-align:right">${fmtBRL(nf.valor||0)}</td><td style="padding:11px 14px;text-align:center">${podeEditar?`<button onclick="toggleStatusNF(${nf.id})" style="background:${sb};border:1px solid ${sd};color:${sc};padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${nf.status==='pago'?'✅ Pago':'⏳ Pendente'}</button>`:`<span style="background:${sb};border:1px solid ${sd};color:${sc};padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700">${nf.status==='pago'?'✅ Pago':'⏳ Pendente'}</span>`}</td><td style="padding:11px 14px;text-align:center;font-size:11px;color:#aec6d8">${nf.dataPagamento?fmtData(nf.dataPagamento):'<span style="color:#3a4a5a">—</span>'}</td><td style="padding:11px 14px;text-align:center"><div style="display:flex;flex-direction:column;gap:4px;align-items:center">${(nf.pdfData||nf.pdfNome)?`<button onclick="verPdfNF(${nf.id})" style="background:#1a2a4a;border:1px solid #2a3a6a;color:#7ab3f0;padding:4px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit;white-space:nowrap">📄 NF</button>`:''}${nf.afPdfNome?`<button onclick="verPdfNFExtra(${nf.id},'af')" style="background:#1a3a1a;border:1px solid #2a5a2a;color:#4aaa6a;padding:4px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit;white-space:nowrap">📄 AF</button>`:''}${nf.empPdfNome?`<button onclick="verPdfNFExtra(${nf.id},'emp')" style="background:#2a1a3a;border:1px solid #4a2a6a;color:#aa7af0;padding:4px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit;white-space:nowrap">📄 Emp.</button>`:''}${(!nf.pdfData&&!nf.pdfNome&&!nf.afPdfNome&&!nf.empPdfNome)?'<span style="color:#3a4a5a;font-size:10px">—</span>':''}</div></td><td style="padding:11px 14px;text-align:right">${podeEditar?`<div style="display:flex;gap:6px;justify-content:flex-end"><button onclick="openModalNF(${nf.id})" style="background:transparent;border:1px solid #2a3a50;color:#8a9bb0;padding:4px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">✏</button><button onclick="delNF(${nf.id})" style="background:transparent;border:1px solid #4a2a2a;color:#f08080;padding:4px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">✕</button></div>`:''}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   }
@@ -1197,11 +1197,60 @@ function openModalNF(id){
   atasMestre.forEach(function(a){ fornOpts+='<option value="'+a.fornecedor+'">'+a.fornecedor+'</option>'; });
   var evOpts='<option value="">— Selecione o evento —</option>';
   events.forEach(function(ev){ evOpts+='<option value="'+ev.id+'"'+(nf&&nf.eventoId===ev.id?' selected':'')+'>'+ev.name+'</option>'; });
-  var html=`<div class="modal-overlay" id="modal-nf" onclick="if(event.target===this)closeModalNF()" style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;align-items:center;justify-content:center"><div style="background:#1a2535;border:1px solid #2a3a50;border-radius:16px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto"><div style="font-family:'DM Serif Display',serif;font-size:18px;color:#fff;margin-bottom:20px">${id?'✏ Editar':'➕ Nova'} Nota Fiscal</div><div autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Nº da Nota Fiscal *</label><input id="nf-numero" type="text" autocomplete="off" value="${nf?.numero||''}" placeholder="Ex: 000123" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Data de Emissão</label><input id="nf-data" type="date" autocomplete="off" value="${nf?.dataEmissao||''}" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Nº da AF</label><input id="nf-af" type="text" autocomplete="off" value="${nf?.af||''}" placeholder="Ex: AF-2025-001" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Nº do Empenho</label><input id="nf-empenho" type="text" autocomplete="off" value="${nf?.empenho||''}" placeholder="Ex: 2025NE000123" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#f9a825;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">★ Nº do Processo *</label><input id="nf-processo" type="text" autocomplete="off" value="${nf?.processo||''}" placeholder="Ex: 23661/2024" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #f9a825;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Fornecedor *</label><select id="nf-forn-sel" onchange="if(this.value){document.getElementById('nf-fornecedor').value=this.value}" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#aec6d8;font-size:12px;font-family:inherit;outline:none;margin-bottom:6px">${fornOpts}</select><input id="nf-fornecedor" type="text" autocomplete="off" value="${nf?.fornecedor||''}" placeholder="Ou digite o fornecedor manualmente" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Descrição</label><input id="nf-desc" type="text" autocomplete="off" value="${nf?.descricao||''}" placeholder="Ex: Locação de equipamentos de som" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Valor (R$) *</label><input id="nf-valor" type="text" value="${nf?.valor?nf.valor.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):''}" placeholder="0,00" inputmode="numeric" oninput="maskBRL(this)" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:monospace;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Status</label><select id="nf-status" onchange="var w=document.getElementById('nf-data-pag-wrap');if(w)w.style.display=this.value==='pago'?'block':'none'" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#aec6d8;font-size:12px;font-family:inherit;outline:none"><option value="pendente" ${(!nf||nf.status==='pendente')?'selected':''}>⏳ Pendente pagamento</option><option value="pago" ${nf?.status==='pago'?'selected':''}>✅ Pago</option></select></div><div id="nf-data-pag-wrap" style="display:${nf?.status==='pago'?'block':'none'}"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Data do Pagamento</label><input id="nf-data-pag" type="date" autocomplete="off" value="${nf?.dataPagamento||''}" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Evento Vinculado</label><select id="nf-evento" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#aec6d8;font-size:12px;font-family:inherit;outline:none">${evOpts}</select></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">PDF da Nota Fiscal</label><div id="nf-pdf-area" onclick="document.getElementById('nf-pdf-input').click()" ondragover="event.preventDefault();this.style.borderColor='#2e7d4f'" ondragleave="this.style.borderColor='#2a3a50'" ondrop="handleDropNF(event)" style="border:2px dashed #2a3a50;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:.2s"><div style="font-size:24px;margin-bottom:8px">📎</div><div style="font-size:11px;color:#5a6a7a">${nf?.pdfData?'<span style="color:#4aaa6a">✅ PDF anexado — clique para substituir</span>':'<strong style="color:#aec6d8">Clique ou arraste</strong> para anexar o PDF'}</div></div><input type="file" id="nf-pdf-input" accept=".pdf" style="display:none" onchange="handleFileNF(this)"><div id="nf-pdf-nome" style="font-size:10px;color:#4aaa6a;margin-top:6px">${nf?.pdfNome||''}</div></div></div><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button onclick="closeModalNF()" style="padding:9px 18px;background:transparent;border:1px solid #3a4a5a;border-radius:8px;color:#8a9bb0;font-size:12px;cursor:pointer;font-family:inherit">Cancelar</button><button onclick="saveNF()" style="padding:9px 18px;background:#2e7d4f;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Salvar</button></div></div></div>`;
+  var html=`<div class="modal-overlay" id="modal-nf" onclick="if(event.target===this)closeModalNF()" style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;align-items:center;justify-content:center"><div style="background:#1a2535;border:1px solid #2a3a50;border-radius:16px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto"><div style="font-family:'DM Serif Display',serif;font-size:18px;color:#fff;margin-bottom:20px">${id?'✏ Editar':'➕ Nova'} Nota Fiscal</div><div autocomplete="off" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Nº da Nota Fiscal *</label><input id="nf-numero" type="text" autocomplete="off" value="${nf?.numero||''}" placeholder="Ex: 000123" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Data de Emissão</label><input id="nf-data" type="date" autocomplete="off" value="${nf?.dataEmissao||''}" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Nº da AF</label><input id="nf-af" type="text" autocomplete="off" value="${nf?.af||''}" placeholder="Ex: AF-2025-001" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Nº do Empenho</label><input id="nf-empenho" type="text" autocomplete="off" value="${nf?.empenho||''}" placeholder="Ex: 2025NE000123" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#f9a825;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">★ Nº do Processo *</label><input id="nf-processo" type="text" autocomplete="off" value="${nf?.processo||''}" placeholder="Ex: 23661/2024" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #f9a825;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Fornecedor *</label><select id="nf-forn-sel" onchange="if(this.value){document.getElementById('nf-fornecedor').value=this.value}" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#aec6d8;font-size:12px;font-family:inherit;outline:none;margin-bottom:6px">${fornOpts}</select><input id="nf-fornecedor" type="text" autocomplete="off" value="${nf?.fornecedor||''}" placeholder="Ou digite o fornecedor manualmente" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Descrição</label><input id="nf-desc" type="text" autocomplete="off" value="${nf?.descricao||''}" placeholder="Ex: Locação de equipamentos de som" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Valor (R$) *</label><input id="nf-valor" type="text" value="${nf?.valor?nf.valor.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):''}" placeholder="0,00" inputmode="numeric" oninput="maskBRL(this)" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:monospace;outline:none"></div><div><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Status</label><select id="nf-status" onchange="var w=document.getElementById('nf-data-pag-wrap');if(w)w.style.display=this.value==='pago'?'block':'none'" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#aec6d8;font-size:12px;font-family:inherit;outline:none"><option value="pendente" ${(!nf||nf.status==='pendente')?'selected':''}>⏳ Pendente pagamento</option><option value="pago" ${nf?.status==='pago'?'selected':''}>✅ Pago</option></select></div><div id="nf-data-pag-wrap" style="display:${nf?.status==='pago'?'block':'none'}"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Data do Pagamento</label><input id="nf-data-pag" type="date" autocomplete="off" value="${nf?.dataPagamento||''}" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#fff;font-size:12px;font-family:inherit;outline:none"></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Evento Vinculado</label><select id="nf-evento" style="width:100%;padding:9px 12px;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;color:#aec6d8;font-size:12px;font-family:inherit;outline:none">${evOpts}</select></div><div style="grid-column:1/-1"><label style="display:block;font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">PDF da Nota Fiscal</label><div id="nf-pdf-area" onclick="document.getElementById('nf-pdf-input').click()" ondragover="event.preventDefault();this.style.borderColor='#2e7d4f'" ondragleave="this.style.borderColor='#2a3a50'" ondrop="handleDropNF(event)" style="border:2px dashed #2a3a50;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:.2s"><div style="font-size:24px;margin-bottom:8px">📎</div><div style="font-size:11px;color:#5a6a7a">${nf?.pdfData?'<span style="color:#4aaa6a">✅ PDF anexado — clique para substituir</span>':'<strong style="color:#aec6d8">Clique ou arraste</strong> para anexar o PDF'}</div></div><input type="file" id="nf-pdf-input" accept=".pdf" style="display:none" onchange="handleFileNF(this)"><div id="nf-pdf-nome" style="font-size:10px;color:#4aaa6a;margin-top:6px">${nf?.pdfNome||''}</div></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+  <div><label style="font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">PDF da AF</label>
+  <div id="nf-af-area" onclick="document.getElementById('nf-af-input').click()" style="border:2px dashed #2a3a50;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:.2s" ondragover="event.preventDefault();this.style.borderColor='#2e7d4f'" ondragleave="this.style.borderColor='#2a3a50'" ondrop="handleDropNFAf(event)">
+    <div style="font-size:20px;margin-bottom:6px">📎</div>
+    <div style="font-size:10px;color:#5a6a7a">${nf?.afPdfNome?'<span style=\"color:#4aaa6a\">✅ '+nf.afPdfNome+'</span>':'<strong style=\"color:#aec6d8\">Clique</strong> para anexar AF'}</div>
+  </div>
+  <input type="file" id="nf-af-input" accept=".pdf" style="display:none" onchange="handleFileNFAf(this)">
+  <div id="nf-af-nome" style="font-size:10px;color:#4aaa6a;margin-top:4px">${nf?.afPdfNome&&!nf?.afPdfData?'(salvo no banco)':''}</div></div>
+  <div><label style="font-size:10px;font-weight:700;color:#8a9bb0;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">PDF do Empenho</label>
+  <div id="nf-emp-area" onclick="document.getElementById('nf-emp-input').click()" style="border:2px dashed #2a3a50;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:.2s" ondragover="event.preventDefault();this.style.borderColor='#2e7d4f'" ondragleave="this.style.borderColor='#2a3a50'" ondrop="handleDropNFEmp(event)">
+    <div style="font-size:20px;margin-bottom:6px">📎</div>
+    <div style="font-size:10px;color:#5a6a7a">${nf?.empPdfNome?'<span style=\"color:#4aaa6a\">✅ '+nf.empPdfNome+'</span>':'<strong style=\"color:#aec6d8\">Clique</strong> para anexar Empenho'}</div>
+  </div>
+  <input type="file" id="nf-emp-input" accept=".pdf" style="display:none" onchange="handleFileNFEmp(this)">
+  <div id="nf-emp-nome" style="font-size:10px;color:#4aaa6a;margin-top:4px">${nf?.empPdfNome&&!nf?.empPdfData?'(salvo no banco)':''}</div></div>
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button onclick="closeModalNF()" style="padding:9px 18px;background:transparent;border:1px solid #3a4a5a;border-radius:8px;color:#8a9bb0;font-size:12px;cursor:pointer;font-family:inherit">Cancelar</button><button onclick="saveNF()" style="padding:9px 18px;background:#2e7d4f;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾 Salvar</button></div></div></div>`;
   document.body.insertAdjacentHTML('beforeend',html);
-  window._nfPdfData=nf?.pdfData||null; window._nfPdfNome=nf?.pdfNome||null;
+  window._nfPdfData=nf?.pdfData||null; window._nfPdfNome=nf?.pdfNome||null; window._nfAfPdfData=null; window._nfAfPdfNome=nf?.afPdfNome||null; window._nfEmpPdfData=null; window._nfEmpPdfNome=nf?.empPdfNome||null;
 }
 function closeModalNF(){ var m=document.getElementById('modal-nf'); if(m) m.remove(); }
+function handleFileNFAf(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){ window._nfAfPdfData=e.target.result; window._nfAfPdfNome=file.name;
+    var el=document.getElementById('nf-af-area');
+    if(el) el.querySelector('div:last-child').innerHTML='<span style="color:#4aaa6a">✅ '+file.name+'</span>';
+  };
+  reader.readAsDataURL(file);
+}
+function handleDropNFAf(e){
+  e.preventDefault();
+  var file=e.dataTransfer.files[0]; if(!file||file.type!=='application/pdf') return;
+  var inp=document.getElementById('nf-af-input');
+  var dt=new DataTransfer(); dt.items.add(file); inp.files=dt.files;
+  handleFileNFAf(inp);
+}
+function handleFileNFEmp(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){ window._nfEmpPdfData=e.target.result; window._nfEmpPdfNome=file.name;
+    var el=document.getElementById('nf-emp-area');
+    if(el) el.querySelector('div:last-child').innerHTML='<span style="color:#4aaa6a">✅ '+file.name+'</span>';
+  };
+  reader.readAsDataURL(file);
+}
+function handleDropNFEmp(e){
+  e.preventDefault();
+  var file=e.dataTransfer.files[0]; if(!file||file.type!=='application/pdf') return;
+  var inp=document.getElementById('nf-emp-input');
+  var dt=new DataTransfer(); dt.items.add(file); inp.files=dt.files;
+  handleFileNFEmp(inp);
+}
 function handleFileNF(input){ var file=input.files[0]; if(!file) return; var reader=new FileReader(); reader.onload=function(e){ window._nfPdfData=e.target.result; window._nfPdfNome=file.name; document.getElementById('nf-pdf-nome').textContent='✅ '+file.name; document.getElementById('nf-pdf-area').innerHTML='<div style="font-size:24px;margin-bottom:8px">📄</div><div style="font-size:11px;color:#4aaa6a"><strong>'+file.name+'</strong> — PDF carregado</div>'; }; reader.readAsDataURL(file); }
 function handleDropNF(event){ event.preventDefault(); var file=event.dataTransfer.files[0]; if(file&&file.type==='application/pdf'){ var dt=new DataTransfer(); dt.items.add(file); document.getElementById('nf-pdf-input').files=dt.files; handleFileNF(document.getElementById('nf-pdf-input')); } }
 async function saveNF(){
@@ -1231,12 +1280,34 @@ async function saveNF(){
   }
   var _pdfSave = window._nfPdfData;
   var _pdfNomeSave = window._nfPdfNome;
+  var _afPdfSave = window._nfAfPdfData;
+  var _afPdfNomeSave = window._nfAfPdfNome;
+  var _empPdfSave = window._nfEmpPdfData;
+  var _empPdfNomeSave = window._nfEmpPdfNome;
   var _idSave = _nfEditId || notasFiscais[notasFiscais.length-1]?.id;
   window._nfPdfData=null; window._nfPdfNome=null;
+  window._nfAfPdfData=null; window._nfAfPdfNome=null;
+  window._nfEmpPdfData=null; window._nfEmpPdfNome=null;
+  // Salvar nome dos PDFs no objeto da NF para exibição
+  if (_nfEditId) {
+    var _nfObj = notasFiscais.find(function(n){ return n.id===_nfEditId; });
+    if (_nfObj) {
+      if (_afPdfNomeSave)  _nfObj.afPdfNome  = _afPdfNomeSave;
+      if (_empPdfNomeSave) _nfObj.empPdfNome = _empPdfNomeSave;
+    }
+  } else {
+    var _nfLast = notasFiscais[notasFiscais.length-1];
+    if (_nfLast) {
+      if (_afPdfNomeSave)  _nfLast.afPdfNome  = _afPdfNomeSave;
+      if (_empPdfNomeSave) _nfLast.empPdfNome = _empPdfNomeSave;
+    }
+  }
   console.log('[NF] Salvando... total antes:', notasFiscais.length);
   closeModalNF();
   await saveNotasImediato();
-  if (_pdfSave && _idSave) { saveNFPdf(_idSave, _pdfSave, _pdfNomeSave); }
+  if (_pdfSave   && _idSave) { saveNFPdf(_idSave, _pdfSave, _pdfNomeSave); }
+  if (_afPdfSave && _idSave) { saveNFExtraPdf(_idSave, 'af',  _afPdfSave,  _afPdfNomeSave); }
+  if (_empPdfSave&& _idSave) { saveNFExtraPdf(_idSave, 'emp', _empPdfSave, _empPdfNomeSave); }
   console.log('[NF] Salvo! total agora:', notasFiscais.length);
   render();
 }
@@ -1346,7 +1417,7 @@ function renderAtracoes() {
   var e = ev();
   var atracoes = e.atracoes || [];
   var _prf = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
-  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin';
+  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin' || _prf.role === 'admin_temp' || !!_prf.email;
   var totalCache = atracoes.reduce(function(s,a){ return s+(parseBRL(String(a.cache||''))||0); }, 0);
 
   var html = '<div class="sh"><span class="sh-emoji">🎤</span>' +
@@ -3847,6 +3918,41 @@ async function loadNFPdf(nfId) {
     var d = await r.json();
     return (d && d[0]) ? d[0].valor : null;
   } catch(e) { return null; }
+}
+
+// Salva PDF extra (AF ou Empenho) em chave separada
+function saveNFExtraPdf(nfId, tipo, pdfData, pdfNome) {
+  if (!pdfData) return Promise.resolve();
+  var chave = 'nf_' + tipo + '_' + nfId;
+  return fetch(SB_URL_GE + '/rest/v1/app_data', {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE,
+               'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ chave: chave, valor: { pdfData: pdfData, pdfNome: pdfNome } })
+  }).catch(function(e){ console.warn('[PDF extra save] erro:', e); });
+}
+
+// Carrega PDF extra (AF ou Empenho) do banco
+async function loadNFExtraPdf(nfId, tipo) {
+  try {
+    var chave = 'nf_' + tipo + '_' + nfId;
+    var r = await fetch(SB_URL_GE + '/rest/v1/app_data?chave=eq.' + chave + '&select=valor',
+      { headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE } });
+    if (!r.ok) return null;
+    var d = await r.json();
+    return (d && d[0]) ? d[0].valor : null;
+  } catch(e) { return null; }
+}
+
+// Visualiza PDF extra (AF ou Empenho)
+async function verPdfNFExtra(nfId, tipo) {
+  var nf = notasFiscais.find(function(n){ return n.id===nfId; });
+  if (!nf) return;
+  toast('Carregando PDF...');
+  var d = await loadNFExtraPdf(nfId, tipo);
+  if (!d || !d.pdfData) { toast('PDF não encontrado.'); return; }
+  var win = window.open('');
+  win.document.write('<iframe src="' + d.pdfData + '" style="width:100%;height:100vh;border:none"></iframe>');
 }
 
 // Save imediato só das ATAs — sem debounce, não pode ser cancelado
