@@ -117,8 +117,8 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
   <div class="alert" id="alert"></div>
   <div class="fg"><label>E-mail</label><input type="email" id="f-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')auth()"></div>
   <div class="fg" id="fg-nome" style="display:none"><label>Nome completo</label><input type="text" id="f-nome" placeholder="Seu nome"></div>
-  <div class="fg"><label>Senha</label><input type="password" id="f-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')auth()"></div>
-  <div class="fg" id="fg-pw2" style="display:none"><label>Confirmar senha</label><input type="password" id="f-pw2" placeholder="••••••••"></div>
+  <div class="fg"><label>Senha</label><div style="position:relative"><input type="password" id="f-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')auth()" style="width:100%;padding-right:40px"><button type="button" onclick="var i=document.getElementById('f-pw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#8a9bb0">👁</button></div></div>
+  <div class="fg" id="fg-pw2" style="display:none"><label>Confirmar senha</label><div style="position:relative"><input type="password" id="f-pw2" placeholder="••••••••" style="width:100%;padding-right:40px"><button type="button" onclick="var i=document.getElementById('f-pw2');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#8a9bb0">👁</button></div></div>
   <button class="btn-primary" id="btn-auth" onclick="auth()">Entrar</button>
   <div class="link-btn" id="link-forgot" onclick="forgot()">Esqueci minha senha</div>
   <div class="login-info" id="login-hint">Acesso restrito à equipe da SMCT</div>
@@ -162,7 +162,7 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
     <div class="modal-title">➕ Adicionar Usuário</div>
     <div class="fg"><label>E-mail</label><input type="email" id="nu-email" placeholder="email@dominio.com"></div>
     <div class="fg"><label>Nome</label><input type="text" id="nu-nome" placeholder="Nome completo"></div>
-    <div class="fg"><label>Senha inicial</label><input type="password" id="nu-pw" placeholder="Mínimo 6 caracteres"></div>
+    <div class="fg"><label>Senha inicial</label><div style="position:relative"><input type="password" id="nu-pw" placeholder="Mínimo 6 caracteres" style="width:100%;padding-right:40px"><button type="button" onclick="var i=document.getElementById('nu-pw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#8a9bb0">👁</button></div></div>
     <div class="fg"><label>Função</label>
       <select id="nu-role"><option value="visualizador">Visualizador</option><option value="editor">Editor</option></select>
     </div>
@@ -426,6 +426,7 @@ function renderUserCard(u) {
         (u.ativo?'✅ Ativo':'❌ Inativo')+
       '</button>'+
       '<button onclick="delUser(\''+id+'\',\''+u.email+'\')" style="padding:5px 12px;border-radius:6px;border:1px solid #4a2a2a;background:transparent;color:#f08080;font-size:10px;cursor:pointer;font-family:inherit">✕ Remover</button>'+
+      '<button onclick="redefinirSenha(\''+u.email+'\')" style="padding:5px 12px;border-radius:6px;border:1px solid #2a4a6a;background:transparent;color:#7ab3f0;font-size:10px;cursor:pointer;font-family:inherit">🔑 Senha</button>'+
     '</div>'+
   '</div>';
 }
@@ -450,6 +451,19 @@ async function delUser(id, email) {
   if (!confirm('Remover ' + email + '?')) return;
   try { await sbDelete('usuarios_permissoes', 'id=eq.' + id); await loadUsers(); toast('✅ Removido!'); }
   catch(e) { toast('❌ Erro.'); }
+}
+
+async function redefinirSenha(email) {
+  var nova = prompt('Nova senha para ' + email + ' (mínimo 6 caracteres):');
+  if (!nova || nova.length < 6) { toast('❌ Senha muito curta.'); return; }
+  try {
+    var r = await fetch(SB_URL + '/rest/v1/rpc/definir_senha', {
+      method: 'POST', headers: SB_H(),
+      body: JSON.stringify({ p_email: email, p_senha: nova })
+    });
+    if (r.ok) { toast('✅ Senha redefinida para ' + email + '!'); }
+    else { toast('❌ Erro ao redefinir senha.'); }
+  } catch(e) { toast('❌ Erro: ' + e.message); }
 }
 
 function openAddUser() {
