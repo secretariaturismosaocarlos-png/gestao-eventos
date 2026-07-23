@@ -1079,8 +1079,8 @@ let nextEdicaoId = 1;
 
 // ─── SAVE / LOAD — Supabase (tempo real para toda a equipe) ───
 const STORAGE_KEY = 'chamamento_artistas_v1';
-const SUPABASE_URL = window.SMCT_SUPABASE_URL || 'https://uhalxchwpspupvfmpixq.supabase.co';
-const SUPABASE_KEY = window.SMCT_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoYWx4Y2h3cHNwdXB2Zm1waXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODcwOTIsImV4cCI6MjA4OTI2MzA5Mn0.kVlk3z8__heq3bRbAMmra_LiNDmRs0wuMFkLtokSL6M';
+const SUPABASE_URL = window.SMCT_SUPABASE_URL || 'https://kvwgjmnsfcvzxuoanjkk.supabase.co';
+const SUPABASE_KEY = window.SMCT_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2d2dqbW5zZmN2enh1b2FuamtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MjUwOTAsImV4cCI6MjEwMDQwMTA5MH0.UDR2G2NiMHz2iyqun0TRtStHxlSvn2XGNkA7jRy_LCM';
 let _sb = null;
 function getSB(){if(!_sb&&window.supabase)_sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);return _sb;}
 function showSync(ok){let e=document.getElementById('_sync');if(!e){e=document.createElement('div');e.id='_sync';e.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0d2018;color:#4cd98a;font-size:11px;padding:5px 14px;border-radius:20px;border:1px solid #1a4731;z-index:9999;transition:opacity .5s;pointer-events:none;font-weight:700';document.body.appendChild(e);}e.textContent=ok?'✓ Sincronizado':'↻ Salvando...';e.style.opacity='1';if(ok)setTimeout(()=>e.style.opacity='0',2000);}
