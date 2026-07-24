@@ -704,6 +704,7 @@ let events = [seed];
 let curEventId = seed.id;
 let curTab = 'resumo';
 let modalCtx = null;
+let cloudSyncOk = true; // false = carregamento inicial falhou; bloqueia saves p/ não sobrescrever dados reais
 
 function ev() { return events.find(e => e.id === curEventId); }
 
@@ -4021,6 +4022,7 @@ async function saveSupabase_ge() {
 // Save imediato das NFs globais
 // Save direto de NFs — simples e confiável
 function saveNotasImediato() {
+  if (!canSaveToCloud()) return Promise.resolve();
   var nfsSemPdf = notasFiscais.map(function(nf) {
     var c = Object.assign({}, nf); delete c.pdfData; return c;
   });
@@ -4113,8 +4115,19 @@ async function verPdfNFExtra(nfId, tipo) {
   win.document.write('<iframe src="' + d.pdfData + '" style="width:100%;height:100vh;border:none"></iframe>');
 }
 
+// Trava de segurança: se o load inicial falhou, bloqueia salvamentos para não
+// sobrescrever os dados reais na nuvem com o estado vazio/seed local.
+function canSaveToCloud() {
+  if (!cloudSyncOk) {
+    alert('⚠ ATENÇÃO: a conexão com o servidor falhou ao carregar esta página.\n\nPara proteger seus dados, os salvamentos foram bloqueados nesta sessão.\n\nRecarregue a página (F5) com uma conexão estável antes de continuar editando — assim você evita sobrescrever dados salvos anteriormente.');
+    return false;
+  }
+  return true;
+}
+
 // Save imediato só das ATAs — sem debounce, não pode ser cancelado
 function saveAtasImediato() {
+  if (!canSaveToCloud()) return Promise.resolve();
   return fetch(SB_URL_GE + '/rest/v1/app_data', {
     method: 'POST',
     headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE,
@@ -4125,6 +4138,7 @@ function saveAtasImediato() {
 }
 
 async function saveData() {
+  if (!canSaveToCloud()) return;
   // Save imediato e aguardável
   setSyncIndicator('saving');
   try {
@@ -4231,9 +4245,9 @@ function importBackup(input) {
   var ok = await loadSupabase_ge();
   if (!ok) {
     events = [seed]; curEventId = seed.id;
+    cloudSyncOk = false;
     setSyncIndicator('offline');
-    if (ind) { ind.textContent = '⚠ Sem conexão com servidor'; ind.style.opacity='1'; }
-    setTimeout(function(){ if(ind) ind.style.opacity='0'; }, 3000);
+    if (ind) { ind.textContent = '⚠ Sem conexão — edições NÃO serão salvas até recarregar a página com sucesso'; ind.style.opacity='1'; ind.style.background='#b71c1c'; }
   }
   render();
   renderEventSelect();
