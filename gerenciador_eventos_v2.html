@@ -2111,6 +2111,7 @@ function handleFileUpload(files, ataId) {
         if (!ata.arquivos) ata.arquivos = [];
         ata.arquivos.push({ id: fid, nome: file.name, size: sizeStr, dataUrl: evt.target.result });
         toast('Arquivo "' + file.name + '" vinculado à ATA ' + ata.numero + '/' + ata.ano + '!');
+        saveAtasImediato();
       }
       render();
     };
@@ -2146,7 +2147,7 @@ function closePdfViewer() {
 function delArquivo(fid) {
   if (!confirm('Remover este arquivo?')) return;
   atasMestre.forEach(a=>{ a.arquivos = (a.arquivos||[]).filter(x=>x.id!==fid); });
-  toast('Arquivo removido.'); render();
+  toast('Arquivo removido.'); saveAtasImediato(); render();
 }
 
 
@@ -2984,7 +2985,6 @@ function openModal(tab, preselectedBloco, editItem) {
         '<label>Nome do Novo Bloco</label><input id="f-nova-secao-est" placeholder="ex: Tendas, Geradores...">' +
       '</div>' +
 
-      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Dados do Item</div>' +
       '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Dados do Item</div>' +
       '<div class="field" style="grid-column:1/-1;position:relative">' +
         '<label>🔍 Buscar item nas ATAs <span style="color:var(--gm);font-size:9px">(digite para encontrar a ATA pelo nome do item)</span></label>' +
