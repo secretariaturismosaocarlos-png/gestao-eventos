@@ -674,7 +674,7 @@ function defaultEvent(name) {
 }
 
 // ── CADASTRO MESTRE GLOBAL DE ATAs (compartilhado entre todos os eventos) ──
-// {id, numero, ano, fornecedor, cnpj, contato, email, vigencia, objeto, itens:[{id,desc,unidade,vlrUnit}], arquivos:[{id,nome,size,dataUrl}]}
+// {id, numero, ano, fornecedor, cnpj, contato, email, vigencia, objeto, itens:[{id,desc,unidade,vlrUnit}], pdfData, pdfNome}
 let atasMestre = [];
 let nextAtaMestre = 1;
 
@@ -1860,9 +1860,8 @@ function renderAtas() {
     ataCards = `<div class="tw"><div class="empty"><div class="ei">📑</div>Nenhuma ATA cadastrada. Clique em "+ Nova ATA" para começar.</div></div>`;
   } else {
     atasMestre.forEach(ata => {
-      const arquivos = ata.arquivos || [];
       const nItens = (ata.itens||[]).length;
-      const nArqs  = arquivos.length;
+      const temPdf = !!ata.pdfNome;
 
       let itensHtml = (ata.itens||[]).map(it => `
         <div class="ata-item-row">
@@ -1871,16 +1870,14 @@ function renderAtas() {
           <button class="bdel" style="margin-left:8px" onclick="delAtaItem(${ata.id},${it.id})" title="Remover item">✕</button>
         </div>`).join('');
 
-      let arquivosHtml = arquivos.length === 0
-        ? '<div style="color:#bbb;font-size:10px;font-style:italic;padding:6px 0">Nenhum arquivo enviado para esta ATA.</div>'
-        : arquivos.map(f => `
-          <div class="upload-file-item">
+      let pdfHtml = temPdf
+        ? `<div class="upload-file-item">
             <span class="fi">📄</span>
-            <span class="fn">${f.nome}</span>
-            <span class="fs">${f.size}</span>
-            <button class="fview" onclick="viewFile('${f.id}')">👁 Visualizar</button>
-            <button class="fdel" onclick="delArquivo('${f.id}')">✕</button>
-          </div>`).join('');
+            <span class="fn">${ata.pdfNome}</span>
+            <button class="fview" onclick="verPdfAta(${ata.id})">👁 Visualizar</button>
+            <button class="fdel" onclick="deletePdfAta(${ata.id})">✕</button>
+          </div>`
+        : '<div style="color:#bbb;font-size:10px;font-style:italic;padding:6px 0">Nenhum PDF anexado a esta ATA. Clique em "✏ Editar" para anexar.</div>';
 
       ataCards += `
       <div style="background:#fff;border:1px solid var(--border);border-radius:9px;margin-bottom:10px;overflow:hidden">
@@ -1890,7 +1887,7 @@ function renderAtas() {
           <span id="ata-arrow-${ata.id}" style="font-size:11px;color:var(--gd);font-weight:700;width:14px;flex-shrink:0">▶</span>
           <span class="ata-badge" style="flex-shrink:0">ATA ${ata.numero}/${ata.ano}</span>
           <span style="font-weight:700;font-size:12px;color:var(--gd);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ata.fornecedor}</span>
-          <span style="font-size:10px;color:#aaa;white-space:nowrap;margin-left:8px">${nItens} item(s) · ${nArqs} doc(s)</span>
+          <span style="font-size:10px;color:#aaa;white-space:nowrap;margin-left:8px">${nItens} item(s) · ${temPdf ? '📄 PDF' : 'sem PDF'}</span>
           ${ata.valorGlobal ? `<span style="font-family:monospace;font-size:11px;font-weight:700;color:var(--gd);white-space:nowrap;margin-left:8px">R$ ${ata.valorGlobal}</span>` : ''}
           <div style="display:flex;gap:6px;margin-left:12px" onclick="event.stopPropagation()">
             <button class="add-btn" style="padding:4px 10px;font-size:10px;margin:0" onclick="openModalAta(${ata.id})">✏ Editar</button>
@@ -1916,17 +1913,8 @@ function renderAtas() {
           ${itensHtml || '<div class="muted" style="padding:6px 0">Nenhum item cadastrado.</div>'}
           <button class="add-btn" style="padding:5px 12px;font-size:10px;margin-top:8px;margin-left:0" onclick="openModalAtaItem(${ata.id})">＋ Adicionar Item</button>
 
-          <div class="ata-itens-title" style="margin-top:14px">📎 Documentos desta ATA</div>
-          <div class="upload-area" style="padding:14px;margin-bottom:8px"
-            onclick="document.getElementById('upload-ata-${ata.id}').click()"
-            ondragover="event.preventDefault();this.classList.add('dragover')"
-            ondragleave="this.classList.remove('dragover')"
-            ondrop="handleDropAta(event,${ata.id})">
-            <div class="ui" style="font-size:20px">📂</div>
-            <p style="font-size:11px"><strong>Clique ou arraste</strong> o arquivo da ATA aqui (PDF, imagem)</p>
-          </div>
-          <input type="file" id="upload-ata-${ata.id}" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple onchange="handleFileUpload(this.files,${ata.id})">
-          <div>${arquivosHtml}</div>
+          <div class="ata-itens-title" style="margin-top:14px">📎 PDF da ATA</div>
+          ${pdfHtml}
         </div>
 
       </div>`;
@@ -2050,10 +2038,24 @@ function openModalAta(id) {
     ${buildItensHtml(ata?.itens||[])}
   </div>
   <button onclick="addInlineItem()" style="background:none;border:1.5px dashed var(--border);color:var(--gm);padding:7px 14px;border-radius:6px;font-size:11px;cursor:pointer;font-family:sans-serif;font-weight:600;width:100%;transition:.15s" onmouseover="this.style.borderColor='var(--gm)'" onmouseout="this.style.borderColor='var(--border)'">＋ Adicionar item manualmente</button>
+
+  <div class="section-sep" style="margin-top:14px">📎 PDF da ATA <span style="color:#aaa;font-weight:400;font-size:10px">(fica salvo no sistema para consulta rápida, sem precisar abrir pastas no PC)</span></div>
+  <div class="upload-area" id="ata-pdf-area" style="padding:16px;margin-bottom:4px"
+    onclick="document.getElementById('f-pdf-ata-input').click()"
+    ondragover="event.preventDefault();this.classList.add('dragover')"
+    ondragleave="this.classList.remove('dragover')"
+    ondrop="handleDropAtaPdf(event)">
+    <div class="ui" style="font-size:22px">📄</div>
+    <p style="font-size:11px" id="ata-pdf-status">${ata?.pdfNome ? '<span style="color:var(--gm);font-weight:700">✅ '+ata.pdfNome+'</span> — clique para substituir' : '<strong>Clique ou arraste</strong> para anexar o PDF da ATA'}</p>
+  </div>
+  <input type="file" id="f-pdf-ata-input" style="display:none" accept=".pdf" onchange="handleFileAtaPdf(this)">
+  ${ata?.pdfNome ? '<div style="text-align:right;margin-bottom:4px"><button type="button" onclick="verPdfAta('+ata.id+')" style="background:none;border:none;color:var(--gm);font-size:10px;cursor:pointer;text-decoration:underline;font-family:sans-serif">👁 Visualizar PDF atual</button></div>' : ''}
   `;
 
   // Initialize inline items array for the modal
   window._modalItens = ata ? JSON.parse(JSON.stringify(ata.itens||[])) : [];
+  window._ataPdfData = null;
+  window._ataPdfNome = null;
   window._aiExtracted = null;
 
   document.getElementById('modal').style.display = 'flex';
@@ -2098,45 +2100,65 @@ function delAtaItem(ataId, itemId) {
 // ── FILE UPLOAD ──
 function bindUploadArea() {}
 
-function handleFileUpload(files, ataId) {
-  if (!files || !files.length) return;
-  Array.from(files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      const fid = 'f_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
-      const sizeStr = file.size > 1024*1024
-        ? (file.size/1024/1024).toFixed(1) + ' MB'
-        : (file.size/1024).toFixed(0) + ' KB';
-      const ata = atasMestre.find(a=>a.id===ataId);
-      if (ata) {
-        if (!ata.arquivos) ata.arquivos = [];
-        ata.arquivos.push({ id: fid, nome: file.name, size: sizeStr, dataUrl: evt.target.result });
-        toast('Arquivo "' + file.name + '" vinculado à ATA ' + ata.numero + '/' + ata.ano + '!');
-        saveAtasImediato();
-      }
-      render();
-    };
-    reader.readAsDataURL(file);
-  });
+// PDF único por ATA — mesmo padrão da Nota Fiscal: anexa/substitui, fica staged
+// até o "Salvar", e é salvo num registro separado no Supabase (não infla o bloco
+// principal de ATAs).
+function handleFileAtaPdf(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    window._ataPdfData = e.target.result;
+    window._ataPdfNome = file.name;
+    const statusEl = document.getElementById('ata-pdf-status');
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--gm);font-weight:700">✅ ' + file.name + '</span> carregado — será salvo ao clicar em Salvar';
+  };
+  reader.readAsDataURL(file);
 }
 
-function handleDrop(event) {
+function handleDropAtaPdf(event) {
   event.preventDefault();
-  document.getElementById('upload-drop-zone')?.classList.remove('dragover');
-  handleFileUpload(event.dataTransfer.files, null);
+  const area = document.getElementById('ata-pdf-area');
+  if (area) area.classList.remove('dragover');
+  const file = event.dataTransfer.files[0];
+  if (!file) return;
+  const dt = new DataTransfer(); dt.items.add(file);
+  const inp = document.getElementById('f-pdf-ata-input');
+  inp.files = dt.files;
+  handleFileAtaPdf(inp);
 }
 
-function handleDropAta(event, ataId) {
-  event.preventDefault();
-  handleFileUpload(event.dataTransfer.files, ataId);
+function saveAtaPdf(ataId, pdfData, pdfNome) {
+  if (!pdfData) return Promise.resolve();
+  return fetch(SB_URL_GE + '/rest/v1/app_data', {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE,
+               'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ chave: 'ata_pdf_' + ataId, valor: { pdfData: pdfData, pdfNome: pdfNome } })
+  }).catch(function(e){ console.warn('[ATA PDF save] erro:', e); });
 }
 
-function viewFile(fid) {
-  let f = null;
-  atasMestre.forEach(a=>{ const found=(a.arquivos||[]).find(x=>x.id===fid); if(found) f=found; });
-  if (!f) return;
-  document.getElementById('pdf-viewer-title').textContent = f.nome;
-  document.getElementById('pdf-viewer-frame').src = f.dataUrl;
+async function loadAtaPdf(ataId) {
+  try {
+    var r = await fetch(SB_URL_GE + '/rest/v1/app_data?chave=eq.ata_pdf_' + ataId + '&select=valor',
+      { headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE } });
+    if (!r.ok) return null;
+    var d = await r.json();
+    return (d && d[0]) ? d[0].valor : null;
+  } catch(e) { return null; }
+}
+
+async function verPdfAta(ataId) {
+  var ata = atasMestre.find(function(a){ return a.id === ataId; });
+  if (!ata) return;
+  var pdf = ata.pdfData;
+  if (!pdf) {
+    toast('Carregando PDF...');
+    var d = await loadAtaPdf(ataId);
+    if (d && d.pdfData) { pdf = d.pdfData; ata.pdfData = d.pdfData; }
+  }
+  if (!pdf) { toast('PDF não encontrado.'); return; }
+  document.getElementById('pdf-viewer-title').textContent = ata.pdfNome || ('ATA ' + ata.numero + '/' + ata.ano);
+  document.getElementById('pdf-viewer-frame').src = pdf;
   document.getElementById('pdf-viewer').style.display = 'flex';
 }
 
@@ -2145,10 +2167,19 @@ function closePdfViewer() {
   document.getElementById('pdf-viewer-frame').src = '';
 }
 
-function delArquivo(fid) {
-  if (!confirm('Remover este arquivo?')) return;
-  atasMestre.forEach(a=>{ a.arquivos = (a.arquivos||[]).filter(x=>x.id!==fid); });
-  toast('Arquivo removido.'); saveAtasImediato(); render();
+async function deletePdfAta(ataId) {
+  if (!confirm('Remover o PDF anexado a esta ATA? Esta ação não pode ser desfeita.')) return;
+  var ata = atasMestre.find(function(a){ return a.id === ataId; });
+  if (!ata) return;
+  delete ata.pdfData; delete ata.pdfNome;
+  try {
+    await fetch(SB_URL_GE + '/rest/v1/app_data?chave=eq.ata_pdf_' + ataId, {
+      method: 'DELETE', headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE }
+    });
+  } catch(e) { console.warn('Erro ao deletar PDF da ATA:', e); }
+  saveAtasImediato();
+  render();
+  toast('PDF removido.');
 }
 
 
@@ -3204,6 +3235,9 @@ async function saveItem() {
   if (type === 'ata') {
     if (!gv('f-numero')) { alert('Informe o número da ATA.'); return; }
     const itensFinais = (window._modalItens || []).filter(function(it){ return it.desc && it.desc.trim(); });
+    const pdfDataSave = window._ataPdfData;
+    const pdfNomeSave = window._ataPdfNome;
+    let ataIdSave;
     if (ctx.id) {
       const ata = atasMestre.find(function(a){ return a.id===ctx.id; });
       if (ata) {
@@ -3214,19 +3248,22 @@ async function saveItem() {
         ata.vigencia=up(gv('f-vigencia')); ata.valorGlobal=gv('f-valorGlobal');
         ata.objeto=up(gv('f-objeto')); ata.processo=up(gv('f-processo'));
         ata.itens=itensFinais;
+        if (pdfDataSave) { ata.pdfData = pdfDataSave; ata.pdfNome = pdfNomeSave; }
       }
-      saveAtasImediato();
+      ataIdSave = ctx.id;
       toast('ATA atualizada!');
     } else {
-      atasMestre.push({ id:nextAtaMestre++, numero:gv('f-numero'), ano:gv('f-ano'),
+      ataIdSave = nextAtaMestre++;
+      atasMestre.push({ id:ataIdSave, numero:gv('f-numero'), ano:gv('f-ano'),
         fornecedor:up(gv('f-fornecedor')), cnpj:gv('f-cnpj'), contato:up(gv('f-contato')), email:gv('f-email'),
         endereco:up(gv('f-endereco')), representante:up(gv('f-representante')), vigencia:up(gv('f-vigencia')),
         valorGlobal:gv('f-valorGlobal'), objeto:up(gv('f-objeto')), processo:up(gv('f-processo')),
-        itens:itensFinais, arquivos:[] });
+        itens:itensFinais, pdfData:pdfDataSave||null, pdfNome:pdfNomeSave||null });
       toast('ATA cadastrada!');
     }
-    window._modalItens=null; closeModal();
+    window._modalItens=null; window._ataPdfData=null; window._ataPdfNome=null; closeModal();
     saveAtasImediato();
+    if (pdfDataSave && ataIdSave) { saveAtaPdf(ataIdSave, pdfDataSave, pdfNomeSave); }
     render(); return;
   }
 
@@ -4134,11 +4171,14 @@ function canSaveToCloud() {
 // Save imediato só das ATAs — sem debounce, não pode ser cancelado
 function saveAtasImediato() {
   if (!canSaveToCloud()) return Promise.resolve();
+  var atasSemPdf = atasMestre.map(function(a) {
+    var c = Object.assign({}, a); delete c.pdfData; return c;
+  });
   return fetch(SB_URL_GE + '/rest/v1/app_data', {
     method: 'POST',
     headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE,
                'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-    body: JSON.stringify({ chave: 'gerenciador_atas_v2', valor: { atasMestre: atasMestre, nextAtaMestre: nextAtaMestre } })
+    body: JSON.stringify({ chave: 'gerenciador_atas_v2', valor: { atasMestre: atasSemPdf, nextAtaMestre: nextAtaMestre } })
   }).then(function(r){ setSyncIndicator('saved'); })
     .catch(function(e){ console.warn('Erro ao salvar ATAs:', e); });
 }
