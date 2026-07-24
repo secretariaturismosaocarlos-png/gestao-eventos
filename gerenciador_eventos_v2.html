@@ -2837,6 +2837,14 @@ function openModal(tab, preselectedBloco, editItem) {
       // ── ATA fields (shown by default) ──
       '<div id="wrap-ata" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
         '<div class="field" style="grid-column:1/-1;position:relative">' +
+          '<label>🔍 Não sabe o número da ATA? Busque pelo item <span style="color:var(--gm);font-size:9px">(ex: vigia, recepcionista, coordenador...)</span></label>' +
+          '<input id="f-busca-ata-item" placeholder="digite o nome do serviço/função" oninput="buscarAtaPorItem(this.value)" autocomplete="off" style="border:1.5px solid var(--gm)">' +
+          '<div id="ata-item-results" style="display:none;position:absolute;z-index:600;background:#fff;border:1.5px solid var(--gm);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:100%;max-height:220px;overflow-y:auto;left:0;top:100%"></div>' +
+        '</div>' +
+        '<div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:-2px 0 2px;color:#bbb;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">' +
+          '<div style="flex:1;height:1px;background:#eee"></div>ou informe direto<div style="flex:1;height:1px;background:#eee"></div>' +
+        '</div>' +
+        '<div class="field" style="grid-column:1/-1;position:relative">' +
           '<label>Nº ATA <span style="color:var(--gm);font-size:9px">(digite para buscar)</span></label>' +
           '<input id="f-ata" placeholder="ex: 154/2025" data-ctx="staff" oninput="onAtaInput(this,this.dataset.ctx)" autocomplete="off" ' +
             'style="font-size:13px;font-weight:600;letter-spacing:.5px">' +
@@ -2874,11 +2882,6 @@ function openModal(tab, preselectedBloco, editItem) {
 
       // ── 3. DADOS DO ITEM ──
       '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Dados do Item</div>' +
-      '<div class="field" style="grid-column:1/-1;position:relative">' +
-        '<label>🔍 Buscar item nas ATAs <span style="color:var(--gm);font-size:9px">(digite para encontrar a ATA pelo nome do item)</span></label>' +
-        '<input id="f-busca-ata-item" placeholder="ex: vigia, recepcionista, coordenador..." oninput="buscarAtaPorItem(this.value)" autocomplete="off">' +
-        '<div id="ata-item-results" style="display:none;position:absolute;z-index:600;background:#fff;border:1.5px solid var(--gm);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:100%;max-height:220px;overflow-y:auto;left:0;top:100%"></div>' +
-      '</div>' +
       '<div class="field" style="grid-column:1/-1"><label>Descrição do Serviço / Função <span style="color:var(--gm);font-size:9px">(ex: Recepcionista, Mestre de Cerimônia, Vigia)</span></label><input id="f-descricao" placeholder="ex: Recepcionista" oninput="this.value=this.value.toUpperCase()"></div>' +
       '<div class="field"><label>Total de Horas Contratadas <span style="color:var(--gm);font-size:9px">(carga hor\u00e1ria total do item)</span></label><input type="number" id="f-totalHoras" min="0.5" step="0.5" placeholder="ex: 30" oninput="calcStaffCusto()"></div>' +
       '<div class="field"><label>Valor por Hora (R$)</label><input type="number" id="f-vlrH" step="0.01" placeholder="ex: 30" oninput="calcStaffCusto()"></div>' +
@@ -2955,6 +2958,14 @@ function openModal(tab, preselectedBloco, editItem) {
 
       '<div id="wrap-ata" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
         '<div class="field" style="grid-column:1/-1;position:relative">' +
+          '<label>🔍 Não sabe o número da ATA? Busque pelo item <span style="color:var(--gm);font-size:9px">(ex: tenda, gerador, som...)</span></label>' +
+          '<input id="f-busca-ata-item" placeholder="digite o nome do item/serviço" oninput="buscarAtaPorItem(this.value)" autocomplete="off" style="border:1.5px solid var(--gm)">' +
+          '<div id="ata-item-results" style="display:none;position:absolute;z-index:600;background:#fff;border:1.5px solid var(--gm);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:100%;max-height:220px;overflow-y:auto;left:0;top:100%"></div>' +
+        '</div>' +
+        '<div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:-2px 0 2px;color:#bbb;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">' +
+          '<div style="flex:1;height:1px;background:#eee"></div>ou informe direto<div style="flex:1;height:1px;background:#eee"></div>' +
+        '</div>' +
+        '<div class="field" style="grid-column:1/-1;position:relative">' +
           '<label>Nº ATA</label>' +
           '<input id="f-ata" placeholder="ex: 113/2025" data-ctx="estrutura" oninput="onAtaInput(this,this.dataset.ctx)" autocomplete="off" style="font-size:13px;font-weight:600">' +
           '<div id="ata-autocomplete" style="display:none;position:absolute;z-index:500;background:#fff;border:1.5px solid var(--gm);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:320px;max-height:200px;overflow-y:auto;left:0;top:100%"></div>' +
@@ -2987,11 +2998,6 @@ function openModal(tab, preselectedBloco, editItem) {
       '</div>' +
 
       '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Dados do Item</div>' +
-      '<div class="field" style="grid-column:1/-1;position:relative">' +
-        '<label>🔍 Buscar item nas ATAs <span style="color:var(--gm);font-size:9px">(digite para encontrar a ATA pelo nome do item)</span></label>' +
-        '<input id="f-busca-ata-item" placeholder="ex: tenda, gerador, som..." oninput="buscarAtaPorItem(this.value)" autocomplete="off">' +
-        '<div id="ata-item-results" style="display:none;position:absolute;z-index:600;background:#fff;border:1.5px solid var(--gm);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:100%;max-height:220px;overflow-y:auto;left:0;top:100%"></div>' +
-      '</div>' +
       '<div class="field" style="grid-column:1/-1"><label>Descrição do Item / Serviço</label>' +
         '<textarea id="f-item" rows="2" placeholder="ex: Tenda Galpão 20×25m com fechamento lateral"></textarea></div>' +
       '<div class="field"><label>Quantidade</label><input type="number" id="f-qtd" placeholder="ex: 3" oninput="calcEstCusto()"></div>' +
