@@ -3512,29 +3512,20 @@ async function extractAtaFromPdf(file) {
     var valoresHint = '';
     try {
       var _vals = [];
-      // Tenta vários padrões: "R$ 6,25", "6,25", "6.25", números com decimais não redondos
-      var _patterns = [
-        /R\$\s*(\d{1,3}(?:\.\d{3})*[,]\d{2})/g,  // R$ 1.234,56
-        /R\$\s*(\d+[,]\d{2})/g,                    // R$ 6,25
-        /R\$\s*(\d+[.]\d{2})/g,                    // R$ 6.25
-      ];
-      _patterns.forEach(function(re) {
-        var _m2;
-        while ((_m2 = re.exec(fullText)) !== null) {
-          var _v = _m2[1].replace('.', ',');
-          // Só inclui se não termina em ,00 (valores redondos são suspeitos)
+      // Padrão principal: R$ com formato brasileiro (1.144,10 ou 500,00)
+      var _re1 = /R\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})/g;
+      var _re2 = /R\$\s*(\d+,\d{2})/g;
+      // Valores em tabela sem R$ mas com formato 1.144,10
+      var _re3 = /\b(\d{1,3}(?:\.\d{3})+,\d{2})\b/g;
+      [_re1, _re2, _re3].forEach(function(re) {
+        var _m; re.lastIndex = 0;
+        while ((_m = re.exec(fullText)) !== null) {
+          var _v = _m[1];
           if (_vals.indexOf(_v) === -1) _vals.push(_v);
         }
       });
-      // Também captura padrões de tabela: número isolado com vírgula decimal (ex: "6,25")
-      var _reIsolado = /(\d+,\d{2})/g;
-      var _m3;
-      while ((_m3 = _reIsolado.exec(fullText)) !== null) {
-        var _v2 = _m3[1];
-        if (_vals.indexOf(_v2) === -1) _vals.push(_v2);
-      }
       console.log('[ATA Debug] Valores encontrados via regex:', _vals);
-      if (_vals.length) valoresHint = 'VALORES MONETÁRIOS EXTRAÍDOS AUTOMATICAMENTE DO DOCUMENTO (copie exatamente, sem arredondar): ' + _vals.join(' | ');
+      if (_vals.length) valoresHint = 'VALORES MONETÁRIOS DO DOCUMENTO (use EXATAMENTE estes, NUNCA arredonde, mantenha os centavos): ' + _vals.join(' | ');
     } catch(e) { console.warn('regex error', e); }
 
     setAiStatus('loading','🤖 Analisando com IA ('+Math.round(fullText.length/1000)+'k caracteres)...');
