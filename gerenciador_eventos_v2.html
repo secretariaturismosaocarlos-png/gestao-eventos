@@ -3613,7 +3613,8 @@ function renderAiPreview(data) {
   if(itens.length) {
     itensHtml='<div style="margin-top:8px"><div class="ai-preview-row"><label>Itens</label><div style="display:flex;flex-wrap:wrap;gap:4px">';
     itens.forEach(function(it,i){
-      const vlr=it.valorUnitario?'R$ '+parseFloat(it.valorUnitario).toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';
+      const vlrNum=it.valorUnitario!=null&&it.valorUnitario!==''?parseBRL(it.valorUnitario):null;
+      const vlr=vlrNum!=null?'R$ '+vlrNum.toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';
       itensHtml+='<span class="ai-item-chip">'+(i+1)+'. '+(it.descricao||'').substring(0,35)+(it.descricao&&it.descricao.length>35?'…':'')+' · '+(it.unidade||'—')+' · '+vlr+'</span>';
     });
     itensHtml+='</div></div></div>';
