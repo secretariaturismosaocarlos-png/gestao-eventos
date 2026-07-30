@@ -173,7 +173,7 @@ body{font-family:var(--sans);background:var(--ink);color:var(--text);min-height:
 </div>
 <div class="topbar">
   <span style="font-size:26px">💰</span>
-  <div class="topbar-logo">Emendas Parlamentares 2026</div>
+  <div class="topbar-logo" id="topbar-titulo-loa">Emendas Parlamentares 2026</div>
   <div class="topbar-sep"></div>
   <div class="pill pill-gold" id="pill-total">Total: —</div>
   <div class="pill pill-rose" id="pill-usado">Utilizado: —</div>
@@ -187,6 +187,9 @@ body{font-family:var(--sans);background:var(--ink);color:var(--text);min-height:
 </div>
 <div class="layout">
   <aside class="sidebar">
+    <div class="sb-label">LOA</div>
+    <div class="nav-item" id="nav-edicoes" onclick="setTab('edicoes')">🗂 Edições / Histórico <span class="nav-cnt" id="cnt-edicoes">0</span></div>
+    <div class="sb-div"></div>
     <div class="sb-label">Visualização</div>
     <div class="nav-item active" id="nav-painel"     onclick="setTab('painel')">📊 Painel Geral</div>
     <div class="nav-item"        id="nav-vereadores" onclick="setTab('vereadores')">👤 Por Vereador <span class="nav-cnt" id="cnt-ver">0</span></div>
@@ -285,6 +288,48 @@ body{font-family:var(--sans);background:var(--ink);color:var(--text);min-height:
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- MODAL NOVA EDIÇÃO (LOA) -->
+<div class="modal-bg" id="modal-edicao-bg">
+  <div class="modal">
+    <div class="modal-title">🗂 Nova Edição — LOA</div>
+    <div class="modal-sub">Arquiva a edição atual no histórico e inicia o cadastro da LOA de um novo ano</div>
+    <div class="modal-info" id="ne-info"></div>
+    <div class="field-row">
+      <div class="field field-full"><label>Título da Edição</label>
+        <input id="ne-titulo" placeholder="ex: LOA 2027">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Ano</label>
+        <input id="ne-ano" type="number" placeholder="ex: 2027">
+      </div>
+      <div class="field"><label>Vigência / Observação</label>
+        <input id="ne-obs" placeholder="ex: LOA aprovada em dez/2026">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button class="btn btn-gold"  onclick="confirmarNovaEdicao()">✓ Criar Edição e Arquivar Atual</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VISUALIZAR EDIÇÃO ARQUIVADA (somente leitura) -->
+<div class="modal-bg" id="modal-ver-edicao-bg">
+  <div class="modal modal-lg">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="modal-title" id="ve-title" style="margin-bottom:0">Edição arquivada</div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-ver-edicao-bg').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-sub">Consulta somente leitura — dados congelados no momento do arquivamento</div>
+    <div id="ve-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('modal-ver-edicao-bg').classList.remove('open')">Fechar</button>
+      <button class="btn btn-gold" id="ve-export-btn" onclick="">⬇ Exportar JSON desta edição</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL EVENTO -->
 <div class="modal-bg" id="modal-evento-bg">
@@ -442,6 +487,8 @@ const SB_KEY_EM  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const SB_TABLE_EM = 'app_data';
 const SB_CHAVE_EM = 'emendas_v2';
 let emendas=[],vincs=[],eventos_cad=[],nextEm=1,nextVi=1,nextEvC=1,curTab='painel',editEmId=null,editViId=null,modalEmendaId=null,editEvCId=null;
+let edicoes=[], edicaoAtiva=null, nextEdicao=1;
+let cloudSyncOk=true; // false = carregamento inicial falhou; bloqueia saves p/ não sobrescrever dados reais na nuvem
 
 function setSyncBadgeEm(status) {
   var el = document.getElementById('sync-badge-em');
@@ -456,13 +503,22 @@ function setSyncBadgeEm(status) {
     window._syncTimerEm = setTimeout(function(){ el.style.opacity='0'; }, 2500);
 }
 
+function canSaveToCloud() {
+  if (!cloudSyncOk) {
+    alert('⚠ ATENÇÃO: a conexão com o servidor falhou ao carregar esta página.\n\nPara proteger seus dados, os salvamentos foram bloqueados nesta sessão.\n\nRecarregue a página (F5) com uma conexão estável antes de continuar editando.');
+    return false;
+  }
+  return true;
+}
+
 function saveLocal_em() {
-  try { localStorage.setItem(KEY, JSON.stringify({emendas,vincs,eventos_cad,nextEm,nextVi,nextEvC})); } catch(e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({emendas,vincs,eventos_cad,nextEm,nextVi,nextEvC,edicoes,edicaoAtiva,nextEdicao})); } catch(e) {}
 }
 
 async function saveSupabase_em() {
+  if (!canSaveToCloud()) return;
   try {
-    var payload = [{ chave: SB_CHAVE_EM, valor: JSON.stringify({emendas,vincs,eventos_cad,nextEm,nextVi,nextEvC}) }];
+    var payload = [{ chave: SB_CHAVE_EM, valor: JSON.stringify({emendas,vincs,eventos_cad,nextEm,nextVi,nextEvC,edicoes,edicaoAtiva,nextEdicao}) }];
     var res = await fetch(SB_URL_EM + '/rest/v1/' + SB_TABLE_EM + '?on_conflict=chave', {
       method: 'POST',
       headers: { 'apikey': SB_KEY_EM, 'Authorization': 'Bearer ' + SB_KEY_EM, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
@@ -475,11 +531,12 @@ async function saveSupabase_em() {
 
 function save() {
   saveLocal_em();
+  if (!canSaveToCloud()) return;
   setSyncBadgeEm('saving');
   clearTimeout(window._sbTimerEm);
   window._sbTimerEm = setTimeout(async function() {
     try {
-      await saveToAPI('emendas_v2', { emendas: emendas, vincs: vincs, eventos_cad: eventos_cad, nextEm: nextEm, nextVi: nextVi, nextEvC: nextEvC });
+      await saveToAPI('emendas_v2', { emendas: emendas, vincs: vincs, eventos_cad: eventos_cad, nextEm: nextEm, nextVi: nextVi, nextEvC: nextEvC, edicoes: edicoes, edicaoAtiva: edicaoAtiva, nextEdicao: nextEdicao });
       setSyncBadgeEm('saved');
     } catch(e) {
       saveSupabase_em().catch(function(){});
@@ -502,6 +559,9 @@ async function loadSupabase_em() {
       nextEm      = d.nextEm      || emendas.length + 1;
       nextVi      = d.nextVi      || vincs.length + 1;
       nextEvC     = d.nextEvC     || eventos_cad.length + 1;
+      edicoes     = d.edicoes     || [];
+      nextEdicao  = d.nextEdicao  || edicoes.length + 1;
+      edicaoAtiva = d.edicaoAtiva || { id: 0, titulo: 'LOA ' + new Date().getFullYear(), ano: new Date().getFullYear(), obs: '', dataCriacao: new Date().toISOString().slice(0,10) };
       saveLocal_em();
       return true;
     }
@@ -519,6 +579,9 @@ function load() {
       nextEm      = d.nextEm      || emendas.length + 1;
       nextVi      = d.nextVi      || vincs.length + 1;
       nextEvC     = d.nextEvC     || eventos_cad.length + 1;
+      edicoes     = d.edicoes     || [];
+      nextEdicao  = d.nextEdicao  || edicoes.length + 1;
+      edicaoAtiva = d.edicaoAtiva || { id: 0, titulo: 'LOA ' + new Date().getFullYear(), ano: new Date().getFullYear(), obs: '', dataCriacao: new Date().toISOString().slice(0,10) };
       return true;
     }
   } catch(e) {}
@@ -543,9 +606,143 @@ function fmtHora(h){return h||''}
 function evStatusBadge(s){return s==='Realizado'?'bt':s==='Cancelado'?'br':s==='Em andamento'?'bg':s==='Confirmado'?'bb':'bx';}
 function totais(){const a=emendas.filter(e=>e.status!=='Cancelado');const total=a.reduce((s,e)=>s+e.valor,0);const ut=a.reduce((s,e)=>s+usado(e.id),0);return{total,ut,livre:total-ut};}
 
+// ═══════════════════════════════════════════════
+//  EDIÇÕES / HISTÓRICO (LOA por ano)
+// ═══════════════════════════════════════════════
+function renderEdicoes(){
+  const t = totais();
+  let arquivadasHtml = edicoes.length === 0
+    ? '<div class="empty-state"><div class="ei">🗂</div>Nenhuma edição arquivada ainda.<br>Quando você criar uma nova edição, a atual será guardada aqui para consulta.</div>'
+    : edicoes.slice().reverse().map(ed => `
+      <div class="ver-card" style="cursor:default">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div>
+            <div style="font-family:var(--serif);font-size:16px;color:#fff">${ed.titulo}</div>
+            <div style="font-size:11px;color:var(--sub);margin-top:2px">Ano ${ed.ano} · ativa de ${fmtDate(ed.dataCriacao)} até ${fmtDate(ed.dataArquivamento)}${ed.obs?' · '+ed.obs:''}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="btn btn-ghost btn-sm" onclick="verEdicaoArquivada(${ed.id})">👁 Ver</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportarEdicaoJSON(${ed.id})">⬇ Exportar JSON</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <div class="sc gold" style="flex:1"><div class="sc-lbl">Total LOA</div><div class="sc-val">${R(ed.totalCongelado)}</div></div>
+          <div class="sc teal" style="flex:1"><div class="sc-lbl">Emendas</div><div class="sc-val">${ed.emendas.length}</div></div>
+          <div class="sc blue" style="flex:1"><div class="sc-lbl">Vinculações</div><div class="sc-val">${ed.vincs.length}</div></div>
+        </div>
+      </div>`).join('');
+
+  return `
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">🗂 Edições / Histórico</div>
+        <div class="sec-sub">${edicoes.length} edição(ões) arquivada(s) · a edição ativa abaixo é usada em Painel, Por Vereador e Emendas</div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn btn-gold" onclick="abrirNovaEdicao()">＋ Nova Edição</button>
+    </div>
+
+    <div class="ver-card open" style="cursor:default">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-family:var(--serif);font-size:18px;color:#fff">${edicaoAtiva.titulo}</div>
+          <div style="font-size:11px;color:var(--sub);margin-top:2px">Ano ${edicaoAtiva.ano} · criada em ${fmtDate(edicaoAtiva.dataCriacao)}${edicaoAtiva.obs?' · '+edicaoAtiva.obs:''}</div>
+        </div>
+        <span class="badge bt" style="font-size:10px">● ATIVA</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <div class="sc gold" style="flex:1"><div class="sc-lbl">Total LOA</div><div class="sc-val">${R(t.total)}</div></div>
+        <div class="sc teal" style="flex:1"><div class="sc-lbl">Emendas</div><div class="sc-val">${emendas.length}</div></div>
+        <div class="sc blue" style="flex:1"><div class="sc-lbl">Vinculações</div><div class="sc-val">${vincs.length}</div></div>
+      </div>
+    </div>
+
+    <div class="resumo-sec-title" style="border:none;padding:4px 0 8px;margin-top:8px">Edições anteriores</div>
+    ${arquivadasHtml}
+  `;
+}
+
+function abrirNovaEdicao(){
+  const proxAno = (parseInt(edicaoAtiva.ano) || new Date().getFullYear()) + 1;
+  document.getElementById('ne-info').textContent = 'A edição atual ("' + edicaoAtiva.titulo + '", ' + emendas.length + ' emenda(s), total ' + R(totais().total) + ') será arquivada no histórico — nada é apagado. O cadastro de emendas começará vazio para a nova LOA.';
+  document.getElementById('ne-titulo').value = 'LOA ' + proxAno;
+  document.getElementById('ne-ano').value = proxAno;
+  document.getElementById('ne-obs').value = '';
+  document.getElementById('modal-edicao-bg').classList.add('open');
+}
+
+function confirmarNovaEdicao(){
+  const titulo = document.getElementById('ne-titulo').value.trim();
+  const ano = parseInt(document.getElementById('ne-ano').value) || null;
+  const obs = document.getElementById('ne-obs').value.trim();
+  if (!titulo) { alert('Informe o título da edição (ex: LOA 2027).'); return; }
+  if (!ano) { alert('Informe o ano da LOA.'); return; }
+  if (!confirm('Confirma a criação da edição "' + titulo + '"?\n\nA edição atual ("' + edicaoAtiva.titulo + '") será arquivada no histórico com ' + emendas.length + ' emenda(s) e total de ' + R(totais().total) + '.\n\nO cadastro de emendas ficará vazio para você começar a nova LOA. Esta ação NÃO apaga nada — a edição atual continua disponível em "Edições / Histórico".')) return;
+
+  const hoje = new Date().toISOString().slice(0,10);
+  edicoes.push(Object.assign({}, edicaoAtiva, {
+    dataArquivamento: hoje,
+    totalCongelado: totais().total,
+    emendas: JSON.parse(JSON.stringify(emendas)),
+    vincs: JSON.parse(JSON.stringify(vincs)),
+    eventos_cad: JSON.parse(JSON.stringify(eventos_cad)),
+  }));
+
+  emendas = []; vincs = []; eventos_cad = []; nextEm = 1; nextVi = 1; nextEvC = 1;
+  edicaoAtiva = { id: nextEdicao++, titulo: titulo, ano: ano, obs: obs, dataCriacao: hoje };
+
+  closeAllModals();
+  save();
+  toast('✅ Edição "' + titulo + '" criada! A edição anterior está no histórico.');
+  setTab('edicoes');
+}
+
+function verEdicaoArquivada(id){
+  const ed = edicoes.find(e => e.id === id);
+  if (!ed) return;
+  const porVer = {};
+  ed.emendas.forEach(function(e){ if (e.status === 'Cancelado') return; porVer[e.vereador] = (porVer[e.vereador]||0) + e.valor; });
+  const linhasVer = Object.keys(porVer).sort().map(function(v){
+    return '<tr><td>' + v + '</td><td style="text-align:right;font-weight:700;color:var(--gold)">' + R(porVer[v]) + '</td></tr>';
+  }).join('');
+  const linhasEm = ed.emendas.map(function(e){
+    return '<tr><td>' + e.vereador + '</td><td>' + (e.num ?? '—') + '</td><td>' + (e.protocolo ?? '—') + '</td><td style="text-align:right">' + R(e.valor) + '</td><td><span class="badge ' + sBadge(e.status) + '">' + e.status + '</span></td></tr>';
+  }).join('');
+  document.getElementById('ve-title').textContent = '🗂 ' + ed.titulo;
+  document.getElementById('ve-body').innerHTML = `
+    <div style="font-size:11px;color:var(--sub);margin-bottom:14px">Ano ${ed.ano} · ativa de ${fmtDate(ed.dataCriacao)} até ${fmtDate(ed.dataArquivamento)}${ed.obs?' · '+ed.obs:''}</div>
+    <div style="display:flex;gap:10px;margin-bottom:18px">
+      <div class="sc gold" style="flex:1"><div class="sc-lbl">Total LOA</div><div class="sc-val">${R(ed.totalCongelado)}</div></div>
+      <div class="sc teal" style="flex:1"><div class="sc-lbl">Emendas</div><div class="sc-val">${ed.emendas.length}</div></div>
+      <div class="sc blue" style="flex:1"><div class="sc-lbl">Vinculações</div><div class="sc-val">${ed.vincs.length}</div></div>
+    </div>
+    <div class="resumo-sec-title" style="border:none;padding:0;margin-bottom:8px">Por vereador</div>
+    <div class="tbl-wrap" style="margin-bottom:16px"><table><thead><tr><th>Vereador</th><th style="text-align:right">Total</th></tr></thead><tbody>${linhasVer || '<tr><td colspan="2" style="text-align:center;color:var(--sub)">Sem emendas</td></tr>'}</tbody></table></div>
+    <div class="resumo-sec-title" style="border:none;padding:0;margin-bottom:8px">Emendas</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Vereador</th><th>Nº</th><th>Protocolo</th><th style="text-align:right">Valor</th><th>Status</th></tr></thead><tbody>${linhasEm || '<tr><td colspan="5" style="text-align:center;color:var(--sub)">Sem emendas</td></tr>'}</tbody></table></div>
+  `;
+  document.getElementById('ve-export-btn').onclick = function(){ exportarEdicaoJSON(id); };
+  document.getElementById('modal-ver-edicao-bg').classList.add('open');
+}
+
+function exportarEdicaoJSON(id){
+  const ed = edicoes.find(e => e.id === id);
+  if (!ed) { toast('Edição não encontrada.'); return; }
+  const blob = new Blob([JSON.stringify(ed, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'emendas_' + (ed.titulo || 'edicao').replace(/[^a-z0-9]+/gi,'_').toLowerCase() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast('⬇ Edição exportada em JSON.');
+}
+
 function setTab(tab){curTab=tab;document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));const el=document.getElementById('nav-'+tab);if(el)el.classList.add('active');render();}
-function updateTopbar(){const t=totais();document.getElementById('pill-total').textContent='Total: '+R(t.total);document.getElementById('pill-usado').textContent='Utilizado: '+R(t.ut);document.getElementById('pill-livre').textContent='Livre: '+R(t.livre);document.getElementById('cnt-ver').textContent=[...new Set(emendas.map(e=>e.vereador))].length;document.getElementById('cnt-em').textContent=emendas.length;document.getElementById('cnt-ev').textContent=eventos_cad.length;}
-function render(){updateTopbar();const m=document.getElementById('main');if(curTab==='painel')m.innerHTML=renderPainel();else if(curTab==='vereadores')m.innerHTML=renderVereadores();else if(curTab==='emendas')m.innerHTML=renderEmendas();else if(curTab==='cad-eventos')m.innerHTML=renderCadEventos();else if(curTab==='eventos')m.innerHTML=renderEventos();else if(curTab==='resumo')m.innerHTML=renderResumo();else if(curTab==='contas')m.innerHTML=renderContas();if(curTab==='emendas')setTimeout(filtrarEmendas,0);if(curTab==='eventos')setTimeout(filtrarEventos,0);}
+function updateTopbar(){const t=totais();document.getElementById('pill-total').textContent='Total: '+R(t.total);document.getElementById('pill-usado').textContent='Utilizado: '+R(t.ut);document.getElementById('pill-livre').textContent='Livre: '+R(t.livre);document.getElementById('cnt-ver').textContent=[...new Set(emendas.map(e=>e.vereador))].length;document.getElementById('cnt-em').textContent=emendas.length;document.getElementById('cnt-ev').textContent=eventos_cad.length;var ce=document.getElementById('cnt-edicoes');if(ce)ce.textContent=edicoes.length;var tl=document.getElementById('topbar-titulo-loa');if(tl&&edicaoAtiva)tl.textContent='Emendas Parlamentares — '+edicaoAtiva.titulo;}
+function render(){updateTopbar();const m=document.getElementById('main');if(curTab==='painel')m.innerHTML=renderPainel();else if(curTab==='vereadores')m.innerHTML=renderVereadores();else if(curTab==='emendas')m.innerHTML=renderEmendas();else if(curTab==='cad-eventos')m.innerHTML=renderCadEventos();else if(curTab==='eventos')m.innerHTML=renderEventos();else if(curTab==='resumo')m.innerHTML=renderResumo();else if(curTab==='contas')m.innerHTML=renderContas();else if(curTab==='edicoes')m.innerHTML=renderEdicoes();if(curTab==='emendas')setTimeout(filtrarEmendas,0);if(curTab==='eventos')setTimeout(filtrarEventos,0);}
 
 function renderPainel(){
   const t=totais();
@@ -1345,9 +1542,18 @@ function imprimirRelatorio(){
   if (badge) { badge.textContent = '⏳ Carregando...'; badge.style.opacity='1'; }
   var ok = await loadSupabase_em();
   if (!ok) {
+    cloudSyncOk = false;
     var localOk = load();
-    if (!localOk) { emendas=SEED.map((e,i)=>({id:i+1,...e,status:'Previsto',obs:''})); nextEm=emendas.length+1; save(); }
+    if (!localOk) {
+      emendas=SEED.map((e,i)=>({id:i+1,...e,status:'Previsto',obs:''}));
+      nextEm=emendas.length+1;
+      edicoes=[];
+      nextEdicao=1;
+      edicaoAtiva={ id:0, titulo:'LOA ' + new Date().getFullYear(), ano:new Date().getFullYear(), obs:'', dataCriacao:new Date().toISOString().slice(0,10) };
+      saveLocal_em();
+    }
     setSyncBadgeEm('offline');
+    if (badge) { badge.textContent='⚠ Sem conexão — edições NÃO serão salvas na nuvem até recarregar a página com sucesso'; badge.style.background='#8b1a1a'; badge.style.opacity='1'; }
   }
   render();
 })();
@@ -1361,6 +1567,9 @@ function exportBackupEmendas() {
     nextEm: nextEm,
     nextVi: nextVi,
     nextEvC: nextEvC,
+    edicoes: edicoes,
+    edicaoAtiva: edicaoAtiva,
+    nextEdicao: nextEdicao,
     exportedAt: new Date().toISOString()
   };
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1386,6 +1595,9 @@ function importBackupEmendas(input) {
       nextEm       = d.nextEm       || emendas.length + 1;
       nextVi       = d.nextVi       || vincs.length + 1;
       nextEvC      = d.nextEvC      || eventos_cad.length + 1;
+      edicoes      = d.edicoes      || [];
+      nextEdicao   = d.nextEdicao   || edicoes.length + 1;
+      edicaoAtiva  = d.edicaoAtiva  || { id: 0, titulo: 'LOA ' + new Date().getFullYear(), ano: new Date().getFullYear(), obs: '', dataCriacao: new Date().toISOString().slice(0,10) };
       save();
       render();
       alert('✅ Backup importado! ' + emendas.length + ' emenda(s) restaurada(s).');
