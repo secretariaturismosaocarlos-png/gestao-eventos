@@ -2465,11 +2465,11 @@ function renderResumo() {
 // ═══════════════════════════════════════════════
 function renderStaff() {
   const e = ev();
-  const secoes = [...new Set([...(e.secoes||[]), ...e.staff.map(x=>x.secao)])];
+  const secoes = [...new Set(e.staff.map(x=>x.secao))];
   let html = '';
 
   if (!secoes.length) {
-    html = '<div class="tw"><div class="empty"><div class="ei">📋</div>Nenhum bloco criado ainda.<br><span style="font-size:11px;color:#aaa">Clique em "+ Novo Bloco" para criar uma seção e adicionar itens.</span></div></div>';
+    html = '<div class="tw"><div class="empty"><div class="ei">👥</div>Nenhum item cadastrado ainda.<br><span style="font-size:11px;color:#aaa">Clique em "+ Novo Item" — os blocos são criados automaticamente por Fornecedor + ATA.</span></div></div>';
   } else {
     secoes.forEach(sec => {
       const items = e.staff.filter(x => x.secao === sec);
@@ -2483,9 +2483,8 @@ function renderStaff() {
   }
 
   return '<div class="sh"><span class="sh-emoji">👥</span>' +
-    '<div><h2>Staff Detalhada</h2><p>Clique duplo em qualquer célula para editar · Crie blocos por função</p></div>' +
+    '<div><h2>Staff Detalhada</h2><p>Clique duplo em qualquer célula para editar · Blocos agrupados automaticamente por Fornecedor + ATA</p></div>' +
     '<div class="sh-actions">' +
-    '<button class="add-btn" style="background:var(--gm)" onclick="openNovoBloco(&quot;staff&quot;)">＋ Novo Bloco</button>' +
     '<button class="add-btn" onclick="openModal(&quot;staff&quot;)">＋ Novo Item</button>' +
     '</div></div>' +
     '<div class="content">' + html + '</div>';
@@ -2613,6 +2612,20 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
   var subtotalStr = subtotal ? ' &nbsp;&bull;&nbsp; <span style="color:var(--gold);font-weight:800">' + fmt(subtotal) + '</span>' : '';
   var countStr = '<span style="background:rgba(255,255,255,.25);font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px">' + itemCount + ' item' + (itemCount!==1?'s':'') + '</span>';
 
+  var atasStr = '';
+  if (mod === 'staff' || mod === 'estrutura') {
+    var atasNoGrupo = [];
+    items.forEach(function(it) {
+      var av = normalizeAta(it.ata || '');
+      if (av && findAtaMestre(av) && atasNoGrupo.indexOf(av) === -1) atasNoGrupo.push(av);
+    });
+    var temDireta = items.some(function(it) { var av = normalizeAta(it.ata||''); return !av || !findAtaMestre(av); });
+    var partes = [];
+    if (atasNoGrupo.length) partes.push('ATA' + (atasNoGrupo.length>1?'s':'') + ' ' + atasNoGrupo.join(', '));
+    if (temDireta) partes.push('Contratação Direta');
+    if (partes.length) atasStr = ' &nbsp;&bull;&nbsp; <span style="opacity:.85">' + partes.join(' + ') + '</span>';
+  }
+
   // ── Block header — bold, large, prominent ──
   var header =
     '<div style="' +
@@ -2628,7 +2641,7 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
         '<div style="width:4px;height:32px;background:var(--gold);border-radius:2px;flex-shrink:0"></div>' +
         '<div>' +
           '<div style="font-size:15px;font-weight:800;letter-spacing:.3px;line-height:1.2">' + sec.toUpperCase() + '</div>' +
-          '<div style="font-size:10px;opacity:.75;margin-top:2px">' + countStr + subtotalStr + '</div>' +
+          '<div style="font-size:10px;opacity:.75;margin-top:2px">' + countStr + subtotalStr + atasStr + '</div>' +
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;align-items:center">' +
@@ -2650,6 +2663,33 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
       '<thead><tr>' + thead + '</tr></thead>' +
       '<tbody>' + rows + subRow + '</tbody>' +
     '</table></div>';
+}
+
+// Calcula automaticamente o bloco — agora só pelo Fornecedor, para que itens do
+// mesmo fornecedor fiquem juntos mesmo vindo de ATAs diferentes (ou de contratação direta).
+function computeGrupoLabel(fornecedor, ataRef) {
+  var forn = up(fornecedor || '').trim();
+  return forn || 'FORNECEDOR NÃO INFORMADO';
+}
+
+// Preenche o nome do fornecedor ao clicar em "+ Novo Item" dentro de um bloco já
+// existente. Não assume qual ATA usar (o fornecedor pode ter mais de uma) — deixa
+// no modo "Contratação Direta" com o nome pronto, e o usuário troca pra "Com ATA"
+// e busca/digita a ATA específica se for o caso.
+function prefillFornecedorNoModal(fornecedorNome) {
+  if (!fornecedorNome || fornecedorNome === 'FORNECEDOR NÃO INFORMADO') return;
+  window._tipoVinculo = 'contrato';
+  var bAta = document.getElementById('btn-tipo-ata');
+  var bCd  = document.getElementById('btn-tipo-contrato');
+  var wAta = document.getElementById('wrap-ata');
+  var wCd  = document.getElementById('wrap-contrato');
+  if (wAta) wAta.style.display = 'none';
+  if (wCd)  { wCd.style.display = 'grid'; wCd.style.gridTemplateColumns = '1fr 1fr'; wCd.style.gap = '10px'; }
+  if (bAta) { bAta.style.background = '#fff'; bAta.style.color = '#666'; bAta.style.borderColor = '#e0e0e0'; }
+  if (bCd)  { bCd.style.background = 'var(--or)'; bCd.style.color = '#fff'; bCd.style.borderColor = 'var(--or)'; }
+  var fFCd = document.getElementById('f-forn-cd'); if (fFCd) fFCd.value = fornecedorNome;
+  var hint = document.getElementById('f-forn-cd');
+  if (hint) hint.title = 'Este fornecedor pode ter mais de uma ATA — troque para "Com ATA" acima se for o caso.';
 }
 
 async function deleteBloco(mod, secao, event) {
@@ -2699,14 +2739,14 @@ function openNovoBloco(mod) {
 // ═══════════════════════════════════════════════
 function renderEstrutura() {
   const e = ev();
-  const secoes = [...new Set([...(e.secoesEst||[]), ...e.estrutura.map(x=>x.secao||'Geral')])];
+  const secoes = [...new Set(e.estrutura.map(x=>x.secao))];
   let html = '';
 
   if (!secoes.length) {
-    html = '<div class="tw"><div class="empty"><div class="ei">📋</div>Nenhum bloco criado ainda.<br><span style="font-size:11px;color:#aaa">Clique em "+ Novo Bloco" para criar uma seção.</span></div></div>';
+    html = '<div class="tw"><div class="empty"><div class="ei">📋</div>Nenhum item cadastrado ainda.<br><span style="font-size:11px;color:#aaa">Clique em "+ Novo Item" — os blocos são criados automaticamente por Fornecedor + ATA.</span></div></div>';
   } else {
     secoes.forEach(function(sec) {
-      const items = e.estrutura.filter(function(x){ return (x.secao||'Geral') === sec; });
+      const items = e.estrutura.filter(function(x){ return x.secao === sec; });
       const sub = items.reduce(function(s,x){ return s+(x.custo||0); }, 0);
       html += buildSecaoBlock('estrutura', sec, sub, items);
     });
@@ -2717,9 +2757,8 @@ function renderEstrutura() {
   }
 
   return '<div class="sh"><span class="sh-emoji">🏗️</span>' +
-    '<div><h2>Estrutura</h2><p>Organize por blocos — Tendas, Geradores, Identidade Visual, etc.</p></div>' +
+    '<div><h2>Estrutura</h2><p>Blocos agrupados automaticamente por Fornecedor + ATA</p></div>' +
     '<div class="sh-actions">' +
-    '<button class="add-btn" style="background:var(--gm)" onclick="openNovoBloco(&quot;estrutura&quot;)">＋ Novo Bloco</button>' +
     '<button class="add-btn" onclick="openModal(&quot;estrutura&quot;)">＋ Novo Item</button>' +
     '</div></div>' +
     '<div class="content">' + html + '</div>';
@@ -2809,6 +2848,10 @@ function startEdit(el) {
       v = v.trim().toUpperCase();
     }
     item[field] = v;
+    // Recalcula o bloco (Fornecedor + ATA) se o campo editado afeta o agrupamento
+    if ((tab === 'staff' || tab === 'estrutura') && (field === 'ata' || field === 'fornecedor')) {
+      item.secao = computeGrupoLabel(item.fornecedor, item.ata);
+    }
     // Recalculate staff custo
     if (tab==='staff') {
       item.custo = (item.totalH||0) * (item.vlrH||0) || null;
@@ -2847,12 +2890,6 @@ function openModal(tab, preselectedBloco, editItem) {
 
   // ── STAFF MODAL ──
   if (tab === 'staff') {
-    const blocos = [...new Set([...(e.secoes||[]), ...e.staff.map(x=>x.secao)])];
-    let blocosOpts = blocos.map(function(s){
-      var sel = (s === preselectedBloco) ? ' selected' : '';
-      return '<option value="'+s+'"'+sel+'>'+s+'</option>';
-    }).join('') + '<option value="__new">+ Novo bloco...</option>';
-
     var body = '<div class="fg">' +
 
       // ── 1. ATA / CONTRATAÇÃO (topo) ──
@@ -2900,21 +2937,8 @@ function openModal(tab, preselectedBloco, editItem) {
         '<div class="field" style="grid-column:1/-1"><label>Referência (Processo, Dispensa, Nota...)</label><input id="f-ref-cd" placeholder="ex: Dispensa nº 12/2025 · Nota de empenho 0042"></div>' +
       '</div>' +
 
-      // ── 2. BLOCO ──
-      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">2. Bloco de destino</div>' +
-      '<div class="field" style="grid-column:1/-1">' +
-        '<label>Bloco / Seção <span style="color:var(--or);font-size:9px;font-weight:700">★ IMPORTANTE — define onde o item aparecerá</span></label>' +
-        '<select id="f-secao" style="border:2px solid var(--gm);font-size:13px;font-weight:700" ' +
-          'onchange="if(this.value===\'__new\'){document.getElementById(\'new-secao-wrap\').style.display=\'block\'}else{document.getElementById(\'new-secao-wrap\').style.display=\'none\'}">' +
-          blocosOpts +
-        '</select>' +
-      '</div>' +
-      '<div class="field" id="new-secao-wrap" style="display:none;grid-column:1/-1">' +
-        '<label>Nome do Novo Bloco</label><input id="f-nova-secao" placeholder="ex: Vigilância Noturna">' +
-      '</div>' +
-
-      // ── 3. DADOS DO ITEM ──
-      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Dados do Item</div>' +
+      // ── 2. DADOS DO ITEM ──
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">2. Dados do Item</div>' +
       '<div class="field" style="grid-column:1/-1"><label>Descrição do Serviço / Função <span style="color:var(--gm);font-size:9px">(ex: Recepcionista, Mestre de Cerimônia, Vigia)</span></label><input id="f-descricao" placeholder="ex: Recepcionista" oninput="this.value=this.value.toUpperCase()"></div>' +
       '<div class="field"><label>Total de Horas Contratadas <span style="color:var(--gm);font-size:9px">(carga hor\u00e1ria total do item)</span></label><input type="number" id="f-totalHoras" min="0.5" step="0.5" placeholder="ex: 30" oninput="calcStaffCusto()"></div>' +
       '<div class="field"><label>Valor por Hora (R$)</label><input type="number" id="f-vlrH" step="0.01" placeholder="ex: 30" oninput="calcStaffCusto()"></div>' +
@@ -2924,8 +2948,8 @@ function openModal(tab, preselectedBloco, editItem) {
         '<div id="f-custo-det" style="font-size:10px;color:#888"></div>' +
       '</div>' +
 
-      // ── 4. OBSERVAÇÕES ──
-      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">4. Observações</div>' +
+      // ── 3. OBSERVAÇÕES ──
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Observações</div>' +
       '<div class="field" style="grid-column:1/-1">' +
         '<label>Observações / Detalhes de Execução <span style="color:#aaa;font-size:9px">(uniforme, local de concentração, responsável...)</span></label>' +
         '<textarea id="f-obs" rows="3" placeholder="Ex: Apresentar na portaria principal às 19h30 com uniforme social. Contato no evento: João (16) 99999-1234."></textarea>' +
@@ -2938,7 +2962,6 @@ function openModal(tab, preselectedBloco, editItem) {
 
     // Pré-preenche campos se for edição (síncrono, logo após inserir o HTML)
     if (editItem) {
-      var fSecao = document.getElementById('f-secao'); if (fSecao) fSecao.value = editItem.secao || '';
       var fDesc  = document.getElementById('f-descricao'); if (fDesc) fDesc.value = editItem.descricao || '';
       var fTotalH = document.getElementById('f-totalHoras'); if (fTotalH) fTotalH.value = editItem.totalH || '';
       var fVlrH  = document.getElementById('f-vlrH'); if (fVlrH) fVlrH.value = editItem.vlrH || '';
@@ -2967,15 +2990,12 @@ function openModal(tab, preselectedBloco, editItem) {
         }
       }
       calcStaffCusto();
+    } else if (preselectedBloco) {
+      // "+ Novo Item" clicado dentro de um bloco existente — herda o Fornecedor daquele bloco
+      prefillFornecedorNoModal(preselectedBloco);
     }
 
   } else if (tab === 'estrutura') {
-    const blocoEst = [...new Set([...(e.secoesEst||[]), ...e.estrutura.map(x=>x.secao||'Geral')])];
-    let blocosEstOpts = blocoEst.map(function(s){
-      var sel = (s === preselectedBloco) ? ' selected' : '';
-      return '<option value="'+s+'"'+sel+'>'+s+'</option>';
-    }).join('') + '<option value="__new">+ Novo bloco...</option>';
-
     var body = '<div class="fg">' +
 
       '<div class="section-sep" style="grid-column:1/-1;margin-bottom:4px">1. ATA ou Contratação</div>' +
@@ -3018,19 +3038,7 @@ function openModal(tab, preselectedBloco, editItem) {
         '<div class="field" style="grid-column:1/-1"><label>Referência</label><input id="f-ref-cd" placeholder="ex: Dispensa nº 12/2025"></div>' +
       '</div>' +
 
-      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">2. Bloco de destino</div>' +
-      '<div class="field" style="grid-column:1/-1">' +
-        '<label>Bloco / Seção <span style="color:var(--or);font-size:9px;font-weight:700">★ define onde o item aparecerá</span></label>' +
-        '<select id="f-secao-est" style="border:2px solid var(--gm);font-size:13px;font-weight:700" ' +
-          'onchange="if(this.value===\'__new\'){document.getElementById(\'new-secao-est-wrap\').style.display=\'block\'}else{document.getElementById(\'new-secao-est-wrap\').style.display=\'none\'}">' +
-          blocosEstOpts +
-        '</select>' +
-      '</div>' +
-      '<div class="field" id="new-secao-est-wrap" style="display:none;grid-column:1/-1">' +
-        '<label>Nome do Novo Bloco</label><input id="f-nova-secao-est" placeholder="ex: Tendas, Geradores...">' +
-      '</div>' +
-
-      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Dados do Item</div>' +
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">2. Dados do Item</div>' +
       '<div class="field" style="grid-column:1/-1"><label>Descrição do Item / Serviço</label>' +
         '<textarea id="f-item" rows="2" placeholder="ex: Tenda Galpão 20×25m com fechamento lateral"></textarea></div>' +
       '<div class="field"><label>Quantidade</label><input type="number" id="f-qtd" placeholder="ex: 3" oninput="calcEstCusto()"></div>' +
@@ -3041,7 +3049,7 @@ function openModal(tab, preselectedBloco, editItem) {
         '<div id="f-custo-val" style="font-size:18px;font-weight:800;color:var(--gd)">R$ 0,00</div>' +
       '</div>' +
 
-      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">4. Observações</div>' +
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Observações</div>' +
       '<div class="field" style="grid-column:1/-1"><label>Observações de Montagem / Execução</label>' +
         '<textarea id="f-obs" rows="3" placeholder="Ex: Montagem: 23/04 a partir das 08h. Desmontagem: 27/04 após 18h. Contato técnico: (16) 99999-0000."></textarea></div>' +
     '</div>';
@@ -3051,7 +3059,6 @@ function openModal(tab, preselectedBloco, editItem) {
 
     // Pré-preenche campos se for edição de estrutura
     if (editItem) {
-      var fSecaoE = document.getElementById('f-secao-est'); if (fSecaoE) fSecaoE.value = editItem.secao || '';
       var fItem   = document.getElementById('f-item');      if (fItem)   fItem.value   = editItem.item || '';
       var fQtdE   = document.getElementById('f-qtd');       if (fQtdE)   fQtdE.value   = editItem.qtd || '';
       var fUnid   = document.getElementById('f-unidade');   if (fUnid)   fUnid.value   = editItem.unidade || '';
@@ -3080,6 +3087,9 @@ function openModal(tab, preselectedBloco, editItem) {
         }
       }
       calcEstCusto();
+    } else if (preselectedBloco) {
+      // "+ Novo Item" clicado dentro de um bloco existente — herda o Fornecedor daquele bloco
+      prefillFornecedorNoModal(preselectedBloco);
     }
 
   } else {
@@ -3295,48 +3305,34 @@ async function saveItem() {
 
   // ── Save Staff ──
   if (tab === 'staff') {
-    // Read secao from f-secao (highlighted prominently in modal)
-    let secao = gv('f-secao');
-    if (!secao) secao = (e.secoes && e.secoes[0]) || 'Geral';
-    if (secao === '__new') {
-      secao = gv('f-nova-secao');
-      if (!secao) { alert('Informe o nome do novo bloco.'); return; }
-    }
-    // Ensure secao exists in event.secoes
-    if (!(e.secoes||[]).includes(secao)) e.secoes = [...(e.secoes||[]), secao];
-
+    const secao = computeGrupoLabel(fornecedor, ataRef);
     const totalH  = parseFloat(gv('f-totalHoras')) || 0;
     const vlrH    = parseFloat(gv('f-vlrH'))       || 0;
     const custo   = totalH * vlrH || null;
     if (modalCtx.editId) {
       const item = e.staff.find(x => x.id === modalCtx.editId);
       if (item) {
-        Object.assign(item, { secao:up(secao), descricao:up(gv('f-descricao')),
+        Object.assign(item, { secao, descricao:up(gv('f-descricao')),
           totalH, vlrH: vlrH||null, custo,
           ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:gv('f-obs') });
       }
       toast('Item atualizado!');
       closeModal(); await saveData(); render(); return;
     }
-    e.staff.push({ id:e.nextStaff++, secao:up(secao), descricao:up(gv('f-descricao')),
+    e.staff.push({ id:e.nextStaff++, secao, descricao:up(gv('f-descricao')),
       qtd:1, totalH, vlrH: vlrH||null, custo,
       ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:gv('f-obs') });
-    toast('Item adicionado ao bloco "' + secao + '"!');
+    toast('Item adicionado!');
     closeModal(); await saveData(); render(); return;
   }
 
   // ── Save Estrutura ──
   if (tab === 'estrutura') {
-    let secao = gv('f-secao-est') || 'Geral';
-    if (secao === '__new') {
-      secao = gv('f-nova-secao-est');
-      if (!secao) { alert('Informe o nome do novo bloco.'); return; }
-    }
-    if (!(e.secoesEst||[]).includes(secao)) e.secoesEst = [...(e.secoesEst||[]), secao];
+    const secao = computeGrupoLabel(fornecedor, ataRef);
     const qtd    = parseFloat(gv('f-qtd'))    || null;
     const vlrUnit= parseBRL(gv('f-vlrUnit')) || null;
     const custo  = qtd && vlrUnit ? qtd * vlrUnit : null;
-    const estObj = { secao:up(secao), item:up(gv('f-item')),
+    const estObj = { secao, item:up(gv('f-item')),
       qtd, unidade:up(gv('f-unidade')), vlrUnit, custo,
       ata:up(ataRef), fornecedor:up(fornecedor), contato:up(contato), obs:gv('f-obs') };
     if (modalCtx.editId) {
@@ -3401,15 +3397,13 @@ function saveItemAndAddMore() {
   const fornVal   = tipoVinc === 'ata' ? gv('f-fornecedor') : gv('f-forn-cd');
   const contVal   = tipoVinc === 'ata' ? gv('f-contato')    : gv('f-cont-cd');
   const refCdVal  = gv('f-ref-cd') || '';
-  const secaoVal  = tab === 'staff' ? gv('f-secao') : gv('f-secao-est');
-  const novaSec   = tab === 'staff' ? gv('f-nova-secao') : gv('f-nova-secao-est');
 
   // Save the current item (without closing the modal flow)
   saveItem(); // this calls closeModal() internally — we'll reopen
 
   // Reopen modal with same context, pre-set ATA
   setTimeout(function() {
-    openModal(tab, secaoVal === '__new' ? novaSec : secaoVal);
+    openModal(tab);
     setTimeout(function() {
       // Restore ATA info
       if (tipoVinc === 'ata' && ataVal) {
