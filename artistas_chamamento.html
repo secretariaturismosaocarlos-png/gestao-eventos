@@ -731,6 +731,21 @@ input.prog-inp:focus { border-color: var(--gold); }
   </div>
 </div>
 
+<!-- MODAL MOTIVO DA RECUSA -->
+<div class="modal-bg" id="modal-recusa-bg">
+  <div class="modal" style="width:460px">
+    <div class="modal-title">⏭ Motivo da Recusa</div>
+    <div class="modal-sub" id="mr-sub"></div>
+    <div class="field-full field"><label>Motivo <span style="color:#999;font-weight:400">(opcional, mas fica registrado no histórico)</span></label>
+      <textarea id="mr-motivo" rows="3" placeholder="ex: já tem outro evento fechado nessa data"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-recusa-bg')">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmarRecusa()" style="background:#c0392b">⏭ Confirmar Recusa</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL NOVA EDIÇÃO DO CHAMAMENTO -->
 <div class="modal-bg" id="modal-edicao-bg">
   <div class="modal" style="width:680px;max-height:90vh;overflow-y:auto">
@@ -2135,6 +2150,70 @@ function closeModal(id) {
   document.getElementById(id).classList.remove('open');
 }
 
+// ─── MOTIVO DA RECUSA ───
+let _recusaCtx = null;
+function abrirModalRecusa(cat, porte, genero, artId, nome) {
+  _recusaCtx = { cat, porte, genero, artId };
+  document.getElementById('mr-sub').innerHTML = `Recusando em nome de <strong>${nome}</strong>`;
+  document.getElementById('mr-motivo').value = '';
+  document.getElementById('modal-recusa-bg').classList.add('open');
+  setTimeout(() => document.getElementById('mr-motivo').focus(), 50);
+}
+function confirmarRecusa() {
+  if (!_recusaCtx) return;
+  const motivo = document.getElementById('mr-motivo').value.trim();
+  const { cat, porte, genero, artId } = _recusaCtx;
+  closeModal('modal-recusa-bg');
+  recusarArtista(cat, porte, genero, artId, motivo);
+  _recusaCtx = null;
+}
+
+// ─── ACORDEÃO DE HISTÓRICO ───
+function toggleHist(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id + '-arrow');
+  if (!el) return;
+  const abrindo = el.style.display === 'none';
+  el.style.display = abrindo ? 'block' : 'none';
+  if (arrow) arrow.textContent = abrindo ? '▾' : '▸';
+}
+// Renderiza uma linha de histórico (mini, dentro do card da fila) — mostra o motivo se houver
+function histRowHtml(h) {
+  const ic = { chamado:'✅', recusou:'⏭', fim_fila:'🔻' }[h.tipo] || '·';
+  const lb = { chamado:'confirmado', recusou:`recusou (${h.recusas||1}x)`, fim_fila:'enviado ao fim da fila' }[h.tipo] || '';
+  const quando = fmtDataHoraCh(h.ts);
+  const motivoHtml = h.motivo ? `<div style="font-size:10px;color:#8a7050;font-style:italic;margin:1px 0 2px 18px">— "${h.motivo}"</div>` : '';
+  return `<div style="padding:2px 0">
+    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#6a5030;flex-wrap:wrap">
+      <span>${ic}</span><strong>${h.nome}</strong><span style="color:#b09060">${lb}${quando?' '+quando:''}</span>
+    </div>
+    ${motivoHtml}
+  </div>`;
+}
+
+// Renderiza uma linha de histórico (tira geral) — inclui categoria/porte/gênero e o motivo se houver
+function histRowHtmlGlobal(h) {
+  const icons = { chamado:'✅', recusou:'⏭', fim_fila:'🔻' };
+  const cores = { chamado:'#2a8a50', recusou:'#b05020', fim_fila:'#c0392b' };
+  const labs  = { chamado:'confirmado', recusou:`recusou (${h.recusas||1}x)`, fim_fila:'enviado ao fim da fila' };
+  const quando = fmtDataHoraCh(h.ts);
+  const motivoHtml = h.motivo ? `<div style="font-size:10px;color:#8a7050;font-style:italic;margin:1px 0 3px 18px">— "${h.motivo}"</div>` : '';
+  return `<div style="padding:5px 0;border-bottom:1px solid #f0e8d0">
+    <div style="display:flex;align-items:center;gap:8px;font-size:11px;flex-wrap:wrap">
+      <span>${icons[h.tipo]||'·'}</span>
+      <strong style="color:#2a1e06">${h.nome}</strong>
+      <span style="color:#b0a080;font-size:10px">Cat.${h.cat} · ${h.porte} · ${h.genero}</span>
+      <span style="color:${cores[h.tipo]||'#666'};font-weight:700;font-size:10px">${labs[h.tipo]||''}</span>
+      <span style="color:#c0a870;font-size:10px">${quando}</span>
+    </div>
+    ${motivoHtml}
+  </div>`;
+}
+
+function chDomId(cat, porte, genero) {
+  return 'ch_' + String(cat + '_' + porte + '_' + genero).replace(/[^a-zA-Z0-9]/g, '_');
+}
+
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -2209,6 +2288,19 @@ let filas = {};
 let ch_historico = [];
 
 function chKey(cat, porte, genero) { return cat + '§' + porte + '§' + genero; }
+
+// Formata timestamp ISO no padrão "dia 11/08/2026 às 16h32"
+function fmtDataHoraCh(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  const dia = String(d.getDate()).padStart(2, '0');
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const ano = d.getFullYear();
+  const hh  = String(d.getHours()).padStart(2, '0');
+  const mm  = String(d.getMinutes()).padStart(2, '0');
+  return `dia ${dia}/${mes}/${ano} às ${hh}h${mm}`;
+}
 
 // ════════════════════════════════════════════════════════════
 //  LÓGICA DE CHAMAMENTO — MODELO DEFINITIVO v5
@@ -2311,16 +2403,17 @@ function chamarArtista(cat, porte, genero, artId) {
 }
 
 // ─── RECUSAR ───
-function recusarArtista(cat, porte, genero, artId) {
+function recusarArtista(cat, porte, genero, artId, motivo) {
   const fila = getFila(cat, porte, genero);
   if (!fila.ordem.length) return;
   const art = artistas.find(a => a.id === artId);
   if (!art) return;
+  motivo = (motivo || '').trim();
 
   fila.recusas[art.id] = (fila.recusas[art.id] || 0) + 1;
   const qtd = fila.recusas[art.id];
 
-  fila.historico.unshift({ tipo:'recusou', artId:art.id, nome:art.projeto||art.razao, recusas:qtd, ts:new Date().toISOString(), cat, porte, genero });
+  fila.historico.unshift({ tipo:'recusou', artId:art.id, nome:art.projeto||art.razao, recusas:qtd, motivo, ts:new Date().toISOString(), cat, porte, genero });
   ch_historico.unshift(fila.historico[0]);
 
   if (qtd >= 3) {
@@ -2349,7 +2442,7 @@ function recusarArtista(cat, porte, genero, artId) {
     }
     fila.recusas[art.id] = 0;
     fila.eventoAberto = true; // alguém precisa responder agora
-    fila.historico.unshift({ tipo:'fim_fila', artId:art.id, nome:art.projeto||art.razao, ts:new Date().toISOString(), cat, porte, genero });
+    fila.historico.unshift({ tipo:'fim_fila', artId:art.id, nome:art.projeto||art.razao, motivo, ts:new Date().toISOString(), cat, porte, genero });
     ch_historico.unshift(fila.historico[0]);
 
   } else if (fila.pendente !== null && art.id === fila.pendente) {
@@ -2546,28 +2639,29 @@ function renderChamamento() {
             <button data-cat="${cat}" data-porte="${porte.replace(/"/g,'&quot;')}" data-genero="${genero.replace(/"/g,'&quot;')}" data-artid="${artId}"
               onclick="chamarArtista(this.dataset.cat,this.dataset.porte,this.dataset.genero,Number(this.dataset.artid))"
               style="padding:6px 12px;border-radius:7px;border:none;background:#2a8a50;color:#fff;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit">✅ Aceitar</button>
-            <button data-cat="${cat}" data-porte="${porte.replace(/"/g,'&quot;')}" data-genero="${genero.replace(/"/g,'&quot;')}" data-artid="${artId}"
-              onclick="recusarArtista(this.dataset.cat,this.dataset.porte,this.dataset.genero,Number(this.dataset.artid))"
+            <button data-cat="${cat}" data-porte="${porte.replace(/"/g,'&quot;')}" data-genero="${genero.replace(/"/g,'&quot;')}" data-artid="${artId}" data-nome="${(art.projeto||art.razao||'').replace(/"/g,'&quot;')}"
+              onclick="abrirModalRecusa(this.dataset.cat,this.dataset.porte,this.dataset.genero,Number(this.dataset.artid),this.dataset.nome)"
               style="padding:6px 12px;border-radius:7px;border:1px solid #f0c0b0;background:#fff5f0;color:#c03020;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit">⏭ Recusar</button>
           </div>` : ''}
         </div>`;
       });
     }
 
-    // mini history
-    const hist = fila.historico.filter(h=>h.tipo!=='fim_fila'||true).slice(0,4);
-    if (hist.length) {
+    // history — 4 mais recentes visíveis, resto em acordeão
+    const histAll = fila.historico;
+    const histVisible = histAll.slice(0, 4);
+    const histRest = histAll.slice(4);
+    const filaDomId = chDomId(cat, porte, genero);
+    if (histAll.length) {
       html += `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e8d8b0">
         <div style="font-size:9px;color:#b09060;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Histórico desta fila</div>
-        ${hist.map(h=>{
-          const ic={chamado:'✅',recusou:'⏭',fim_fila:'🔻'}[h.tipo]||'·';
-          const lb={chamado:'confirmado',recusou:`recusou (${h.recusas||1}x)`,fim_fila:'enviado ao fim da fila'}[h.tipo]||'';
-          const time=h.ts?new Date(h.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
-          return `<div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#6a5030;padding:2px 0">
-            <span>${ic}</span><strong>${h.nome}</strong><span style="color:#b09060">${lb}</span>
-            <span style="margin-left:auto;color:#c0a870;font-size:9px">${time}</span>
-          </div>`;
-        }).join('')}
+        ${histVisible.map(histRowHtml).join('')}
+        ${histRest.length ? `
+          <div id="${filaDomId}-hist" style="display:none;margin-top:2px">${histRest.map(histRowHtml).join('')}</div>
+          <div onclick="toggleHist('${filaDomId}-hist')" style="cursor:pointer;font-size:10px;color:#2471a3;font-weight:700;margin-top:5px;user-select:none">
+            <span id="${filaDomId}-hist-arrow">▸</span> Ver mais ${histRest.length} registro${histRest.length!==1?'s':''}
+          </div>
+        ` : ''}
       </div>`;
     }
 
@@ -2576,21 +2670,17 @@ function renderChamamento() {
 
   // global history strip
   if (ch_historico.length && !_chCat && !_chPorte && !_chGenero) {
+    const globalVisible = ch_historico.slice(0, 8);
+    const globalRest = ch_historico.slice(8);
     html += `<div style="background:#fffdf5;border:1.5px solid #e8d8a0;border-radius:13px;padding:14px 18px;margin-top:4px">
       <div style="font-size:10px;font-weight:800;color:#7a5a20;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">📋 Histórico Geral Recente</div>
-      ${ch_historico.slice(0,8).map(h=>{
-        const icons={chamado:'✅',recusou:'⏭',fim_fila:'🔻'};
-        const cores={chamado:'#2a8a50',recusou:'#b05020',fim_fila:'#c0392b'};
-        const labs={chamado:'confirmado',recusou:`recusou (${h.recusas||1}x)`,fim_fila:'enviado ao fim da fila'};
-        const time=h.ts?new Date(h.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
-        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0e8d0;font-size:11px">
-          <span>${icons[h.tipo]||'·'}</span>
-          <strong style="color:#2a1e06">${h.nome}</strong>
-          <span style="color:#b0a080;font-size:10px">Cat.${h.cat} · ${h.porte} · ${h.genero}</span>
-          <span style="color:${cores[h.tipo]||'#666'};font-weight:700;font-size:10px">${labs[h.tipo]||''}</span>
-          <span style="margin-left:auto;color:#c0a870;font-size:10px">${time}</span>
-        </div>`;
-      }).join('')}
+      ${globalVisible.map(histRowHtmlGlobal).join('')}
+      ${globalRest.length ? `
+        <div id="ch-hist-global" style="display:none">${globalRest.map(histRowHtmlGlobal).join('')}</div>
+        <div onclick="toggleHist('ch-hist-global')" style="cursor:pointer;font-size:11px;color:#2471a3;font-weight:700;margin-top:10px;user-select:none;text-align:center">
+          <span id="ch-hist-global-arrow">▸</span> Ver histórico completo — mais ${globalRest.length} registro${globalRest.length!==1?'s':''}
+        </div>
+      ` : ''}
     </div>`;
   }
 
