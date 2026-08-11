@@ -1125,7 +1125,11 @@ function applyLoadedData(d) {
       criadaEm: new Date().toISOString(), artistas: d.artistas,
       filas: d.filas || {}, ch_historico: d.ch_historico || [], nextId: d.nextId || 1
     };
-    Object.values(edicaoMigrada.filas).forEach(f => { if (f.eventoAberto === undefined) f.eventoAberto = false; });
+    Object.values(edicaoMigrada.filas).forEach(f => {
+      if (f.eventoAberto === undefined) f.eventoAberto = false;
+      if (f.vezDoPendente === undefined) f.vezDoPendente = false;
+      if (f.pendente === null) f.vezDoPendente = false;
+    });
     edicoes_chamamento = [edicaoMigrada];
     edicaoAtiva = edicaoMigrada.id;
     ativarEdicao(edicaoAtiva, false);
@@ -1161,7 +1165,11 @@ function ativarEdicao(id, salvar) {
   ch_historico= ed.ch_historico|| [];
   nextId      = ed.nextId      || 1;
   // migração inline
-  Object.values(filas).forEach(f => { if (f.eventoAberto === undefined) f.eventoAberto = false; });
+  Object.values(filas).forEach(f => {
+    if (f.eventoAberto === undefined) f.eventoAberto = false;
+    if (f.vezDoPendente === undefined) f.vezDoPendente = false;
+    if (f.pendente === null) f.vezDoPendente = false;
+  });
   if (salvar) saveData();
 }
 
@@ -2203,31 +2211,39 @@ let ch_historico = [];
 function chKey(cat, porte, genero) { return cat + '§' + porte + '§' + genero; }
 
 // ════════════════════════════════════════════════════════════
-//  LÓGICA DE CHAMAMENTO — MODELO DEFINITIVO v4
+//  LÓGICA DE CHAMAMENTO — MODELO DEFINITIVO v5
 //
 //  Estrutura:
-//    ordem[]   — IDs em ordem de classificação atual
-//    cursor    — índice do próximo substituto/normal a chamar
-//    pendente  — ID em Stand By (reofertado primeiro em toda nova demanda)
-//    recusas{} — recusas consecutivas por artista
+//    ordem[]        — IDs em ordem de classificação atual
+//    cursor         — índice do artista "da vez" (fila normal)
+//    pendente       — ID em Stand By (o primeiro que recusou; guarda a posição dele)
+//    vezDoPendente  — de quem é a vez de responder agora, quando pendente!=null e evento aberto:
+//                       true  → é a vez do Stand By (pendente)
+//                       false → é a vez do artista da fila (cursor)
+//    recusas{}      — recusas consecutivas por artista (3 seguidas = penalidade, vai pro fim)
 //
-//  REGRA CURSOR:
-//    1ª recusa (sem pendente): cursor++ → aponta pro substituto desta demanda
-//    Reoferta recusada:        cursor NÃO avança → substituto = ordem[cursor]
-//    Penalidade:               cursor = índice do idNoCursor após splice
-//    Substituto aceita:        cursor++
-//    Reoferta aceita:          cursor NÃO avança (já está no próximo correto)
+//  REGRA DO REVEZAMENTO ("cabo de guerra" entre Stand By e o artista da vez):
+//    1ª recusa (sem pendente ainda):  pendente = quem recusou; cursor++; vezDoPendente=false
+//                                     (a vez passa pro novo cursor, não some ninguém)
+//    Pendente recusa de novo:         continua pendente (mesma posição!); vezDoPendente=false
+//                                     (passa a vez pro cursor)
+//    Cursor recusa (com pendente já existindo): NÃO vira o novo pendente, NÃO avança o cursor —
+//                                     só devolve a vez pro pendente; vezDoPendente=true
+//    Pendente aceita:                 pendente=null; cursor já estava correto (não mexeu)
+//    Cursor aceita:                   cursor++; pendente PERMANECE (guardado pra próxima vaga)
+//    Penalidade (3ª recusa seguida):  o penalizado vai pro fim da fila; se era o pendente, ele
+//                                     "sai da jogada" (pendente=null, segue com o cursor); se era
+//                                     o cursor, o cursor passa pro próximo e a vez volta pro pendente
+//                                     (se ele existir).
 //
-//  SIMULAÇÃO (DV=0,V78=1,Brexó=2,SRT=3,Flash=4,Back=5,Band=6):
-//    Carnaval: DV recusa(1) → pend=DV, cur=1(V78); V78 aceita → cur=2
-//    Milho:    pend=DV → DV recusa(2) reoferta, cur NÃO muda(2=Brexó); Brexó aceita → cur=3
-//    Clima:    pend=DV → DV recusa(3) PENALIDADE → ordem=[V78,Brexó,SRT,...,DV], cur=2(SRT)
-//              SRT aceita → cur=3(Flash)
-//    Matsuri:  Flash aceita → cur=4(Back)
-//    Laranja:  Back aceita  → cur=5(Band)
-//    Flores:   Band aceita  → cur=6(DV)
-//    Próxima:  DV(último)   → cur=0(V78)
-//    BÔNUS — DV aceita reoferta na Clima: pendente=null, cur=3(SRT) → próx=SRT ✓
+//  SIMULAÇÃO (exemplo real usado para validar a regra — bandas A,B,C,D):
+//    A aceita           → cursor=B
+//    B recusa (1ª)       → pendente=B, cursor=C, vez=C
+//    C recusa            → pendente continua B, cursor continua C, vez volta pra B
+//    B recusa (2ª)       → pendente continua B, vez passa pra C
+//    C recusa (2ª)       → vez volta pra B
+//    B aceita             → pendente=null, cursor continua em C → vez=C
+//    C aceita             → cursor avança → vez=D
 // ════════════════════════════════════════════════════════════
 
 function getFila(cat, porte, genero) {
@@ -2238,7 +2254,7 @@ function getFila(cat, porte, genero) {
     .map(a => a.id);
 
   if (!filas[key]) {
-    filas[key] = { ordem: sorted, cursor: 0, pendente: null, recusas: {}, historico: [], eventoAberto: false };
+    filas[key] = { ordem: sorted, cursor: 0, pendente: null, vezDoPendente: false, recusas: {}, historico: [], eventoAberto: false };
   } else {
     const f = filas[key];
     sorted.forEach(id => { if (!f.ordem.includes(id)) f.ordem.push(id); });
@@ -2246,18 +2262,22 @@ function getFila(cat, porte, genero) {
     if (f.ordem.length) f.cursor = Math.min(f.cursor, f.ordem.length - 1);
     if (f.pendente !== null && !f.ordem.includes(f.pendente)) f.pendente = null;
     if (f.eventoAberto === undefined) f.eventoAberto = false; // migração de dados antigos
+    if (f.vezDoPendente === undefined) f.vezDoPendente = false; // migração de dados antigos
+    if (f.pendente === null) f.vezDoPendente = false; // consistência
   }
   return filas[key];
 }
 
 // Quem age AGORA:
-// - Se evento aberto (recusa recente, próximo ainda não respondeu) → ordem[cursor]
-// - Se evento fechado com pendente → pendente (Stand By tem prioridade no próximo evento)
-// - Se sem pendente → ordem[cursor]
+// - Sem pendente → sempre o artista da vez (cursor)
+// - Com pendente e evento fechado (nova demanda) → pendente tem prioridade (reoferta)
+// - Com pendente e evento aberto (revezamento em andamento) → depende de vezDoPendente:
+//     true  → é a vez do Stand By responder de novo
+//     false → é a vez do artista da fila (cursor) responder
 function getProxArtista(fila) {
   if (!fila.ordem.length) return null;
   const aberto = fila.eventoAberto === true;
-  const id = (fila.pendente !== null && !aberto)
+  const id = (fila.pendente !== null && (!aberto || fila.vezDoPendente))
     ? fila.pendente
     : fila.ordem[fila.cursor % fila.ordem.length];
   return artistas.find(a => a.id === id) || null;
@@ -2278,10 +2298,13 @@ function chamarArtista(cat, porte, genero, artId) {
     // Stand By ACEITA → sai do stand by, evento fechado
     fila.pendente = null;
     fila.eventoAberto = false;
+    fila.vezDoPendente = false;
   } else {
     // Chamamento normal (cursor ou próximo durante evento aberto) → avança cursor, fecha evento
+    // Obs: se havia alguém em Stand By, ele permanece — só é resolvido quando ele mesmo aceita/recusa a 3ª vez
     fila.cursor = (fila.cursor + 1) % fila.ordem.length;
     fila.eventoAberto = false;
+    fila.vezDoPendente = false;
   }
 
   saveData(); render();
@@ -2303,46 +2326,51 @@ function recusarArtista(cat, porte, genero, artId) {
   if (qtd >= 3) {
     // ══ PENALIDADE: 3 recusas consecutivas — vai pro fim, cursor segue para o próximo ══
     if (fila.pendente !== null && art.id === fila.pendente) {
-      // Veio de Stand By: cursor já aponta para o próximo correto, só move o penalizado
+      // Penalidade veio de quem estava em Stand By: sai do Stand By e vai pro fim da fila.
+      // O cursor não tinha se mexido durante o revezamento — continua apontando pro mesmo artista de antes.
       const cursorId = fila.ordem[fila.cursor % fila.ordem.length];
       fila.ordem.splice(fila.ordem.indexOf(art.id), 1);
       fila.ordem.push(art.id);
       const novoIdx = fila.ordem.indexOf(cursorId);
       fila.cursor = novoIdx >= 0 ? novoIdx : 0;
+      fila.pendente = null;
+      fila.vezDoPendente = false;
     } else {
-      // Recusa normal chegando a 3: cursor estava no penalizado, avança pro próximo
+      // Penalidade veio do artista da vez (cursor): sai da posição atual, vai pro fim.
+      // O cursor passa a apontar pra quem ficou no lugar dele (o próximo da fila).
       const idxAtual = fila.ordem.indexOf(art.id);
       const idProximo = fila.ordem[(idxAtual + 1) % fila.ordem.length];
       fila.ordem.splice(idxAtual, 1);
       fila.ordem.push(art.id);
       const novoIdx = fila.ordem.indexOf(idProximo);
       fila.cursor = novoIdx >= 0 ? novoIdx : 0;
+      // Se já havia alguém em Stand By, a vez volta pra essa pessoa; senão, segue com o novo cursor.
+      fila.vezDoPendente = fila.pendente !== null;
     }
     fila.recusas[art.id] = 0;
-    fila.pendente = null;
-    fila.eventoAberto = true; // STR80 precisa responder agora
+    fila.eventoAberto = true; // alguém precisa responder agora
     fila.historico.unshift({ tipo:'fim_fila', artId:art.id, nome:art.projeto||art.razao, ts:new Date().toISOString(), cat, porte, genero });
     ch_historico.unshift(fila.historico[0]);
 
   } else if (fila.pendente !== null && art.id === fila.pendente) {
-    // Stand By RECUSA de novo (1ª ou 2ª vez):
-    // cursor já aponta para o próximo correto (avançou quando virou Stand By)
-    // só abre o evento para o próximo responder
+    // Stand By recusa de novo (1ª ou 2ª vez): continua em Stand By (não perde a posição),
+    // e a vez passa para o artista da fila (cursor) responder.
     fila.eventoAberto = true;
+    fila.vezDoPendente = false;
 
-  } else if (fila.eventoAberto) {
-    // Próximo recusa durante evento aberto (Stand By já existe):
-    // este artista também entra em stand by (substitui o anterior), cursor avança
-    fila.pendente = art.id;
-    fila.cursor = (fila.cursor + 1) % fila.ordem.length;
-    fila.eventoAberto = true; // ainda aberto, próximo precisa responder
+  } else if (fila.pendente !== null && fila.eventoAberto) {
+    // O artista da vez (cursor) recusa, e já existe alguém em Stand By:
+    // NÃO substitui o Stand By nem avança o cursor — a vez apenas volta para quem está em Stand By.
+    fila.eventoAberto = true;
+    fila.vezDoPendente = true;
 
   } else {
-    // Recusa normal (sem stand by, evento fechado):
-    // este artista entra em stand by, cursor avança, evento abre para o próximo
+    // Recusa normal (ainda sem ninguém em Stand By): este artista entra em Stand By,
+    // o cursor avança para o próximo da fila, que responde agora.
     fila.pendente = art.id;
     fila.cursor = (fila.cursor + 1) % fila.ordem.length;
-    fila.eventoAberto = true; // evento aberto — próximo (cursor) responde agora
+    fila.eventoAberto = true;
+    fila.vezDoPendente = false;
   }
 
   saveData(); render();
@@ -2454,9 +2482,10 @@ function renderChamamento() {
       if (fila.pendente !== null) {
         const pArt = artistas.find(a=>a.id===fila.pendente);
         const nArt = artistas.find(a=>a.id===fila.ordem[fila.cursor % fila.ordem.length]);
-        const msg = fila.eventoAberto
-          ? 'recusou este evento · aguarda o próximo da fila responder'
-          : 'deve ser o primeiro a ser chamado no próximo evento';
+        const vezDoPendente = fila.eventoAberto && fila.vezDoPendente === true;
+        const msg = !fila.eventoAberto
+          ? 'deve ser o primeiro a ser chamado no próximo evento'
+          : (vezDoPendente ? 'é a vez dele responder agora' : 'aguarda a resposta do próximo da fila — volta a vez pra ele se recusarem');
         html += `<div style="display:flex;gap:8px;align-items:stretch;background:#fff4ed;border:1.5px solid #e05a20;
                              border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:11px">
           <span style="font-size:18px;line-height:1">🔄</span>
@@ -2468,7 +2497,7 @@ function renderChamamento() {
                 <span style="color:#9a8060;font-size:10px"> · ${msg}</span>
               </div>
               ${nArt && nArt.id !== fila.pendente ? `<div style="color:#9a8060;font-size:10px">
-                ${fila.eventoAberto ? 'Respondendo agora:' : 'Se recusar → próximo será'} <strong style="color:#2471a3">${nArt.projeto||nArt.razao}</strong>
+                ${!fila.eventoAberto ? 'Se recusar → próximo será' : (vezDoPendente ? 'Se recusar de novo → passa a vez para' : 'Respondendo agora:')} <strong style="color:#2471a3">${nArt.projeto||nArt.razao}</strong>
               </div>` : ''}
             </div>
           </div>
