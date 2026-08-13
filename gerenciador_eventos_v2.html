@@ -1932,7 +1932,7 @@ function renderAtas() {
     <span class="sh-emoji">📑</span>
     <div><h2>Atas &amp; Contratos — Cadastro Mestre</h2><p>Cadastre suas ATAs uma única vez · use o número ATA em qualquer módulo para preencher automaticamente</p></div>
     <div class="sh-actions">
-      ${podeNovaAta ? `<button class="add-btn" onclick="openModalAta(null)">＋ Nova ATA</button>` : `<span style="font-size:10px;color:#999" title="Apenas administradores podem cadastrar novas ATAs">🔒 Apenas administradores podem cadastrar novas ATAs</span>`}
+      ${podeNovaAta ? `<button class="add-btn" onclick="openModalAta(null)">＋ Nova ATA</button>` : `<span style="font-size:10px;color:#999" title="Apenas administradores podem cadastrar novas ATAs">🔒 Apenas administradores podem cadastrar novas ATAs — solicite a ${(_prfAta.contatoAdmin || 'Fabiana Ferreira — SMCT')}</span>`}
     </div>
   </div>
   <div class="content">

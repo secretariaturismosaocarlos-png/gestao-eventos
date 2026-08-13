@@ -791,7 +791,7 @@ function renderEdicoes(){
         <div class="sec-sub">${edicoes.length} edição(ões) arquivada(s) · a edição ativa abaixo é usada em Painel, Por Vereador e Emendas</div>
       </div>
       <div style="flex:1"></div>
-      ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').isAdmin===true) ? `<button class="btn btn-gold" onclick="abrirNovaEdicao()">＋ Nova Edição</button>` : `<span style="font-size:10px;color:var(--sub)" title="Apenas administradores podem criar novas edições">🔒 Apenas admin/admin temporário pode criar edições</span>`}
+      ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').isAdmin===true) ? `<button class="btn btn-gold" onclick="abrirNovaEdicao()">＋ Nova Edição</button>` : `<span style="font-size:10px;color:var(--sub)" title="Apenas administradores podem criar novas edições">🔒 Apenas admin/admin temporário pode criar edições — solicite a ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').contatoAdmin || 'Fabiana Ferreira — SMCT')}</span>`}
     </div>
 
     <div class="ver-card open" style="cursor:default">

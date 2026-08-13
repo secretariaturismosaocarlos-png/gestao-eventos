@@ -547,6 +547,37 @@ input.prog-inp:focus { border-color: var(--gold); }
 </head>
 <body>
 
+<div id="smct-banner" style="display:none;background:#0a1a2a;border-bottom:2px solid #1a3a5a;padding:10px 20px;font-size:11px;font-family:'DM Sans',sans-serif;color:#7ab3f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:999">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="background:#1a3a5a;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:#7ab3f0" id="banner-role-ch">👤 Carregando...</span>
+    <span id="banner-info-ch" style="color:#5a8ab0"></span>
+  </div>
+  <span style="font-size:10px;color:#3a5a7a">Dúvidas ou solicitações: <strong id="banner-contato-ch" style="color:#7ab3f0"></strong></span>
+</div>
+<script>
+(function(){
+  try {
+    var p = JSON.parse(localStorage.getItem('smct_perfil')||'{}');
+    var b = document.getElementById('smct-banner');
+    var r = document.getElementById('banner-role-ch');
+    var i = document.getElementById('banner-info-ch');
+    var c = document.getElementById('banner-contato-ch');
+    if (!p.email) { b.style.display='none'; return; }
+    b.style.display='flex';
+    var roleLabel = p.isAdmin ? '⚡ Admin' : p.role==='editor' ? '✏️ Editor' : '👁 Visualizador';
+    r.textContent = roleLabel + ' — ' + (p.nome||p.email);
+    c.textContent = p.contatoAdmin || 'o administrador';
+    if (p.isAdmin) {
+      i.textContent = 'Acesso total: você pode criar edições, zerar filas e gerenciar o chamamento.';
+    } else if (p.role === 'editor') {
+      i.textContent = 'Você pode chamar/aceitar/recusar artistas. Para novas edições ou zerar filas, solicite ao administrador.';
+    } else {
+      i.textContent = 'Acesso somente leitura. Para edições, solicite ao administrador.';
+    }
+  } catch(e) {}
+})();
+</script>
+
 <!-- TOPBAR -->
 <div style="background:#0f1923;padding:7px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e2e40;font-family:'DM Sans',sans-serif">
   <a href="index.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;background:#1a2535;border:1px solid #2a3a50;color:#8a9bb0;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;transition:.15s" onmouseover="this.style.color='#fff';this.style.borderColor='#3a5a70'" onmouseout="this.style.color='#8a9bb0';this.style.borderColor='#2a3a50'">
@@ -2160,6 +2191,11 @@ function abrirModalRecusa(cat, porte, genero, artId, nome) {
   setTimeout(() => document.getElementById('mr-motivo').focus(), 50);
 }
 function confirmarZerarFilas() {
+  var _prfZf = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  if (_prfZf.isAdmin !== true) {
+    alert('⚠ Apenas administradores podem zerar as filas.\n\nSolicite ao administrador: ' + (_prfZf.contatoAdmin || 'Fabiana Ferreira — SMCT'));
+    return;
+  }
   const nFilas = Object.keys(filas).length;
   if (!nFilas) { toast('Não há filas para zerar.'); return; }
   if (!confirm(`Zerar TODAS as ${nFilas} fila(s) de chamamento?\n\nIsso vai:\n- Voltar a ordem de cada fila para a classificação original\n- Tirar quem estiver em Stand By\n- Zerar o contador de recusas\n- Apagar todo o histórico de chamados e recusas\n\nEsta ação não pode ser desfeita. Confirma?`)) return;
@@ -2533,7 +2569,7 @@ function renderChamamento() {
       ${(_chCat||_chPorte||_chGenero)?`<button onclick="_chCat='';_chPorte='';_chGenero='';render()" style="padding:8px 14px;border-radius:8px;border:1px solid #ddd;background:#f5f5f5;font-size:11px;font-weight:700;cursor:pointer;color:#666;font-family:inherit">✕ Limpar</button>`:''}
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button onclick="confirmarZerarFilas()" style="padding:8px 14px;border-radius:8px;border:2px solid #e53935;background:#fff5f5;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" title="Zera toda a fila voltando à ordem original">🔄 Zerar Filas</button>
+        ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').isAdmin===true) ? `<button onclick="confirmarZerarFilas()" style="padding:8px 14px;border-radius:8px;border:2px solid #e53935;background:#fff5f5;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" title="Zera toda a fila voltando à ordem original">🔄 Zerar Filas</button>` : `<span style="font-size:10px;color:#999" title="Apenas administradores podem zerar as filas">🔒 Apenas admin/admin temporário pode zerar filas — solicite a ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').contatoAdmin || 'Fabiana Ferreira — SMCT')}</span>`}
       </div>
     </div>
   </div>`;
@@ -2734,13 +2770,15 @@ let _importedArtistas = [];
 function renderEdicoes() {
   const fmtData = iso => iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
   const total = edicoes_chamamento.length;
+  const _prfEdCh = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  const _podeNovaEdCh = _prfEdCh.isAdmin === true;
   return `
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
     <div>
       <div style="font-size:20px;font-weight:800;color:#e8d5a0;font-family:'DM Serif Display',serif">📦 Edições do Chamamento Público</div>
       <div style="font-size:11px;color:#6a8a9a;margin-top:3px">${total} edição(ões) registrada(s) · A edição ativa é usada em Banco, Fila e Programação</div>
     </div>
-    <button onclick="openNovaEdicao()" style="padding:8px 18px;border-radius:8px;border:none;background:#4cd98a;color:#0a1520;font-size:12px;font-weight:800;cursor:pointer">＋ Nova Edição</button>
+    ${_podeNovaEdCh ? `<button onclick="openNovaEdicao()" style="padding:8px 18px;border-radius:8px;border:none;background:#4cd98a;color:#0a1520;font-size:12px;font-weight:800;cursor:pointer">＋ Nova Edição</button>` : `<span style="font-size:10px;color:#5a6a7a" title="Apenas administradores podem criar novas edições">🔒 Apenas admin/admin temporário pode criar edições — solicite a ${(_prfEdCh.contatoAdmin || 'Fabiana Ferreira — SMCT')}</span>`}
   </div>
 
   ${edicoes_chamamento.length === 0 ? `<div style="text-align:center;padding:60px 20px;color:#6a8a9a;font-size:13px">Nenhuma edição cadastrada ainda.<br><small>Clique em "＋ Nova Edição" para importar a primeira base de artistas.</small></div>` : ''}
@@ -2789,6 +2827,11 @@ function renderEdicoes() {
 }
 
 function openNovaEdicao() {
+  var _prfCk = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  if (_prfCk.isAdmin !== true) {
+    alert('⚠ Apenas administradores podem criar novas edições do Chamamento.\n\nSolicite ao administrador: ' + (_prfCk.contatoAdmin || 'Fabiana Ferreira — SMCT'));
+    return;
+  }
   _importMode = 'csv';
   _importedArtistas = [];
   ['ned-nome','ned-ano','ned-vigencia','ned-desc','ned-csv','ned-json'].forEach(id => {

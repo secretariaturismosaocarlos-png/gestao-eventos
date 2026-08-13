@@ -290,6 +290,16 @@ async function logout() {
   localStorage.removeItem('smct_session');
 }
 
+async function getContatoAdminAtual() {
+  try {
+    const temps = await sbGet('usuarios_permissoes', 'role=eq.admin_temp&ativo=eq.true&select=nome,email&order=criado_em.desc');
+    if (temps && temps.length) {
+      return (temps[0].nome || temps[0].email) + ' (Admin Temporário) — SMCT';
+    }
+  } catch(e) {}
+  return localStorage.getItem('smct_contato_admin') || 'Fabiana Ferreira — SMCT';
+}
+
 async function showPainel(user) {
   _curUser = user;
   hide('loading'); hide('login-box');
@@ -306,7 +316,7 @@ async function showPainel(user) {
   }
   const isAdmin = isAdminFixed || perms?.role === 'admin_temp';
   if (isAdmin) { document.getElementById('btn-admin').style.display = ''; checkPendentes(); }
-  const contatoAdmin = localStorage.getItem('smct_contato_admin') || 'Fabiana Ferreira — SMCT';
+  const contatoAdmin = await getContatoAdminAtual();
   const perfilSessao = {
     email: user.email,
     nome: perms?.nome || user.email,
@@ -441,6 +451,18 @@ async function savePerm(id, campo, val) {
     if (campo === 'role') payload.role = val;
     else if (['acesso_gerenciador','acesso_chamamento','acesso_emendas','ativo'].includes(campo)) payload[campo] = val === true || val === 'true';
     else payload[campo] = val;
+
+    // Só pode existir um Admin Temporário por vez — promover alguém novo rebaixa quem já era
+    if (campo === 'role' && val === 'admin_temp') {
+      try {
+        const outrosTemp = await sbGet('usuarios_permissoes', 'role=eq.admin_temp&id=neq.' + id + '&select=id,nome,email');
+        for (const u of outrosTemp) {
+          await sbPatch('usuarios_permissoes', 'id=eq.' + u.id, { role: 'editor' });
+        }
+        if (outrosTemp.length) toast('⚠ ' + (outrosTemp[0].nome || outrosTemp[0].email) + ' deixou de ser Admin Temporário (só pode haver um por vez).');
+      } catch(e) {}
+    }
+
     await sbPatch('usuarios_permissoes', 'id=eq.' + id, payload);
     toast('✅ Salvo!');
     await loadUsers();
