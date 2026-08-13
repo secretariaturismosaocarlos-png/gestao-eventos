@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 :root {
   --gd: #1a4731; --gm: #2e7d4f; --gl: #d6ead8; --gp: #f0f7f1;
@@ -1923,12 +1924,15 @@ function renderAtas() {
     });
   }
 
+  var _prfAta = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  var podeNovaAta = _prfAta.isAdmin === true;
+
   return `
   <div class="sh">
     <span class="sh-emoji">📑</span>
     <div><h2>Atas &amp; Contratos — Cadastro Mestre</h2><p>Cadastre suas ATAs uma única vez · use o número ATA em qualquer módulo para preencher automaticamente</p></div>
     <div class="sh-actions">
-      <button class="add-btn" onclick="openModalAta(null)">＋ Nova ATA</button>
+      ${podeNovaAta ? `<button class="add-btn" onclick="openModalAta(null)">＋ Nova ATA</button>` : `<span style="font-size:10px;color:#999" title="Apenas administradores podem cadastrar novas ATAs">🔒 Apenas administradores podem cadastrar novas ATAs</span>`}
     </div>
   </div>
   <div class="content">
@@ -1971,6 +1975,13 @@ function buildItensHtml(itens) {
 }
 
 function openModalAta(id) {
+  if (!id) {
+    var _prfNovaAta = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+    if (_prfNovaAta.isAdmin !== true) {
+      alert('⚠ Apenas administradores podem cadastrar novas ATAs.\n\nSolicite ao administrador: ' + (_prfNovaAta.contatoAdmin || 'Fabiana Ferreira — SMCT'));
+      return;
+    }
+  }
   const ata = id ? atasMestre.find(a=>a.id===id) : null;
   modalCtx = { type: 'ata', id };
   document.getElementById('modal-inner').classList.add('wide');
@@ -4002,13 +4013,13 @@ const SB_CHAVE_AT = 'gerenciador_atas_v2';
 function setSyncIndicator(status) {
   var ind = document.getElementById('save-indicator');
   if (!ind) return;
-  var msgs = { saving:'⏳ Sincronizando...', saved:'☁ Salvo na nuvem', offline:'💾 Salvo localmente', error:'⚠ Erro ao salvar' };
-  var colors = { saving:'#1a4731', saved:'#1a6b3a', offline:'#7a6010', error:'#8b1a1a' };
+  var msgs = { saving:'⏳ Sincronizando...', saved:'☁ Salvo na nuvem', offline:'💾 Salvo localmente', error:'⚠ Erro ao salvar', synced:'🔄 Atualizado em tempo real' };
+  var colors = { saving:'#1a4731', saved:'#1a6b3a', offline:'#7a6010', error:'#8b1a1a', synced:'#1a3a6a' };
   ind.textContent = msgs[status] || '';
   ind.style.background = colors[status] || '#1a4731';
   ind.style.opacity = '1';
   clearTimeout(window._saveTimer);
-  if (status === 'saved' || status === 'offline')
+  if (status === 'saved' || status === 'offline' || status === 'synced')
     window._saveTimer = setTimeout(function(){ ind.style.opacity='0'; }, 2500);
 }
 
@@ -4223,6 +4234,54 @@ async function loadSupabase_ge() {
   } catch(e) { console.warn('API load error:', e); return false; }
 }
 
+// ── Extrai valor de payload realtime (jsonb já vem parseado; texto precisa de JSON.parse) ──
+function _rtVal(v) {
+  if (typeof v === 'string') { try { return JSON.parse(v); } catch(e) { return null; } }
+  return v;
+}
+
+let _sbRealtimeGE = null;
+function listenRealtimeGE() {
+  if (typeof supabase === 'undefined' || !supabase.createClient) return;
+  if (!_sbRealtimeGE) _sbRealtimeGE = supabase.createClient(SB_URL_GE, SB_KEY_GE);
+  _sbRealtimeGE.channel('ge-realtime')
+    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'app_data', filter:'chave=eq.' + SB_CHAVE_EV }, function(payload) {
+      try {
+        var ev = _rtVal(payload.new.valor);
+        if (ev && ev.events && ev.events.length) {
+          events = ev.events;
+          curEventId = ev.curEventId || ev.events[0].id;
+          migrateEvents(events);
+          render(); renderEventSelect();
+          setSyncIndicator('synced');
+        }
+      } catch(e) {}
+    })
+    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'app_data', filter:'chave=eq.' + SB_CHAVE_AT }, function(payload) {
+      try {
+        var ata = _rtVal(payload.new.valor);
+        if (ata && ata.atasMestre) {
+          atasMestre = ata.atasMestre || [];
+          nextAtaMestre = ata.nextAtaMestre || 1;
+          render();
+          setSyncIndicator('synced');
+        }
+      } catch(e) {}
+    })
+    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'app_data', filter:'chave=eq.gerenciador_nfs_v2' }, function(payload) {
+      try {
+        var nfs = _rtVal(payload.new.valor);
+        if (nfs && Array.isArray(nfs.notasFiscais)) {
+          notasFiscais = nfs.notasFiscais;
+          nextNF = nfs.nextNF || 1;
+          render();
+          setSyncIndicator('synced');
+        }
+      } catch(e) {}
+    })
+    .subscribe();
+}
+
 function loadLocal_ge() {
   try {
     var raw = localStorage.getItem(STORAGE_KEY);
@@ -4294,6 +4353,7 @@ function importBackup(input) {
   }
   render();
   renderEventSelect();
+  listenRealtimeGE();
 })();
 </script>
 <div id="save-indicator" style="position:fixed;bottom:20px;right:20px;background:#1a4731;color:#fff;font-size:11px;font-family:monospace;padding:7px 16px;border-radius:20px;box-shadow:0 3px 12px rgba(0,0,0,.25);opacity:0;transition:opacity .5s;pointer-events:none;z-index:9999">&#x2713; Salvo automaticamente</div>
