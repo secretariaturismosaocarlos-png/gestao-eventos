@@ -2159,6 +2159,17 @@ function abrirModalRecusa(cat, porte, genero, artId, nome) {
   document.getElementById('modal-recusa-bg').classList.add('open');
   setTimeout(() => document.getElementById('mr-motivo').focus(), 50);
 }
+function confirmarZerarFilas() {
+  const nFilas = Object.keys(filas).length;
+  if (!nFilas) { toast('Não há filas para zerar.'); return; }
+  if (!confirm(`Zerar TODAS as ${nFilas} fila(s) de chamamento?\n\nIsso vai:\n- Voltar a ordem de cada fila para a classificação original\n- Tirar quem estiver em Stand By\n- Zerar o contador de recusas\n- Apagar todo o histórico de chamados e recusas\n\nEsta ação não pode ser desfeita. Confirma?`)) return;
+  filas = {};
+  ch_historico = [];
+  saveData();
+  render();
+  toast('🔄 Todas as filas foram zeradas — voltaram à ordem de classificação original.');
+}
+
 function confirmarRecusa() {
   if (!_recusaCtx) return;
   const motivo = document.getElementById('mr-motivo').value.trim();
