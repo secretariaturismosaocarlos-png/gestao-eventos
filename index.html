@@ -136,6 +136,7 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
     <div class="topbar-right">
       <div class="user-chip"><span class="dot"></span><span id="chip-email">—</span></div>
       <button class="btn-sm btn-admin" id="btn-admin" onclick="toggleAdmin()" style="display:none">⚙ Usuários <span id="badge-pendentes" style="display:none;background:#c84a4a;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;margin-left:4px">0</span></button>
+      <button class="btn-sm" style="background:transparent;border-color:#3a4a5a;color:#8a9bb0" onclick="abrirTrocarSenha()" onmouseover="this.style.borderColor='#4a8a6a';this.style.color='#4cd98a'" onmouseout="this.style.borderColor='#3a4a5a';this.style.color='#8a9bb0'">🔑 Trocar Senha</button>
       <button class="btn-sm btn-logout" onclick="logout()">Sair</button>
     </div>
   </div>
@@ -144,11 +145,9 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
     <div class="admin-hdr">
       <h3>👥 Gerenciamento de Usuários</h3>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:8px;background:#0f1923;border:1px solid #2a3a50;border-radius:8px;padding:6px 12px">
-          <span style="font-size:11px;color:#5a6a7a;white-space:nowrap">📞 Contato admin:</span>
-          <input id="inp-contato-admin" type="text" placeholder="Fabiana Ferreira — SMCT"
-            onchange="localStorage.setItem('smct_contato_admin',this.value)"
-            style="background:transparent;border:none;color:#e0e8f0;font-size:11px;font-family:inherit;outline:none;width:200px">
+        <div style="display:flex;align-items:center;gap:8px;background:#0f1923;border:1px solid #2a3a50;border-radius:8px;padding:6px 12px" id="wrap-contato-atual">
+          <span style="font-size:11px;color:#5a6a7a;white-space:nowrap">📧 Contato exibido aos usuários:</span>
+          <span id="txt-contato-atual" style="font-size:11px;color:#7ab3f0;font-weight:700">—</span>
         </div>
         <button class="btn-add" onclick="openAddUser()">＋ Adicionar Usuário</button>
       </div>
@@ -176,6 +175,20 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
     <div class="mfooter">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-primary" style="width:auto;margin:0" onclick="saveUser()">Criar Usuário</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-trocar-senha" style="display:none">
+  <div class="modal-bx">
+    <div class="modal-title">🔑 Trocar Minha Senha</div>
+    <div class="alert" id="alert-ts"></div>
+    <div class="fg"><label>Senha atual</label><div style="position:relative"><input type="password" id="ts-atual" placeholder="Sua senha atual" style="width:100%;padding-right:40px" onkeydown="if(event.key==='Enter')document.getElementById('ts-nova').focus()"><button type="button" onclick="var i=document.getElementById('ts-atual');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#8a9bb0">👁</button></div></div>
+    <div class="fg"><label>Nova senha</label><div style="position:relative"><input type="password" id="ts-nova" placeholder="Mínimo 6 caracteres" style="width:100%;padding-right:40px" onkeydown="if(event.key==='Enter')document.getElementById('ts-nova2').focus()"><button type="button" onclick="var i=document.getElementById('ts-nova');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#8a9bb0">👁</button></div></div>
+    <div class="fg"><label>Confirmar nova senha</label><div style="position:relative"><input type="password" id="ts-nova2" placeholder="Repita a nova senha" style="width:100%;padding-right:40px" onkeydown="if(event.key==='Enter')trocarMinhaSenha()"><button type="button" onclick="var i=document.getElementById('ts-nova2');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#8a9bb0">👁</button></div></div>
+    <div class="mfooter">
+      <button class="btn-cancel" onclick="closeModalTrocarSenha()">Cancelar</button>
+      <button class="btn-primary" id="btn-ts-confirmar" style="width:auto;margin:0" onclick="trocarMinhaSenha()">Trocar Senha</button>
     </div>
   </div>
 </div>
@@ -271,7 +284,8 @@ async function auth() {
 }
 
 async function forgot() {
-  showAlert('Para redefinir sua senha, solicite ao administrador: ' + (localStorage.getItem('smct_contato_admin') || 'Fabiana Ferreira — SMCT'));
+  const contato = await getContatoAdminAtual();
+  showAlert('Para redefinir sua senha, envie um e-mail solicitando para: ' + contato.label);
 }
 
 async function logout() {
@@ -294,10 +308,10 @@ async function getContatoAdminAtual() {
   try {
     const temps = await sbGet('usuarios_permissoes', 'role=eq.admin_temp&ativo=eq.true&select=nome,email&order=criado_em.desc');
     if (temps && temps.length) {
-      return (temps[0].nome || temps[0].email) + ' (Admin Temporário) — SMCT';
+      return { email: temps[0].email, label: temps[0].email + ' (Admin Temporário)' };
     }
   } catch(e) {}
-  return localStorage.getItem('smct_contato_admin') || 'Fabiana Ferreira — SMCT';
+  return { email: ADMIN_EMAIL, label: ADMIN_EMAIL };
 }
 
 async function showPainel(user) {
@@ -316,7 +330,7 @@ async function showPainel(user) {
   }
   const isAdmin = isAdminFixed || perms?.role === 'admin_temp';
   if (isAdmin) { document.getElementById('btn-admin').style.display = ''; checkPendentes(); }
-  const contatoAdmin = await getContatoAdminAtual();
+  const contatoInfo = await getContatoAdminAtual();
   const perfilSessao = {
     email: user.email,
     nome: perms?.nome || user.email,
@@ -324,7 +338,7 @@ async function showPainel(user) {
     acesso_gerenciador: isAdmin || (perms?.acesso_gerenciador && perms?.ativo),
     acesso_chamamento:  isAdmin || (perms?.acesso_chamamento  && perms?.ativo),
     acesso_emendas:     isAdmin || (perms?.acesso_emendas     && perms?.ativo),
-    isAdmin, contatoAdmin
+    isAdmin, contatoAdmin: contatoInfo.label, contatoAdminEmail: contatoInfo.email
   };
   localStorage.setItem('smct_perfil', JSON.stringify(perfilSessao));
   renderCards(perms, isAdmin);
@@ -375,8 +389,8 @@ async function toggleAdmin() {
   const open = p.style.display === 'block';
   p.style.display = open ? 'none' : 'block';
   if (!open) {
-    const inp = document.getElementById('inp-contato-admin');
-    if (inp) inp.value = localStorage.getItem('smct_contato_admin') || 'Fabiana Ferreira — SMCT';
+    const txt = document.getElementById('txt-contato-atual');
+    if (txt) { const c = await getContatoAdminAtual(); txt.textContent = c.label; }
     await loadUsers();
   }
 }
@@ -486,6 +500,52 @@ async function redefinirSenha(email) {
     if (r.ok) { toast('✅ Senha redefinida para ' + email + '!'); }
     else { toast('❌ Erro ao redefinir senha.'); }
   } catch(e) { toast('❌ Erro: ' + e.message); }
+}
+
+// ── Trocar a própria senha (usuário já logado) ──
+function abrirTrocarSenha() {
+  ['ts-atual','ts-nova','ts-nova2'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const a = document.getElementById('alert-ts'); if (a) a.style.display = 'none';
+  document.getElementById('modal-trocar-senha').style.display = 'flex';
+  setTimeout(() => document.getElementById('ts-atual').focus(), 50);
+}
+function closeModalTrocarSenha() { document.getElementById('modal-trocar-senha').style.display = 'none'; }
+
+async function trocarMinhaSenha() {
+  const atual = gv('ts-atual'), nova = gv('ts-nova'), nova2 = gv('ts-nova2');
+  const a = document.getElementById('alert-ts');
+  function mostrarErro(msg) { a.textContent = msg; a.className = 'alert error'; a.style.display = 'block'; }
+  if (!atual || !nova || !nova2) { mostrarErro('Preencha todos os campos.'); return; }
+  if (nova.length < 6) { mostrarErro('A nova senha precisa ter pelo menos 6 caracteres.'); return; }
+  if (nova !== nova2) { mostrarErro('As senhas novas não conferem.'); return; }
+  if (nova === atual) { mostrarErro('A nova senha precisa ser diferente da atual.'); return; }
+
+  const btn = document.getElementById('btn-ts-confirmar');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  try {
+    const email = _curUser?.email;
+    // Confirma que a senha atual está correta antes de trocar (evita que alguém
+    // com a sessão aberta troque a senha de outra pessoa por engano/mal-intencionadamente)
+    const rv = await fetch(SB_URL + '/rest/v1/rpc/verificar_senha', {
+      method: 'POST', headers: SB_H(),
+      body: JSON.stringify({ p_email: email, p_senha: atual })
+    });
+    const ok = await rv.json();
+    if (!ok) { mostrarErro('Senha atual incorreta.'); btn.disabled = false; btn.textContent = 'Trocar Senha'; return; }
+
+    const rd = await fetch(SB_URL + '/rest/v1/rpc/definir_senha', {
+      method: 'POST', headers: SB_H(),
+      body: JSON.stringify({ p_email: email, p_senha: nova })
+    });
+    if (!rd.ok) { mostrarErro('Erro ao salvar a nova senha. Tente novamente.'); btn.disabled = false; btn.textContent = 'Trocar Senha'; return; }
+
+    closeModalTrocarSenha();
+    toast('✅ Senha alterada com sucesso!');
+  } catch(e) {
+    mostrarErro('Erro: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Trocar Senha';
+  }
 }
 
 function openAddUser() {
