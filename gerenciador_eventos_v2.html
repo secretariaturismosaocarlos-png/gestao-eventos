@@ -434,7 +434,7 @@ body{font-family:sans-serif;background:#0d1f16;color:var(--gray);min-height:100v
     <div class="nav-item" onclick="setTab('atas')" id="nav-atas"><span class="ne">📑</span> Atas &amp; Contratos<span class="nav-cnt" id="cnt-atas">0</span></div>
     <div class="nav-item" onclick="setTab('nf')" id="nav-nf"><span class="ne">🧾</span> Notas Fiscais<span class="nav-cnt" id="cnt-nf">0</span></div>
     <div class="nav-item" onclick="setTab('escala')" id="nav-escala"><span class="ne">🗓️</span> Escala de Trabalho</div>
-    <div class="nav-item" onclick="setTab('config')" id="nav-config"><span class="ne">⚙️</span> Configurações</div>
+    <div class="nav-item" onclick="setTab('config')" id="nav-config"><span class="ne">⚙️</span> Dados do Evento</div>
     <div class="nav-item" onclick="setTab('historico')" id="nav-historico"><span class="ne">📊</span> Histórico &amp; Comparativo</div>
     <div class="sb-div"></div>
     <div class="sb-label">Módulos Ativos</div>
@@ -725,7 +725,7 @@ async function newEvent() {
   curTab = 'config';
   await saveSupabase_ge();
   render();
-  toast('Evento criado! Configure os detalhes na aba ⚙️ Configurações.');
+  toast('Evento criado! Configure os detalhes na aba ⚙️ Dados do Evento.');
 }
 
 function switchEvent(id) {
@@ -948,7 +948,7 @@ function renderConfig() {
   }).join('') : '<p style="color:#bbb;font-size:11px;font-style:italic;margin:0 0 8px">Nenhum dia/local cadastrado ainda.</p>';
 
   return `
-  <div class="sh"><span class="sh-emoji">⚙️</span><div><h2>Configurações do Evento</h2><p>Dados gerais, programação e módulos ativos</p></div></div>
+  <div class="sh"><span class="sh-emoji">⚙️</span><div><h2>Dados do Evento</h2><p>Identificação, programação e módulos ativos</p></div></div>
   <div class="content">
 
     <!-- DADOS GERAIS -->
@@ -1932,7 +1932,7 @@ function renderAtas() {
     <span class="sh-emoji">📑</span>
     <div><h2>Atas &amp; Contratos — Cadastro Mestre</h2><p>Cadastre suas ATAs uma única vez · use o número ATA em qualquer módulo para preencher automaticamente</p></div>
     <div class="sh-actions">
-      ${podeNovaAta ? `<button class="add-btn" onclick="openModalAta(null)">＋ Nova ATA</button>` : `<span style="font-size:10px;color:#999" title="Apenas administradores podem cadastrar novas ATAs">🔒 Apenas administradores podem cadastrar novas ATAs — solicite a ${(_prfAta.contatoAdmin || 'Fabiana Ferreira — SMCT')}</span>`}
+      ${podeNovaAta ? `<button class="add-btn" onclick="openModalAta(null)">＋ Nova ATA</button>` : `<span style="font-size:10px;color:#999">🔒 Apenas administradores podem cadastrar novas ATAs — <a href="mailto:${_prfAta.contatoAdminEmail||''}" style="color:#2471a3">solicite a ${(_prfAta.contatoAdmin || 'o administrador')}</a></span>`}
     </div>
   </div>
   <div class="content">
@@ -1978,7 +1978,7 @@ function openModalAta(id) {
   if (!id) {
     var _prfNovaAta = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
     if (_prfNovaAta.isAdmin !== true) {
-      alert('⚠ Apenas administradores podem cadastrar novas ATAs.\n\nSolicite ao administrador: ' + (_prfNovaAta.contatoAdmin || 'Fabiana Ferreira — SMCT'));
+      alert('⚠ Apenas administradores podem cadastrar novas ATAs.\n\nSolicite ao administrador: ' + (_prfNovaAta.contatoAdmin || 'fabiana.ferreira@saocarlos.sp.gov.br'));
       return;
     }
   }
@@ -2415,7 +2415,7 @@ function renderResumo() {
     '<div style="display:flex;align-items:center;gap:12px">' +
       '<span class="sh-emoji">📋</span>' +
       '<div><h2>Relatório — '+e.name+'</h2>' +
-      '<p>'+(infoLine||'Configure o evento em ⚙️ Configurações')+' &nbsp;·&nbsp; Emitido em '+now+'</p></div>' +
+      '<p>'+(infoLine||'Configure o evento em ⚙️ Dados do Evento')+' &nbsp;·&nbsp; Emitido em '+now+'</p></div>' +
     '</div>' +
     '<button onclick="window.print()" style="background:var(--gd);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🖨 Imprimir / PDF</button>' +
   '</div>' +
