@@ -34,7 +34,7 @@ body{font-family:sans-serif;background:#0d1f16;color:var(--gray);min-height:100v
 .btn-new-event:hover{background:rgba(255,255,255,.2);color:#fff}
 .btn-del-event{background:rgba(183,28,28,.25);border:1px solid rgba(183,28,28,.4);color:#ff8a80;font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:sans-serif;transition:.15s}
 .btn-del-event:hover{background:rgba(183,28,28,.45)}
-.topbar-hint{font-size:9px;color:rgba(255,255,255,.3);font-family:monospace;background:rgba(255,255,255,.06);padding:4px 10px;border-radius:10px;white-space:nowrap;margin-left:auto}
+.topbar-hint{font-size:12px;color:rgba(255,255,255,.75);font-family:monospace;background:rgba(255,255,255,.1);padding:5px 12px;border-radius:10px;white-space:nowrap;margin-left:auto}
 .btn-export{background:linear-gradient(135deg,var(--gold),#f57f17);color:var(--gd);font-size:11px;font-weight:700;padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-family:sans-serif;transition:.15s;white-space:nowrap}
 .btn-export:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(249,168,37,.35)}
 .btn-pdf{background:linear-gradient(135deg,#c62828,#b71c1c);color:#fff;font-size:11px;font-weight:700;padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-family:sans-serif;transition:.15s;white-space:nowrap;margin-left:4px}
@@ -626,6 +626,7 @@ function filterHistorico(val) {
 }
 
 async function newEventFromCopy() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   var src = ev();
   var newName = prompt('Nome do novo evento (a estrutura de blocos será copiada):', src.name);
   if (!newName || !newName.trim()) return;
@@ -713,6 +714,7 @@ function ev() { return events.find(e => e.id === curEventId); }
 //  EVENT MANAGEMENT
 // ═══════════════════════════════════════════════
 async function newEvent() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const name = prompt('Nome do novo evento:');
   if (!name) return;
   // Salva estado atual ANTES de criar novo evento
@@ -734,6 +736,7 @@ function switchEvent(id) {
 }
 
 async function deleteEvent() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (events.length === 1) { toast('Não é possível excluir o único evento.'); return; }
   if (!confirm(`Excluir "${ev().name}"? Esta ação não pode ser desfeita.`)) return;
   events = events.filter(e => e.id !== curEventId);
@@ -826,6 +829,17 @@ function up(val) {
 
 // Normalize ATA reference to always show "numero/ano" format
 // If only number given (e.g. "154"), tries to find in atasMestre and appends /ano
+// Sessão atual pode criar/editar/excluir? (Visualizador = não; Editor/Admin/Admin Temp = sim)
+function podeEditarSessao() {
+  try {
+    var p = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+    return p.isAdmin === true || p.role === 'editor' || p.role === 'admin' || p.role === 'admin_temp';
+  } catch(e) { return false; }
+}
+function bloqueadoSomenteLeitura() {
+  alert('👁 Seu acesso é somente leitura.\n\nPara editar, criar ou excluir qualquer informação, solicite ao administrador.');
+}
+
 function normalizeAta(ref) {
   if (!ref || !ref.trim()) return ref || '';
   const s = ref.trim();
@@ -1051,6 +1065,7 @@ function renderConfig() {
 }
 
 function updateCfg(field, val) {
+  if (!podeEditarSessao()) return; // silencioso — evita alerta a cada tecla digitada
   ev()[field] = val;
   // Atualiza so o nome no select sem re-renderizar a pagina toda
   if (field === 'name') {
@@ -1066,6 +1081,7 @@ function updateCfg(field, val) {
 }
 
 function updateModDesc(mod, val) {
+  if (!podeEditarSessao()) return;
   if (!ev().modDesc) ev().modDesc = {};
   ev().modDesc[mod] = val;
   clearTimeout(window._cfgSaveTimer);
@@ -1073,6 +1089,7 @@ function updateModDesc(mod, val) {
 }
 
 function addProg() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!ev().programacao) ev().programacao = [];
   ev().programacao.push({ data:'', horario:'', local:'', descricao:'' });
   // Re-render just config (no full render to keep focus)
@@ -1083,6 +1100,7 @@ function addProg() {
 }
 
 function updateProg(i, field, val) {
+  if (!podeEditarSessao()) return;
   if (!ev().programacao) return;
   if (ev().programacao[i]) ev().programacao[i][field] = val.toUpperCase();
   clearTimeout(window._cfgSaveTimer);
@@ -1090,12 +1108,14 @@ function updateProg(i, field, val) {
 }
 
 function delProg(i) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!ev().programacao) return;
   ev().programacao.splice(i,1);
   document.getElementById('main').innerHTML = renderConfig();
 }
 
 function toggleModule(mod, checked) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); render(); return; }
   ev().modules[mod] = checked;
   if (!ev().modDesc) ev().modDesc = {};
   renderModuleNav();
@@ -1149,7 +1169,7 @@ function renderNF() {
       })
     : _todasNfs;
   var _prf = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
-  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin' || _prf.role === 'admin_temp' || !!_prf.email;
+  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin' || _prf.role === 'admin_temp';
   const totalPago    = _todasNfs.filter(n=>n.status==='pago').reduce((s,n)=>s+(n.valor||0),0);
   const totalPendente= _todasNfs.filter(n=>n.status==='pendente').reduce((s,n)=>s+(n.valor||0),0);
   const totalGeral   = _todasNfs.reduce((s,n)=>s+(n.valor||0),0);
@@ -1188,11 +1208,12 @@ function maskBRL(el) {
   el.value = num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function fmtData(d){ if(!d) return '—'; var p=d.split('-'); if(p.length===3) return p[2]+'/'+p[1]+'/'+p[0]; return d; }
-async function toggleStatusNF(id){ var nf=notasFiscais.find(function(n){return n.id===id;}); if(!nf) return; nf.status=nf.status==='pago'?'pendente':'pago'; await saveNotasImediato(); render(); toast(nf.status==='pago'?'✅ Nota marcada como paga!':'⏳ Nota marcada como pendente!'); }
-async function delNF(id){ if(!confirm('Excluir esta nota fiscal?')) return; notasFiscais=notasFiscais.filter(function(n){return n.id!==id;}); await saveNotasImediato(); render(); toast('Nota fiscal excluída.'); }
+async function toggleStatusNF(id){ if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; } var nf=notasFiscais.find(function(n){return n.id===id;}); if(!nf) return; nf.status=nf.status==='pago'?'pendente':'pago'; await saveNotasImediato(); render(); toast(nf.status==='pago'?'✅ Nota marcada como paga!':'⏳ Nota marcada como pendente!'); }
+async function delNF(id){ if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; } if(!confirm('Excluir esta nota fiscal?')) return; notasFiscais=notasFiscais.filter(function(n){return n.id!==id;}); await saveNotasImediato(); render(); toast('Nota fiscal excluída.'); }
 async function verPdfNF(id){ var nf=notasFiscais.find(function(n){return n.id===id;}); if(!nf) return; var pdf=nf.pdfData; if(!pdf){ var d=await loadNFPdf(id); if(d&&d.pdfData) pdf=d.pdfData; } if(!pdf){ toast('PDF nao encontrado.'); return; } var win=window.open(''); win.document.write('<iframe src="'+pdf+'" style="width:100%;height:100vh;border:none"></iframe>'); }
 var _nfEditId=null;
 function openModalNF(id){
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   _nfEditId=id;
   var nf=id?notasFiscais.find(function(n){return n.id===id;}):null;
   var fornOpts='<option value="">Selecione ou digite abaixo</option>';
@@ -1284,6 +1305,7 @@ function handleDropNFEmp(e){
 function handleFileNF(input){ var file=input.files[0]; if(!file) return; var reader=new FileReader(); reader.onload=function(e){ window._nfPdfData=e.target.result; window._nfPdfNome=file.name; document.getElementById('nf-pdf-nome').textContent='✅ '+file.name; document.getElementById('nf-pdf-area').innerHTML='<div style="font-size:24px;margin-bottom:8px">📄</div><div style="font-size:11px;color:#4aaa6a"><strong>'+file.name+'</strong> — PDF carregado</div>'; }; reader.readAsDataURL(file); }
 function handleDropNF(event){ event.preventDefault(); var file=event.dataTransfer.files[0]; if(file&&file.type==='application/pdf'){ var dt=new DataTransfer(); dt.items.add(file); document.getElementById('nf-pdf-input').files=dt.files; handleFileNF(document.getElementById('nf-pdf-input')); } }
 async function saveNF(){
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   var numero=document.getElementById('nf-numero').value.trim();
   var dataEmissao=document.getElementById('nf-data').value;
   var sc=document.getElementById('nf-sc').value.trim();
@@ -1457,7 +1479,7 @@ function renderAtracoes() {
   var e = ev();
   var atracoes = e.atracoes || [];
   var _prf = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
-  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin' || _prf.role === 'admin_temp' || !!_prf.email;
+  var podeEditar = _prf.isAdmin === true || _prf.role === 'editor' || _prf.role === 'admin' || _prf.role === 'admin_temp';
   var totalCache = atracoes.reduce(function(s,a){ return s+(parseBRL(String(a.cache||''))||0); }, 0);
 
   var html = '<div class="sh"><span class="sh-emoji">🎤</span>' +
@@ -1511,6 +1533,7 @@ function renderAtracoes() {
 }
 
 function openModalAtracoes(id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   var e = ev();
   var atracoes = e.atracoes || [];
   var a = id ? atracoes.find(function(x){ return x.id === id; }) : null;
@@ -1557,6 +1580,7 @@ function openModalAtracoes(id) {
 }
 
 async function saveAtracao() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   var e = ev();
   if (!e.atracoes) e.atracoes = [];
   if (!e.nextAtracoes) e.nextAtracoes = 1;
@@ -1588,6 +1612,7 @@ async function saveAtracao() {
 }
 
 async function delAtracao(id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!confirm('Excluir esta atração?')) return;
   var e = ev();
   e.atracoes = (e.atracoes||[]).filter(function(a){ return a.id !== id; });
@@ -1704,6 +1729,7 @@ function renderEscala() {
 }
 
 function addEscalaLinha(staffId) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   var e = ev();
   var it = e.staff.find(function(x){ return x.id === staffId; });
   if (!it) return;
@@ -1745,6 +1771,7 @@ function addEscalaLinha(staffId) {
 }
 
 function editarEscalaLinha(staffId, idx) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   var e = ev();
   var it = e.staff.find(function(x){ return x.id === staffId; });
   if (!it || !it.escala || !it.escala[idx]) return;
@@ -1773,6 +1800,7 @@ function editarEscalaLinha(staffId, idx) {
 }
 
 function delEscalaLinha(staffId, idx) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   var e = ev();
   var it = e.staff.find(function(x){ return x.id === staffId; });
   if (!it || !it.escala) return;
@@ -1932,7 +1960,7 @@ function renderAtas() {
     <span class="sh-emoji">📑</span>
     <div><h2>Atas &amp; Contratos — Cadastro Mestre</h2><p>Cadastre suas ATAs uma única vez · use o número ATA em qualquer módulo para preencher automaticamente</p></div>
     <div class="sh-actions">
-      ${podeNovaAta ? `<button class="add-btn" onclick="openModalAta(null)">＋ Nova ATA</button>` : `<span style="font-size:10px;color:#999">🔒 Apenas administradores podem cadastrar novas ATAs — <a href="mailto:${_prfAta.contatoAdminEmail||''}" style="color:#2471a3">solicite a ${(_prfAta.contatoAdmin || 'o administrador')}</a></span>`}
+      ${podeNovaAta ? `<button class="add-btn" onclick="openModalAta(null)">＋ Nova ATA</button>` : `<span style="font-size:12px;font-weight:600;color:#555">🔒 Apenas administradores podem cadastrar novas ATAs — <a href="mailto:${_prfAta.contatoAdminEmail||''}" style="color:#2471a3">solicite a ${(_prfAta.contatoAdmin || 'o administrador')}</a></span>`}
     </div>
   </div>
   <div class="content">
@@ -1981,6 +2009,8 @@ function openModalAta(id) {
       alert('⚠ Apenas administradores podem cadastrar novas ATAs.\n\nSolicite ao administrador: ' + (_prfNovaAta.contatoAdmin || 'fabiana.ferreira@saocarlos.sp.gov.br'));
       return;
     }
+  } else if (!podeEditarSessao()) {
+    bloqueadoSomenteLeitura(); return;
   }
   const ata = id ? atasMestre.find(a=>a.id===id) : null;
   modalCtx = { type: 'ata', id };
@@ -2084,6 +2114,7 @@ function openModalAta(id) {
 }
 
 function openModalAtaItem(ataId) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   modalCtx = { type: 'ata-item', ataId };
   document.getElementById('modal-inner').classList.remove('wide');
   document.getElementById('mtitle').textContent = 'Adicionar Item à ATA';
@@ -2098,12 +2129,14 @@ function openModalAtaItem(ataId) {
 }
 
 function delAta(id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!confirm('Excluir esta ATA do cadastro mestre? Todos os eventos que a referenciam não serão alterados.')) return;
   atasMestre = atasMestre.filter(a=>a.id!==id);
   toast('ATA excluída do cadastro mestre.'); saveAtasImediato(); render();
 }
 
 function delAtaItem(ataId, itemId) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const ata = atasMestre.find(a=>a.id===ataId);
   if (!ata) return;
   ata.itens = ata.itens.filter(i=>i.id!==itemId);
@@ -2181,6 +2214,7 @@ function closePdfViewer() {
 }
 
 async function deletePdfAta(ataId) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!confirm('Remover o PDF anexado a esta ATA? Esta ação não pode ser desfeita.')) return;
   var ata = atasMestre.find(function(a){ return a.id === ataId; });
   if (!ata) return;
@@ -2349,9 +2383,7 @@ function renderResumo() {
           '<td style="text-align:center">'+(it.quartos||'—')+'</td>' +
           '<td style="font-size:10px;white-space:nowrap">'+(it.checkin||'—')+' → '+(it.checkout||'—')+'</td>' +
           '<td style="text-align:center">'+(it.totalDiarias||'—')+'</td>' +
-          '<td style="text-align:center">'+(it.cafes||'—')+'</td>' +
-          '<td style="text-align:center">'+(it.almocos||'—')+'</td>' +
-          '<td style="text-align:center">'+(it.jantares||'—')+'</td>' +
+          '<td style="font-size:10px">'+(it.regimeAlimentacao||'—')+'</td>' +
           '<td style="font-size:10px">'+fmtAta(it.ata)+'</td>' +
           '<td><span class="tag '+(it.status==='Contratado'?'t-ata':it.status==='Em licitação'?'t-lic':'t-pend')+'" style="font-size:9px">'+(it.status||'—')+'</span></td>' +
           '<td style="font-size:10px;color:#888">'+(it.obs||'—')+'</td>' +
@@ -2366,7 +2398,7 @@ function renderResumo() {
           '<thead><tr>' +
             '<th>Grupo</th><th style="text-align:center">Cidades</th><th style="text-align:center">Pessoas</th>' +
             '<th style="text-align:center">Quartos</th><th>Período</th><th style="text-align:center">Diárias</th>' +
-            '<th>Custo Total</th><th>ATA/Processo</th><th>Status</th><th>Observações</th>' +
+            '<th>Regime</th><th>Custo Total</th><th>ATA/Processo</th><th>Status</th><th>Observações</th>' +
           '</tr></thead>' +
           '<tbody>'+rows+'</tbody>' +
         '</table></div>';
@@ -2426,7 +2458,7 @@ function renderResumo() {
       '<div class="card gold"><div class="card-lbl">Total Geral do Evento</div><div class="card-val">'+fmtV(totalGeral)+'</div><div class="card-sub">Staff · Estrutura · Hospedagem · Atrações</div></div>' +
       (e.modules.staff ? '<div class="card"><div class="card-lbl">Total Staff</div><div class="card-val">'+fmtV(totalStaffVal)+'</div><div class="card-sub">'+totalStaffQtd+' pessoas · '+totalStaffH+'h</div></div>' : '') +
       (e.modules.estrutura ? '<div class="card"><div class="card-lbl">Total Estrutura</div><div class="card-val">'+fmtV(totalEstVal)+'</div><div class="card-sub">'+totalEstItens+' item(s) contratados</div></div>' : '') +
-      (e.modules.hospedagem ? '<div class="card blue"><div class="card-lbl">Hospedagem</div><div class="card-val">'+(totalHosp()?fmtV(totalHosp()):totalHospGrupos+' grupo(s)')+'</div><div class="card-sub">'+(totalHosp()?totalHospGrupos+' grupo(s) · pensão completa':'valor a cotar')+'</div></div>' : '') +
+      (e.modules.hospedagem ? '<div class="card blue"><div class="card-lbl">Hospedagem</div><div class="card-val">'+(totalHosp()?fmtV(totalHosp()):totalHospGrupos+' grupo(s)')+'</div><div class="card-sub">'+(totalHosp()?totalHospGrupos+' grupo(s)':'valor a cotar')+'</div></div>' : '') +
       (e.modules.atracoes && (e.atracoes||[]).length ? '<div class="card" style="border-top:3px solid var(--pur)"><div class="card-lbl">Atrações</div><div class="card-val">'+fmtV(totalAtracoes)+'</div><div class="card-sub">'+(e.atracoes||[]).length+' atração(ões) contratada(s)</div></div>' : '') +
     '</div>' +
 
@@ -2520,7 +2552,7 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
     thead = '<th>Grupo</th><th>Cidades</th><th>Pessoas</th><th>Quartos</th>' +
       '<th>Check-in</th><th>Check-out</th><th>Di&aacute;rias</th>' +
       '<th style="background:rgba(255,255,255,.15)">Tot.Di&aacute;rias<br><span style="font-size:8px;opacity:.8">qtd&times;di&aacute;rias</span></th>' +
-      '<th>Vlr.Di&aacute;ria</th><th>Custo Total</th><th>ATA</th><th></th>';
+      '<th>Regime</th><th>Vlr.Di&aacute;ria</th><th>Custo Total</th><th>ATA</th><th></th>';
   }
 
   var rows = '';
@@ -2599,9 +2631,7 @@ function buildSecaoBlock(mod, sec, subtotal, items) {
           '<td style="font-size:11px">' + edCell('hospedagem',it.id,'checkin',it.checkin,'text',90) + '</td>' +
           '<td style="font-size:11px">' + edCell('hospedagem',it.id,'checkout',it.checkout,'text',90) + '</td>' +
           '<td style="text-align:center">' + edCell('hospedagem',it.id,'totalDiarias',it.totalDiarias,'number',36) + '</td>' +
-          '<td style="text-align:center">' + edCell('hospedagem',it.id,'cafes',it.cafes,'number',50) + '</td>' +
-          '<td style="text-align:center">' + edCell('hospedagem',it.id,'almocos',it.almocos,'number',50) + '</td>' +
-          '<td style="text-align:center">' + edCell('hospedagem',it.id,'jantares',it.jantares,'number',50) + '</td>' +
+          '<td style="font-size:10px">' + (it.regimeAlimentacao || '—') + '</td>' +
           '<td class="val-r">' + edCell('hospedagem',it.id,'vlrDiaria',it.vlrDiaria,'number',80) + '</td>' +
           '<td class="val-r" style="font-weight:700;color:var(--gd)">' + (it.custoHosp ? fmtV(it.custoHosp) : '<span class="val-p">A cotar</span>') + '</td>' +
           '<td>' + edCell('hospedagem',it.id,'ata',normalizeAta(it.ata),'text',120) + '</td>' +
@@ -2705,6 +2735,7 @@ function prefillFornecedorNoModal(fornecedorNome) {
 
 async function deleteBloco(mod, secao, event) {
   if (event) event.stopPropagation();
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const arr = mod==='staff' ? ev().staff : mod==='estrutura' ? ev().estrutura : ev().hospedagem;
   const count = arr.filter(function(x){ return (x.secao||'Geral')===secao; }).length;
   const msg = count > 0
@@ -2729,6 +2760,7 @@ async function deleteBloco(mod, secao, event) {
 function deleteSecao(secao, event) { deleteBloco('staff', secao, event); }
 
 function openNovoBloco(mod) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const label = mod==='staff' ? 'Staff' : mod==='estrutura' ? 'Estrutura' : 'Hospedagem';
   const name = prompt('Nome do novo bloco de ' + label + ' (ex: Vigilância, Geradores, Expositores A...)');
   if (!name || !name.trim()) return;
@@ -2822,6 +2854,7 @@ function edCell(tab, id, field, val, type, minW) {
 function bindEditable() {}
 
 function startEdit(el) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (el.querySelector('input,textarea,select')) return;
   const tab   = el.dataset.tab;
   const id    = parseInt(el.dataset.id);
@@ -2890,6 +2923,7 @@ function startEdit(el) {
 //  MODAL — ADD ITEM
 // ═══════════════════════════════════════════════
 function openModal(tab, preselectedBloco, editItem) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   modalCtx = { tab, editId: editItem ? editItem.id : null };
   document.getElementById('modal-inner').classList.remove('wide');
   const e = ev();
@@ -3131,10 +3165,15 @@ function openModal(tab, preselectedBloco, editItem) {
       '<div class="field"><label>Check-in</label><input id="f-checkin" placeholder="ex: 24/05/2026"></div>' +
       '<div class="field"><label>Check-out</label><input id="f-checkout" placeholder="ex: 27/05/2026"></div>' +
       '<div class="field"><label>Total Diárias</label><input type="number" id="f-totalDiarias" placeholder="ex: 3" oninput="calcHospCusto()"></div>' +
-      '<div class="field"><label>Cafés</label><input type="number" id="f-cafes" placeholder="ex: 156"></div>' +
-      '<div class="field"><label>Almoços</label><input type="number" id="f-almocos" placeholder="ex: 156"></div>' +
-      '<div class="field"><label>Jantares</label><input type="number" id="f-jantares" placeholder="ex: 156"></div>' +
-      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Cotação</div>' +'<div class="field"><label>Valor da Diária por Quarto (R$) <span style="color:var(--gm);font-size:9px">pensão completa inclusa</span></label>' +'<input type="number" id="f-vlrDiaria" step="0.01" placeholder="ex: 380.00" oninput="calcHospCusto()"></div>' +'<div class="field" id="f-hosp-custo-preview" style="display:none;background:var(--gp);border-radius:6px;padding:8px 12px">' +'<label style="color:var(--gm)">Custo Calculado</label>' +'<div id="f-hosp-custo-val" style="font-size:18px;font-weight:800;color:var(--gd)">R$ 0,00</div>' +'<div id="f-hosp-custo-det" style="font-size:10px;color:#888"></div>' +'</div>' +'<div class="field"><label>ATA / Processo</label><input id="f-ata" placeholder="ex: Proc. 29552/2025"></div>' +
+      '<div class="field"><label>Regime de Alimentação</label>' +
+        '<select id="f-regimeAlimentacao">' +
+          '<option value="">Selecione...</option>' +
+          '<option value="Sem alimentação incluída">Sem alimentação incluída</option>' +
+          '<option value="Café da manhã">Café da manhã</option>' +
+          '<option value="Meia pensão">Meia pensão (café + 1 refeição)</option>' +
+          '<option value="Pensão completa">Pensão completa (café + almoço + jantar)</option>' +
+        '</select></div>' +
+      '<div class="section-sep" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px">3. Cotação</div>' +'<div class="field"><label>Valor da Diária por Quarto (R$)</label>' +'<input type="number" id="f-vlrDiaria" step="0.01" placeholder="ex: 380.00" oninput="calcHospCusto()"></div>' +'<div class="field" id="f-hosp-custo-preview" style="display:none;background:var(--gp);border-radius:6px;padding:8px 12px">' +'<label style="color:var(--gm)">Custo Calculado</label>' +'<div id="f-hosp-custo-val" style="font-size:18px;font-weight:800;color:var(--gd)">R$ 0,00</div>' +'<div id="f-hosp-custo-det" style="font-size:10px;color:#888"></div>' +'</div>' +'<div class="field"><label>ATA / Processo</label><input id="f-ata" placeholder="ex: Proc. 29552/2025"></div>' +
       '<div class="field"><label>Status</label>' +
         '<select id="f-status"><option>Em licitação</option><option>Aprovado</option><option>Contratado</option><option>A definir</option></select></div>' +
       '<div class="field" style="grid-column:1/-1"><label>Observações</label>' +
@@ -3153,9 +3192,7 @@ function openModal(tab, preselectedBloco, editItem) {
       var fCi     = document.getElementById('f-checkin');    if (fCi)     fCi.value     = editItem.checkin || '';
       var fCo     = document.getElementById('f-checkout');   if (fCo)     fCo.value     = editItem.checkout || '';
       var fDia    = document.getElementById('f-totalDiarias'); if (fDia)  fDia.value    = editItem.totalDiarias || '';
-      var fCaf    = document.getElementById('f-cafes');      if (fCaf)    fCaf.value    = editItem.cafes || '';
-      var fAlm    = document.getElementById('f-almocos');    if (fAlm)    fAlm.value    = editItem.almocos || '';
-      var fJan    = document.getElementById('f-jantares');   if (fJan)    fJan.value    = editItem.jantares || '';
+      var fReg    = document.getElementById('f-regimeAlimentacao'); if (fReg) fReg.value = editItem.regimeAlimentacao || '';
       var fVlrD   = document.getElementById('f-vlrDiaria');  if (fVlrD)  fVlrD.value   = editItem.vlrDiaria || '';
       var fAtaH   = document.getElementById('f-ata');        if (fAtaH)   fAtaH.value   = editItem.ata || '';
       var fStat   = document.getElementById('f-status');     if (fStat)   fStat.value   = editItem.status || '';
@@ -3245,6 +3282,7 @@ function gv(id) {
 }
 
 async function saveItem() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const ctx = modalCtx;
   if (!ctx) return;
   const tab  = ctx.tab;
@@ -3370,8 +3408,7 @@ async function saveItem() {
       qtdCidades:parseFloat(gv('f-qtdCidades'))||null, pessoas:parseFloat(gv('f-pessoas'))||null,
       quartos:parseFloat(gv('f-quartos'))||null, checkin:gv('f-checkin'), checkout:gv('f-checkout'),
       totalDiarias:parseFloat(gv('f-totalDiarias'))||null,
-      cafes:parseFloat(gv('f-cafes'))||null, almocos:parseFloat(gv('f-almocos'))||null,
-      jantares:parseFloat(gv('f-jantares'))||null, ata:up(gv('f-ata')), status:gv('f-status'), obs:gv('f-obs'),
+      regimeAlimentacao:gv('f-regimeAlimentacao'), ata:up(gv('f-ata')), status:gv('f-status'), obs:gv('f-obs'),
       vlrDiaria: parseBRL(gv('f-vlrDiaria')),
       custoHosp: (function(){ var q=parseFloat(gv('f-quartos'))||0, d=parseFloat(gv('f-totalDiarias'))||0, v=parseBRL(gv('f-vlrDiaria'))||0; return q&&d&&v ? q*d*v : null; })()
     };
@@ -3446,6 +3483,7 @@ function closeModalOut(event) {
 
 
 async function delItem(tab, id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!confirm('Excluir este item?')) return;
   if (tab==='staff')      ev().staff      = ev().staff.filter(x=>x.id!==id);
   if (tab==='estrutura')  ev().estrutura  = ev().estrutura.filter(x=>x.id!==id);
@@ -3863,8 +3901,8 @@ function exportExcel() {
   addSheet('Estrutura',['Bloco','Item','Qtd','Unidade','Vlr.Unit.','Custo','ATA','Fornecedor','Observações'],estRows,[18,40,8,12,12,14,14,30,45]);
   const secoesH=[...new Set([...(e.secoesHosp||[]),...e.hospedagem.map(function(x){return x.secao||'Hospedagem';}) ])];
   const hospRows=[];
-  secoesH.forEach(function(sec){ e.hospedagem.filter(function(x){return (x.secao||'Hospedagem')===sec;}).forEach(function(it){ hospRows.push([sec,it.grupo,it.qtdCidades,it.pessoas,it.quartos,it.checkin,it.checkout,it.totalDiarias,it.cafes,it.almocos,it.jantares,it.ata,it.status]); }); });
-  addSheet('Hospedagem',['Bloco','Grupo','Cidades','Pessoas','Quartos','Check-in','Check-out','Diárias','Cafés','Almoços','Jantares','ATA','Status'],hospRows,[18,30,10,10,10,12,12,10,8,8,8,14,14]);
+  secoesH.forEach(function(sec){ e.hospedagem.filter(function(x){return (x.secao||'Hospedagem')===sec;}).forEach(function(it){ hospRows.push([sec,it.grupo,it.qtdCidades,it.pessoas,it.quartos,it.checkin,it.checkout,it.totalDiarias,it.regimeAlimentacao,it.ata,it.status]); }); });
+  addSheet('Hospedagem',['Bloco','Grupo','Cidades','Pessoas','Quartos','Check-in','Check-out','Diárias','Regime de Alimentação','ATA','Status'],hospRows,[18,30,10,10,10,12,12,10,22,14,14]);
   XLSX.writeFile(wb, (e.name||'evento')+'.xlsx');
 }
 
@@ -4134,6 +4172,7 @@ async function loadNFExtraPdf(nfId, tipo) {
 
 // Visualiza PDF extra (AF ou Empenho)
 async function deletePdfNF(nfId, tipo) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   var labels = { 'nf': 'PDF da Nota Fiscal', 'sc': 'PDF da SC/SCA', 'af': 'PDF da AF', 'emp': 'PDF do Empenho' };
   if (!confirm('Excluir o ' + (labels[tipo]||tipo) + '? O arquivo será removido permanentemente.')) return;
   var nf = notasFiscais.find(function(n){ return n.id===nfId; });
@@ -4317,6 +4356,7 @@ function exportBackup() {
 }
 
 function importBackup(input) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); input.value=''; return; }
   const file = input.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = async function(e) {

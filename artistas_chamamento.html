@@ -547,12 +547,12 @@ input.prog-inp:focus { border-color: var(--gold); }
 </head>
 <body>
 
-<div id="smct-banner" style="display:none;background:#0a1a2a;border-bottom:2px solid #1a3a5a;padding:10px 20px;font-size:11px;font-family:'DM Sans',sans-serif;color:#7ab3f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:999">
+<div id="smct-banner" style="display:none;background:#0a1a2a;border-bottom:2px solid #1a3a5a;padding:10px 20px;font-size:13px;font-family:'DM Sans',sans-serif;color:#9ab8d0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:999">
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="background:#1a3a5a;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:#7ab3f0" id="banner-role-ch">👤 Carregando...</span>
-    <span id="banner-info-ch" style="color:#5a8ab0"></span>
+    <span style="background:#1a3a5a;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:#9ab8d0" id="banner-role-ch">👤 Carregando...</span>
+    <span id="banner-info-ch" style="color:#bcd0e0;font-size:12px"></span>
   </div>
-  <span style="font-size:10px;color:#3a5a7a">Dúvidas ou solicitações: <strong id="banner-contato-ch" style="color:#7ab3f0"></strong></span>
+  <span style="font-size:12px;color:#8aa5c0">Dúvidas ou solicitações: <strong id="banner-contato-ch" style="color:#9ab8d0"></strong></span>
 </div>
 <script>
 (function(){
@@ -1246,7 +1246,7 @@ function updateTopbarEdicao() {
   if (!el) return;
   const ed = edicoes_chamamento.find(e => e.id === edicaoAtiva);
   if (ed) {
-    el.innerHTML = `<span style="background:#0e2418;border:1px solid #1e5030;color:#4cd98a;border-radius:12px;padding:2px 10px;font-size:10px;font-weight:800">● ${ed.nome}</span> <span style="color:#3a4a5a;font-size:10px">Edição ativa · ${artistas.length} artistas</span>`;
+    el.innerHTML = `<span style="background:#0e2418;border:1px solid #1e5030;color:#4cd98a;border-radius:12px;padding:3px 12px;font-size:12px;font-weight:800">● ${ed.nome}</span> <span style="color:#9ab0c0;font-size:12px;font-weight:600">Edição ativa · ${artistas.length} artistas</span>`;
   } else {
     el.textContent = 'Prefeitura Municipal de São Carlos · SMCT · 2025';
   }
@@ -1402,6 +1402,7 @@ function selectEvento(id) {
 }
 
 function openNovoEvento() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   _editEventoId = null;
   document.getElementById('me-title').textContent = 'Novo Evento';
   ['me-nome','me-dtInicio','me-dtFim','me-local','me-publico','me-obs'].forEach(id => {
@@ -1412,6 +1413,7 @@ function openNovoEvento() {
 }
 
 function editEvento(id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const ev = eventos.find(e => e.id === id);
   if (!ev) return;
   _editEventoId = id;
@@ -1426,6 +1428,7 @@ function editEvento(id) {
 }
 
 function saveEvento() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const nome = document.getElementById('me-nome').value.trim();
   if (!nome) { alert('Informe o nome do evento.'); return; }
   const data = {
@@ -1769,6 +1772,7 @@ function renderRelatorio() {
 
 // ─── ADD TO PROGRAMAÇÃO ───
 function addToProg(id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const a = artistas.find(a => a.id === id);
   if (!a) return;
   _modalArtista = a;
@@ -1895,6 +1899,7 @@ function checkConflict(eventoId, data, horario, horarioFim, duracao, excludeId) 
 }
 
 function confirmAddProg() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!_modalArtista) return;
   const selEvId = parseInt(document.getElementById('mp-evento').value);
   if (!selEvId) { alert('Selecione um evento antes de confirmar.'); return; }
@@ -1937,12 +1942,14 @@ function confirmAddProg() {
 }
 
 function removeProg(id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   programacao = programacao.filter(p => p.id !== id);
   saveData();
   render();
 }
 
 function removeProgByArtista(artistaId) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const eid = curEventoId;
   const existing = eid
     ? programacao.filter(p => p.artistaId === artistaId && p.eventoId === eid)
@@ -1976,6 +1983,7 @@ function updateProgItem(id, field, val) {
 let _editProgId = null;
 
 function openEditProg(id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const p = programacao.find(function(p){ return p.id===id; });
   if (!p) return;
   _editProgId = id;
@@ -2048,6 +2056,7 @@ function checkEditConflict() {
 }
 
 function saveEditProg() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!_editProgId) return;
   var p = programacao.find(function(x){ return x.id===_editProgId; });
   if (!p) return;
@@ -2076,6 +2085,7 @@ function saveEditProg() {
 }
 
 function confirmArtista(progId) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const p = programacao.find(p => p.id === progId);
   if (!p) return;
   p.status = 'Confirmado';
@@ -2086,6 +2096,7 @@ function confirmArtista(progId) {
 }
 
 function cancelArtista(progId) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const p = programacao.find(p => p.id === progId);
   if (!p) return;
   p.status = 'Pendente';
@@ -2095,6 +2106,7 @@ function cancelArtista(progId) {
 
 // ─── ARTISTA MODAL ───
 function openAddArtista() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   _editArtistaId = null;
   document.getElementById('ma-title').textContent = 'Cadastrar Artista';
   document.getElementById('ma-insc').value = '';
@@ -2114,6 +2126,7 @@ function openAddArtista() {
 }
 
 function editArtista(id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const a = artistas.find(a => a.id === id);
   if (!a) return;
   _editArtistaId = id;
@@ -2147,6 +2160,7 @@ function updateCacheModal() {
 }
 
 function saveArtista() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const area = document.getElementById('ma-area').value;
   const porte = document.getElementById('ma-porte').value;
   const cat = document.getElementById('ma-categoria').value;
@@ -2184,6 +2198,7 @@ function closeModal(id) {
 // ─── MOTIVO DA RECUSA ───
 let _recusaCtx = null;
 function abrirModalRecusa(cat, porte, genero, artId, nome) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   _recusaCtx = { cat, porte, genero, artId };
   document.getElementById('mr-sub').innerHTML = `Recusando em nome de <strong>${nome}</strong>`;
   document.getElementById('mr-motivo').value = '';
@@ -2193,7 +2208,7 @@ function abrirModalRecusa(cat, porte, genero, artId, nome) {
 function confirmarZerarFilas() {
   var _prfZf = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
   if (_prfZf.isAdmin !== true) {
-    alert('⚠ Apenas administradores podem zerar as filas.\n\nSolicite ao administrador: ' + (_prfZf.contatoAdmin || 'Fabiana Ferreira — SMCT'));
+    alert('⚠ Apenas administradores podem zerar as filas.\n\nSolicite ao administrador: ' + (_prfZf.contatoAdmin || 'fabiana.ferreira@saocarlos.sp.gov.br'));
     return;
   }
   const nFilas = Object.keys(filas).length;
@@ -2207,6 +2222,7 @@ function confirmarZerarFilas() {
 }
 
 function confirmarRecusa() {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!_recusaCtx) return;
   const motivo = document.getElementById('mr-motivo').value.trim();
   const { cat, porte, genero, artId } = _recusaCtx;
@@ -2334,6 +2350,17 @@ function gerarPDF() {
 let filas = {};
 let ch_historico = [];
 
+// Sessão atual pode criar/editar/excluir? (Visualizador = não; Editor/Admin/Admin Temp = sim)
+function podeEditarSessao() {
+  try {
+    var p = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+    return p.isAdmin === true || p.role === 'editor' || p.role === 'admin' || p.role === 'admin_temp';
+  } catch(e) { return false; }
+}
+function bloqueadoSomenteLeitura() {
+  alert('👁 Seu acesso é somente leitura.\n\nPara editar, criar ou excluir qualquer informação, solicite ao administrador.');
+}
+
 function chKey(cat, porte, genero) { return cat + '§' + porte + '§' + genero; }
 
 // Formata timestamp ISO no padrão "dia 11/08/2026 às 16h32"
@@ -2424,6 +2451,7 @@ function getProxArtista(fila) {
 
 // ─── ACEITAR ───
 function chamarArtista(cat, porte, genero, artId) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   const fila = getFila(cat, porte, genero);
   if (!fila.ordem.length) return;
   const art = artistas.find(a => a.id === artId);
@@ -2569,7 +2597,7 @@ function renderChamamento() {
       ${(_chCat||_chPorte||_chGenero)?`<button onclick="_chCat='';_chPorte='';_chGenero='';render()" style="padding:8px 14px;border-radius:8px;border:1px solid #ddd;background:#f5f5f5;font-size:11px;font-weight:700;cursor:pointer;color:#666;font-family:inherit">✕ Limpar</button>`:''}
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').isAdmin===true) ? `<button onclick="confirmarZerarFilas()" style="padding:8px 14px;border-radius:8px;border:2px solid #e53935;background:#fff5f5;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" title="Zera toda a fila voltando à ordem original">🔄 Zerar Filas</button>` : `<span style="font-size:10px;color:#999" title="Apenas administradores podem zerar as filas">🔒 Apenas admin/admin temporário pode zerar filas — solicite a ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').contatoAdmin || 'Fabiana Ferreira — SMCT')}</span>`}
+        ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').isAdmin===true) ? `<button onclick="confirmarZerarFilas()" style="padding:8px 14px;border-radius:8px;border:2px solid #e53935;background:#fff5f5;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" title="Zera toda a fila voltando à ordem original">🔄 Zerar Filas</button>` : `<span style="font-size:12px;font-weight:600;color:#666">🔒 Apenas admin/admin temporário pode zerar filas — <a href="mailto:${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').contatoAdminEmail||'')}" style="color:#2471a3">solicite a ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').contatoAdmin || 'o administrador')}</a></span>`}
       </div>
     </div>
   </div>`;
@@ -2778,7 +2806,7 @@ function renderEdicoes() {
       <div style="font-size:20px;font-weight:800;color:#e8d5a0;font-family:'DM Serif Display',serif">📦 Edições do Chamamento Público</div>
       <div style="font-size:11px;color:#6a8a9a;margin-top:3px">${total} edição(ões) registrada(s) · A edição ativa é usada em Banco, Fila e Programação</div>
     </div>
-    ${_podeNovaEdCh ? `<button onclick="openNovaEdicao()" style="padding:8px 18px;border-radius:8px;border:none;background:#4cd98a;color:#0a1520;font-size:12px;font-weight:800;cursor:pointer">＋ Nova Edição</button>` : `<span style="font-size:10px;color:#5a6a7a" title="Apenas administradores podem criar novas edições">🔒 Apenas admin/admin temporário pode criar edições — solicite a ${(_prfEdCh.contatoAdmin || 'Fabiana Ferreira — SMCT')}</span>`}
+    ${_podeNovaEdCh ? `<button onclick="openNovaEdicao()" style="padding:8px 18px;border-radius:8px;border:none;background:#4cd98a;color:#0a1520;font-size:12px;font-weight:800;cursor:pointer">＋ Nova Edição</button>` : `<span style="font-size:12px;font-weight:600;color:#9ab8d0">🔒 Apenas admin/admin temporário pode criar edições — <a href="mailto:${_prfEdCh.contatoAdminEmail||''}" style="color:#7ab3f0">solicite a ${(_prfEdCh.contatoAdmin || 'o administrador')}</a></span>`}
   </div>
 
   ${edicoes_chamamento.length === 0 ? `<div style="text-align:center;padding:60px 20px;color:#6a8a9a;font-size:13px">Nenhuma edição cadastrada ainda.<br><small>Clique em "＋ Nova Edição" para importar a primeira base de artistas.</small></div>` : ''}
@@ -2829,7 +2857,7 @@ function renderEdicoes() {
 function openNovaEdicao() {
   var _prfCk = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
   if (_prfCk.isAdmin !== true) {
-    alert('⚠ Apenas administradores podem criar novas edições do Chamamento.\n\nSolicite ao administrador: ' + (_prfCk.contatoAdmin || 'Fabiana Ferreira — SMCT'));
+    alert('⚠ Apenas administradores podem criar novas edições do Chamamento.\n\nSolicite ao administrador: ' + (_prfCk.contatoAdmin || 'fabiana.ferreira@saocarlos.sp.gov.br'));
     return;
   }
   _importMode = 'csv';
@@ -2920,6 +2948,8 @@ function parseCsvArtistas(txt) {
 }
 
 function salvarNovaEdicao() {
+  var _prfSalvarEd = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  if (_prfSalvarEd.isAdmin !== true) { bloqueadoSomenteLeitura(); return; }
   const nome = (document.getElementById('ned-nome').value || '').trim();
   const ano  = (document.getElementById('ned-ano').value  || '').trim();
   if (!nome) { alert('Informe o nome da edição.'); return; }
@@ -2958,6 +2988,8 @@ function salvarNovaEdicao() {
 }
 
 function confirmarAtivarEdicao(id) {
+  var _prfAtivEd = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  if (_prfAtivEd.isAdmin !== true) { alert('⚠ Apenas administradores podem ativar edições.\n\nSolicite ao administrador: ' + (_prfAtivEd.contatoAdmin || 'fabiana.ferreira@saocarlos.sp.gov.br')); return; }
   const ed = edicoes_chamamento.find(e => e.id === id);
   if (!ed) return;
   if (!confirm(`Ativar a edição "${ed.nome}"?\n\nO banco de artistas, filas e histórico serão substituídos pelos desta edição. A edição atual permanece salva no histórico.`)) return;
@@ -2967,6 +2999,8 @@ function confirmarAtivarEdicao(id) {
 }
 
 function confirmarExcluirEdicao(id) {
+  var _prfExclEd = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  if (_prfExclEd.isAdmin !== true) { alert('⚠ Apenas administradores podem excluir edições.\n\nSolicite ao administrador: ' + (_prfExclEd.contatoAdmin || 'fabiana.ferreira@saocarlos.sp.gov.br')); return; }
   const ed = edicoes_chamamento.find(e => e.id === id);
   if (!ed) return;
   if (ed.id === edicaoAtiva) { toast('⚠️ Não é possível excluir a edição ativa.'); return; }

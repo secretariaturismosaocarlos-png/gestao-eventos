@@ -163,12 +163,12 @@ body{font-family:var(--sans);background:var(--ink);color:var(--text);min-height:
 </style>
 </head>
 <body>
-<div id="smct-banner" style="display:none;background:#0a1a2a;border-bottom:2px solid #1a3a5a;padding:10px 20px;font-size:11px;font-family:'DM Sans',sans-serif;color:#7ab3f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:999">
+<div id="smct-banner" style="display:none;background:#0a1a2a;border-bottom:2px solid #1a3a5a;padding:10px 20px;font-size:13px;font-family:'DM Sans',sans-serif;color:#9ab8d0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:999">
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="background:#1a3a5a;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:#7ab3f0" id="banner-role-eme">👤 Carregando...</span>
-    <span id="banner-info-eme" style="color:#5a8ab0"></span>
+    <span style="background:#1a3a5a;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:#9ab8d0" id="banner-role-eme">👤 Carregando...</span>
+    <span id="banner-info-eme" style="color:#bcd0e0;font-size:12px"></span>
   </div>
-  <span style="font-size:10px;color:#3a5a7a">Dúvidas ou solicitações: <strong id="banner-contato-eme" style="color:#7ab3f0"></strong></span>
+  <span style="font-size:12px;color:#8aa5c0">Dúvidas ou solicitações: <strong id="banner-contato-eme" style="color:#9ab8d0"></strong></span>
 </div>
 <script>
 (function(){
@@ -756,6 +756,17 @@ function getEventoInfo(nome){return eventos_cad.find(e=>e.nome===nome)||null;}
 function fmtDate(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('pt-BR');}catch(e){return d;}}
 function fmtHora(h){return h||''}
 function evStatusBadge(s){return s==='Realizado'?'bt':s==='Cancelado'?'br':s==='Em andamento'?'bg':s==='Confirmado'?'bb':'bx';}
+// Sessão atual pode criar/editar/excluir? (Visualizador = não; Editor/Admin/Admin Temp = sim)
+function podeEditarSessao() {
+  try {
+    var p = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+    return p.isAdmin === true || p.role === 'editor' || p.role === 'admin' || p.role === 'admin_temp';
+  } catch(e) { return false; }
+}
+function bloqueadoSomenteLeitura() {
+  alert('👁 Seu acesso é somente leitura.\n\nPara editar, criar ou excluir qualquer informação, solicite ao administrador.');
+}
+
 function totais(){const a=emendas.filter(e=>e.status!=='Cancelado');const total=a.reduce((s,e)=>s+e.valor,0);const ut=a.reduce((s,e)=>s+usado(e.id),0);return{total,ut,livre:total-ut};}
 
 // ═══════════════════════════════════════════════
@@ -791,7 +802,7 @@ function renderEdicoes(){
         <div class="sec-sub">${edicoes.length} edição(ões) arquivada(s) · a edição ativa abaixo é usada em Painel, Por Vereador e Emendas</div>
       </div>
       <div style="flex:1"></div>
-      ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').isAdmin===true) ? `<button class="btn btn-gold" onclick="abrirNovaEdicao()">＋ Nova Edição</button>` : `<span style="font-size:10px;color:var(--sub)" title="Apenas administradores podem criar novas edições">🔒 Apenas admin/admin temporário pode criar edições — solicite a ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').contatoAdmin || 'Fabiana Ferreira — SMCT')}</span>`}
+      ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').isAdmin===true) ? `<button class="btn btn-gold" onclick="abrirNovaEdicao()">＋ Nova Edição</button>` : `<span style="font-size:12px;font-weight:600;color:#c9b070">🔒 Apenas admin/admin temporário pode criar edições — <a href="mailto:${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').contatoAdminEmail||'')}" style="color:var(--gold)">solicite a ${(JSON.parse(localStorage.getItem('smct_perfil')||'{}').contatoAdmin || 'o administrador')}</a></span>`}
     </div>
 
     <div class="ver-card open" style="cursor:default">
@@ -817,7 +828,7 @@ function renderEdicoes(){
 function abrirNovaEdicao(){
   var _prfNeEm = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
   if (_prfNeEm.isAdmin !== true) {
-    alert('⚠ Apenas administradores podem criar novas edições da LOA.\n\nSolicite ao administrador: ' + (_prfNeEm.contatoAdmin || 'Fabiana Ferreira — SMCT'));
+    alert('⚠ Apenas administradores podem criar novas edições da LOA.\n\nSolicite ao administrador: ' + (_prfNeEm.contatoAdmin || 'fabiana.ferreira@saocarlos.sp.gov.br'));
     return;
   }
   const proxAno = (parseInt(edicaoAtiva.ano) || new Date().getFullYear()) + 1;
@@ -840,6 +851,8 @@ function abrirNovaEdicao(){
 }
 
 function confirmarNovaEdicao(){
+  var _prfConfEd = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
+  if (_prfConfEd.isAdmin !== true) { alert('⚠ Apenas administradores podem criar novas edições da LOA.\n\nSolicite ao administrador: ' + (_prfConfEd.contatoAdmin || 'fabiana.ferreira@saocarlos.sp.gov.br')); return; }
   const titulo = document.getElementById('ne-titulo').value.trim();
   const ano = parseInt(document.getElementById('ne-ano').value) || null;
   const obs = document.getElementById('ne-obs').value.trim();
@@ -1375,13 +1388,14 @@ function renderContas(){
   </tbody></table></div>`;
 }
 
-function openNovaEmenda(){editEmId=null;document.getElementById('me-title').textContent='Nova Emenda';['me-num','me-protocolo','me-valor','me-obs'].forEach(id=>document.getElementById(id).value='');document.getElementById('me-status').value='Previsto';populateVereadorSel();document.getElementById('me-vereador').value='';document.getElementById('modal-emenda-bg').classList.add('open');}
-function editEmenda(id){const em=emendas.find(e=>e.id===id);if(!em)return;editEmId=id;document.getElementById('me-title').textContent='Editar Emenda';populateVereadorSel();document.getElementById('me-vereador').value=em.vereador;document.getElementById('me-num').value=em.num||'';document.getElementById('me-protocolo').value=em.protocolo||'';document.getElementById('me-valor').value=em.valor;document.getElementById('me-status').value=em.status;document.getElementById('me-obs').value=em.obs||'';document.getElementById('modal-emenda-bg').classList.add('open');}
+function openNovaEmenda(){if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}editEmId=null;document.getElementById('me-title').textContent='Nova Emenda';['me-num','me-protocolo','me-valor','me-obs'].forEach(id=>document.getElementById(id).value='');document.getElementById('me-status').value='Previsto';populateVereadorSel();document.getElementById('me-vereador').value='';document.getElementById('modal-emenda-bg').classList.add('open');}
+function editEmenda(id){if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}const em=emendas.find(e=>e.id===id);if(!em)return;editEmId=id;document.getElementById('me-title').textContent='Editar Emenda';populateVereadorSel();document.getElementById('me-vereador').value=em.vereador;document.getElementById('me-num').value=em.num||'';document.getElementById('me-protocolo').value=em.protocolo||'';document.getElementById('me-valor').value=em.valor;document.getElementById('me-status').value=em.status;document.getElementById('me-obs').value=em.obs||'';document.getElementById('modal-emenda-bg').classList.add('open');}
 function populateVereadorSel(){const sel=document.getElementById('me-vereador');const vs=[...new Set([...CONTAS.map(c=>c.vereador),...emendas.map(e=>e.vereador)])].sort();sel.innerHTML='<option value="">— selecione —</option>'+vs.map(v=>`<option>${v}</option>`).join('');}
-function salvarEmenda(){const ver=document.getElementById('me-vereador').value.trim();const val=parseFloat(document.getElementById('me-valor').value);if(!ver){alert('Selecione o vereador.');return;}if(!val||val<=0){alert('Informe um valor válido.');return;}const data={vereador:ver,num:parseInt(document.getElementById('me-num').value)||null,protocolo:parseInt(document.getElementById('me-protocolo').value)||null,valor:val,status:document.getElementById('me-status').value,obs:document.getElementById('me-obs').value.trim()};if(editEmId!==null){const idx=emendas.findIndex(e=>e.id===editEmId);if(idx>=0)emendas[idx]={...emendas[idx],...data};toast('✅ Emenda atualizada!');}else{emendas.push({id:nextEm++,...data});toast('✅ Emenda adicionada!');}save();closeAllModals();render();}
-function deletarEmenda(id){const em=emendas.find(e=>e.id===id);if(!em)return;const hv=vincs.some(v=>v.emendaId===id);if(!confirm(`Excluir emenda de ${em.vereador}?${hv?'\n\n⚠️ As vinculações também serão removidas!':''}`))return;emendas=emendas.filter(e=>e.id!==id);vincs=vincs.filter(v=>v.emendaId!==id);save();toast('🗑 Emenda excluída.');render();}
+function salvarEmenda(){if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}const ver=document.getElementById('me-vereador').value.trim();const val=parseFloat(document.getElementById('me-valor').value);if(!ver){alert('Selecione o vereador.');return;}if(!val||val<=0){alert('Informe um valor válido.');return;}const data={vereador:ver,num:parseInt(document.getElementById('me-num').value)||null,protocolo:parseInt(document.getElementById('me-protocolo').value)||null,valor:val,status:document.getElementById('me-status').value,obs:document.getElementById('me-obs').value.trim()};if(editEmId!==null){const idx=emendas.findIndex(e=>e.id===editEmId);if(idx>=0)emendas[idx]={...emendas[idx],...data};toast('✅ Emenda atualizada!');}else{emendas.push({id:nextEm++,...data});toast('✅ Emenda adicionada!');}save();closeAllModals();render();}
+function deletarEmenda(id){if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}const em=emendas.find(e=>e.id===id);if(!em)return;const hv=vincs.some(v=>v.emendaId===id);if(!confirm(`Excluir emenda de ${em.vereador}?${hv?'\n\n⚠️ As vinculações também serão removidas!':''}`))return;emendas=emendas.filter(e=>e.id!==id);vincs=vincs.filter(v=>v.emendaId!==id);save();toast('🗑 Emenda excluída.');render();}
 
 function openNovaVinc(emId){
+  if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}
   editViId=null;modalEmendaId=emId;
   const em=emendas.find(e=>e.id===emId);if(!em)return;
   const l=livre(emId);
@@ -1394,6 +1408,7 @@ function openNovaVinc(emId){
   document.getElementById('modal-vinc-bg').classList.add('open');
 }
 function editVinc(id){
+  if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}
   const v=vincs.find(x=>x.id===id);if(!v)return;
   editViId=id;modalEmendaId=v.emendaId;
   const em=emendas.find(e=>e.id===v.emendaId)||{};
@@ -1466,6 +1481,7 @@ function previewSaldoVinc(){
   p.textContent=nl<0?`⚠️ Excede o saldo! Disponível: ${R(la)} · Excesso: ${R(Math.abs(nl))}`:`✓ Saldo após vinculação: ${R(nl)}`;
 }
 function salvarVinculacao(){
+  if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}
   const emId=modalEmendaId;const val=parseFloat(document.getElementById('mv-valor').value);const evento=getMvEventoValue();
   if(!val||val<=0){alert('Informe um valor válido.');return;}if(!evento){alert('Informe o evento.');return;}
   const la=editViId!==null?livre(emId)+(vincs.find(v=>v.id===editViId)?.valor||0):livre(emId);
@@ -1478,6 +1494,7 @@ function salvarVinculacao(){
   if(curTab==='vereadores'&&em)setTimeout(()=>toggleVer(em.vereador),80);
 }
 function deletarVinc(id){
+  if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}
   const v=vincs.find(x=>x.id===id);if(!v)return;
   const em=emendas.find(e=>e.id===v.emendaId)||{};
   if(!confirm(`Remover vinculação "${v.evento||'sem evento'}" (${R(v.valor)}) da emenda de ${em.vereador}?`))return;
@@ -1534,6 +1551,7 @@ function renderCadEventos(){
 }
 
 function openNovoEvento(){
+  if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}
   editEvCId=null;
   document.getElementById('mev-title').textContent='Novo Evento';
   ['mev-nome','mev-local','mev-obs'].forEach(id=>document.getElementById(id).value='');
@@ -1543,6 +1561,7 @@ function openNovoEvento(){
   document.getElementById('modal-evento-bg').classList.add('open');
 }
 function editEvento(id){
+  if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}
   const ev=eventos_cad.find(e=>e.id===id);if(!ev)return;
   editEvCId=id;
   document.getElementById('mev-title').textContent='Editar Evento';
@@ -1556,6 +1575,7 @@ function editEvento(id){
   document.getElementById('modal-evento-bg').classList.add('open');
 }
 function salvarEvento(){
+  if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}
   const nome=document.getElementById('mev-nome').value.trim();
   if(!nome){alert('Informe o nome do evento.');return;}
   const data={nome,dataIni:document.getElementById('mev-data-ini').value,dataFim:document.getElementById('mev-data-fim').value,horaIni:'',horaFim:'',local:document.getElementById('mev-local').value.trim(),tipo:document.getElementById('mev-tipo').value,status:document.getElementById('mev-status').value,obs:document.getElementById('mev-obs').value.trim()};
@@ -1570,6 +1590,7 @@ function salvarEvento(){
   save();closeAllModals();render();
 }
 function deletarEvento(id){
+  if(!podeEditarSessao()){bloqueadoSomenteLeitura();return;}
   const ev=eventos_cad.find(e=>e.id===id);if(!ev)return;
   if(!confirm(`Excluir evento "${ev.nome}"?\nAs vinculações de emendas que usam este nome serão mantidas, mas o evento sairá da lista.`))return;
   eventos_cad=eventos_cad.filter(e=>e.id!==id);
