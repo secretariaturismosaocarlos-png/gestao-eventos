@@ -1980,7 +1980,6 @@ function renderAtas() {
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="exportBackup()" style="background:var(--gd);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Sora,sans-serif">⬇ Exportar Backup</button>
       <label style="background:#e8f4ea;color:var(--gd);border:1.5px solid var(--gm);padding:8px 16px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Sora,sans-serif">⬆ Importar Backup<input type="file" accept=".json" style="display:none" onchange="importBackup(this)"></label>
-      <button onclick="clearData()" style="background:#fff;color:#c62828;border:1.5px solid #ef9a9a;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Sora,sans-serif">🗑 Limpar tudo</button>
     </div>
   </div>
   </div>`;
@@ -4334,17 +4333,6 @@ function loadLocal_ge() {
     }
   } catch(e) {}
   return false;
-}
-
-async function clearData() {
-  if (!confirm('Apagar TODOS os dados salvos e começar do zero? Esta ação não pode ser desfeita.')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  try {
-    await fetch(SB_URL_GE + '/rest/v1/' + SB_TABLE_GE + '?chave=in.(' + SB_CHAVE_EV + ',' + SB_CHAVE_AT + ')', {
-      method: 'DELETE', headers: { 'apikey': SB_KEY_GE, 'Authorization': 'Bearer ' + SB_KEY_GE }
-    });
-  } catch(e) {}
-  location.reload();
 }
 
 function exportBackup() {

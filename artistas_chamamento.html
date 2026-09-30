@@ -1145,13 +1145,24 @@ function saveData() {
     const payload = {edicoes_chamamento, edicaoAtiva, nextEdicaoId, programacao, eventos, nextProgId, nextEventoId, curEventoId};
     // Salva local (fallback) + remoto
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    if (!cloudSyncOk) { avisarSemNuvem(); return; }
     const sb = getSB();
     if(sb){showSync(false);sb.from('modulos').upsert({nome:STORAGE_KEY,dados:JSON.stringify(payload),atualizado_em:new Date().toISOString()},{onConflict:'nome'}).then(({error})=>{if(!error)showSync(true);});}
   } catch(e) {}
 }
+// Trava de segurança: se o load inicial da nuvem falhou, não envia salvamentos para não
+// sobrescrever os dados reais com o estado local/seed (mesma regra do Gerenciador e das Emendas).
+let cloudSyncOk = true;
+let _avisoSemNuvemMostrado = false;
+function avisarSemNuvem() {
+  if (_avisoSemNuvemMostrado) return;
+  _avisoSemNuvemMostrado = true;
+  alert('⚠ ATENÇÃO: a conexão com o servidor falhou ao carregar esta página.\n\nPara proteger seus dados, as alterações desta sessão NÃO serão enviadas à nuvem.\n\nRecarregue a página (F5) com uma conexão estável antes de continuar editando.');
+}
 async function loadDataRemote() {
   const sb = getSB();
-  if(sb){try{const{data}=await sb.from('modulos').select('dados').eq('nome',STORAGE_KEY).single();if(data&&data.dados){const d=JSON.parse(data.dados);applyLoadedData(d);return true;}}catch(e){}}
+  if(sb){try{const{data,error}=await sb.from('modulos').select('dados').eq('nome',STORAGE_KEY).maybeSingle();if(error)throw error;if(data&&data.dados){const d=JSON.parse(data.dados);applyLoadedData(d);return true;}}catch(e){cloudSyncOk=false;}}
+  else cloudSyncOk=false;
   // fallback localStorage
   try{const d=JSON.parse(localStorage.getItem(STORAGE_KEY));if(d){applyLoadedData(d);return true;}}catch(e){}
   return false;
@@ -1455,6 +1466,7 @@ function saveEvento() {
 }
 
 function deleteEvento(id) {
+  if (!podeEditarSessao()) { bloqueadoSomenteLeitura(); return; }
   if (!confirm('Excluir este evento e toda a sua programação?')) return;
   eventos = eventos.filter(e => e.id !== id);
   programacao = programacao.filter(p => p.eventoId !== id);
@@ -3048,6 +3060,12 @@ function inicializarEdicaoPadrao() {
   if (!loaded) inicializarEdicaoPadrao();
   listenRealtime();
   render();
+  if (!cloudSyncOk) {
+    showSync(false);
+    const el = document.getElementById('_sync');
+    el.textContent = '⚠ Sem conexão — edições NÃO serão salvas na nuvem até recarregar a página com sucesso';
+    el.style.background = '#8b1a1a'; el.style.color = '#fff'; el.style.borderColor = '#b71c1c';
+  }
 })();
 </script>
 </body>
