@@ -527,25 +527,6 @@ body{font-family:var(--sans);background:var(--ink);color:var(--text);min-height:
 const CONTAS=[{vereador:'ANDRE REBELLO',conta:'114.840-0',codigo:507},{vereador:'BIRA',conta:'114.841-9',codigo:508},{vereador:'BRUNO ZANCHETA',conta:'114.842-7',codigo:509},{vereador:'CIDINHA',conta:'114.845-1',codigo:510},{vereador:'DE ALVIM',conta:'114.846-X',codigo:511},{vereador:'DJALMA NERY',conta:'114.848-6',codigo:512},{vereador:'EDSON FERRAZ',conta:'114.850-8',codigo:513},{vereador:'ELTON CARVALHO',conta:'114.852-4',codigo:514},{vereador:'FABIO ZANCHIN',conta:'114.853-2',codigo:515},{vereador:'FERNANDA CASTELANO',conta:'114.856-7',codigo:516},{vereador:'GUSTAVO POZZI',conta:'114.857-5',codigo:517},{vereador:'JULIO CESAR',conta:'114.860-5',codigo:518},{vereador:'LARISSA CAMARGO',conta:'114.863-X',codigo:519},{vereador:'LINEU',conta:'114.870-2',codigo:520},{vereador:'LUCAO FERNANDES',conta:'114.875-3',codigo:521},{vereador:'MALABIM',conta:'114.878-8',codigo:522},{vereador:'MOISES',conta:'114.881-8',codigo:523},{vereador:'PARANÁ',conta:'114.885-0',codigo:524},{vereador:'RAQUEL',conta:'114.888-5',codigo:525},{vereador:'SERGIO ROCHA',conta:'114.899-0',codigo:526},{vereador:'THIAGO',conta:'114.900-8',codigo:527}];
 const SEED=[{vereador:'ANDRE REBELLO',num:32,protocolo:9324,valor:170000},{vereador:'BIRA',num:44,protocolo:9347,valor:250000},{vereador:'BRUNO ZANCHETA',num:175,protocolo:9627,valor:117000},{vereador:'CIDINHA',num:14,protocolo:9293,valor:195000},{vereador:'DJALMA NERY',num:193,protocolo:9877,valor:211879.61},{vereador:'EDSON FERRAZ',num:119,protocolo:9494,valor:50000},{vereador:'ELTON CARVALHO',num:128,protocolo:9532,valor:8000},{vereador:'ELTON CARVALHO',num:81,protocolo:9401,valor:26000},{vereador:'FERNANDA CASTELANO',num:166,protocolo:9609,valor:38979.61},{vereador:'FERNANDA CASTELANO',num:165,protocolo:9608,valor:100000},{vereador:'FERNANDA CASTELANO',num:null,protocolo:null,valor:20000},{vereador:'FERNANDA CASTELANO',num:163,protocolo:9606,valor:5000},{vereador:'GUSTAVO POZZI',num:48,protocolo:9351,valor:315000},{vereador:'LARISSA CAMARGO',num:143,protocolo:9586,valor:198000},{vereador:'LINEU',num:90,protocolo:9454,valor:100000},{vereador:'LUCAO FERNANDES',num:170,protocolo:9613,valor:117879.62},{vereador:'MALABIM',num:122,protocolo:9498,valor:10000},{vereador:'MALABIM',num:183,protocolo:9719,valor:92879.61},{vereador:'MOISES',num:76,protocolo:9388,valor:255879.61},{vereador:'PARANÁ',num:217,protocolo:10053,valor:20000},{vereador:'RAQUEL',num:49,protocolo:9352,valor:492879.61},{vereador:'SERGIO ROCHA',num:206,protocolo:9988,valor:247102.45},{vereador:'THIAGO',num:60,protocolo:9988,valor:50000}];
 
-const API_URL_LOCAL = 'http://186.233.80.46/api';
-
-async function saveToAPI(chave, valor) {
-  try {
-    await fetch(API_URL_LOCAL + '/?path=data/' + chave, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chave: chave, valor: valor })
-    });
-  } catch(e) {}
-}
-
-async function loadFromAPI(chave) {
-  try {
-    const r = await fetch(API_URL_LOCAL + '/?path=data/' + chave);
-    if (r.ok) return await r.json();
-  } catch(e) {}
-  return null;
-}
-
 const KEY='emendas_v2';
 const SB_URL_EM  = 'https://kvwgjmnsfcvzxuoanjkk.supabase.co';
 const SB_KEY_EM  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2d2dqbW5zZmN2enh1b2FuamtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MjUwOTAsImV4cCI6MjEwMDQwMTA5MH0.UDR2G2NiMHz2iyqun0TRtStHxlSvn2XGNkA7jRy_LCM';
@@ -631,13 +612,8 @@ function save() {
   if (!canSaveToCloud()) return;
   setSyncBadgeEm('saving');
   clearTimeout(window._sbTimerEm);
-  window._sbTimerEm = setTimeout(async function() {
-    try {
-      await saveToAPI('emendas_v2', { emendas: emendas, vincs: vincs, eventos_cad: eventos_cad, nextEm: nextEm, nextVi: nextVi, nextEvC: nextEvC, edicoes: edicoes, edicaoAtiva: edicaoAtiva, nextEdicao: nextEdicao });
-      setSyncBadgeEm('saved');
-    } catch(e) {
-      saveSupabase_em().catch(function(){});
-    }
+  window._sbTimerEm = setTimeout(function() {
+    saveSupabase_em().catch(function(){});
   }, 800);
 }
 
