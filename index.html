@@ -100,6 +100,7 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
 .toast-el{position:fixed;bottom:24px;right:24px;background:#1a3a2a;border:1px solid #2e7d4f;color:#4cd98a;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999}
 @media(max-width:700px){.card{width:100%}.perms-grid{grid-template-columns:1fr}.topbar{flex-direction:column;align-items:flex-start}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 <div id="loading" class="loading" style="font-size:14px"><span class="spin">⚙</span> Verificando sessão...</div>
@@ -149,33 +150,10 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
           <span style="font-size:11px;color:#5a6a7a;white-space:nowrap">📧 Contato exibido aos usuários:</span>
           <span id="txt-contato-atual" style="font-size:11px;color:#7ab3f0;font-weight:700">—</span>
         </div>
-        <button class="btn-add" onclick="openAddUser()">＋ Adicionar Usuário</button>
+        <span style="font-size:11px;color:#5a6a7a">Novos usuários se cadastram em “Criar conta” na tela de login e aparecem aqui como pendentes.</span>
       </div>
     </div>
     <div id="users-tb" style="padding:12px 16px"><div style="text-align:center;padding:20px;color:#3a4a5a">Carregando...</div></div>
-  </div>
-</div>
-
-<div class="modal-ov" id="modal-user" style="display:none">
-  <div class="modal-bx">
-    <div class="modal-title">➕ Adicionar Usuário</div>
-    <div class="fg"><label>E-mail</label><input type="email" id="nu-email" placeholder="email@dominio.com"></div>
-    <div class="fg"><label>Nome</label><input type="text" id="nu-nome" placeholder="Nome completo"></div>
-    <div class="fg"><label>Senha inicial</label><div style="position:relative"><input type="password" id="nu-pw" placeholder="Mínimo 6 caracteres" style="width:100%;padding-right:40px"><button type="button" onclick="var i=document.getElementById('nu-pw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#8a9bb0">👁</button></div></div>
-    <div class="fg"><label>Função</label>
-      <select id="nu-role"><option value="visualizador">Visualizador</option><option value="editor">Editor</option></select>
-    </div>
-    <div class="fg"><label>Acessos</label>
-      <div class="perms-grid">
-        <div class="pt" id="pt-g" onclick="tp('g')"><div class="pt-ico">📁</div><div class="pt-lbl">Gerenciador</div></div>
-        <div class="pt" id="pt-c" onclick="tp('c')"><div class="pt-ico">🎭</div><div class="pt-lbl">Chamamento</div></div>
-        <div class="pt" id="pt-e" onclick="tp('e')"><div class="pt-ico">💰</div><div class="pt-lbl">Emendas</div></div>
-      </div>
-    </div>
-    <div class="mfooter">
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" style="width:auto;margin:0" onclick="saveUser()">Criar Usuário</button>
-    </div>
   </div>
 </div>
 
@@ -199,7 +177,18 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
 const SB_URL  = 'https://kvwgjmnsfcvzxuoanjkk.supabase.co';
 const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2d2dqbW5zZmN2enh1b2FuamtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MjUwOTAsImV4cCI6MjEwMDQwMTA5MH0.UDR2G2NiMHz2iyqun0TRtStHxlSvn2XGNkA7jRy_LCM';
 const SB_REST = SB_URL + '/rest/v1';
-const SB_H    = () => ({ 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' });
+const sb      = supabase.createClient(SB_URL, SB_KEY);
+let _token    = null; // token da sessão do usuário logado
+const SB_H    = () => ({ 'apikey': SB_KEY, 'Authorization': 'Bearer ' + (_token || SB_KEY), 'Content-Type': 'application/json' });
+sb.auth.onAuthStateChange(function(ev, session) { _token = session ? session.access_token : null; });
+
+async function sbRpc(fn, body) {
+  const r = await fetch(SB_REST + '/rpc/' + fn, { method: 'POST', headers: SB_H(), body: JSON.stringify(body || {}) });
+  const txt = await r.text();
+  let d = null; try { d = txt ? JSON.parse(txt) : null; } catch(e) { d = txt; }
+  if (!r.ok) throw new Error((d && d.message) || ('HTTP ' + r.status));
+  return d;
+}
 const ADMIN_EMAIL = 'fabiana.ferreira@saocarlos.sp.gov.br';
 let _curUser = null, _np = {g:false,c:false,e:false};
 
@@ -226,10 +215,14 @@ async function sbDelete(table, filter) {
 }
 
 (async function(){
-  const perfil = JSON.parse(localStorage.getItem('smct_perfil') || '{}');
-  if (perfil.email) {
-    await showPainel({ email: perfil.email });
+  const { data } = await sb.auth.getSession();
+  const session = data && data.session;
+  if (session) {
+    _token = session.access_token;
+    await showPainel(session.user);
   } else {
+    localStorage.removeItem('smct_perfil');
+    localStorage.removeItem('smct_session');
     hide('loading'); show('login-box');
   }
 })();
@@ -246,38 +239,34 @@ function switchTab(t) {
 }
 
 async function auth() {
-  const email = gv('f-email'), pw = gv('f-pw');
+  const email = gv('f-email').toLowerCase(), pw = gv('f-pw');
   const isUp = document.getElementById('t-up').classList.contains('active');
   if (!email || !pw) { showAlert('Preencha e-mail e senha.'); return; }
   setLoading(true);
   try {
     if (isUp) {
       const nome = gv('f-nome'), pw2 = gv('f-pw2');
+      if (!nome) { showAlert('Informe seu nome completo.'); setLoading(false); return; }
       if (pw !== pw2) { showAlert('As senhas não conferem.'); setLoading(false); return; }
       if (pw.length < 6) { showAlert('Senha com pelo menos 6 caracteres.'); setLoading(false); return; }
-      // Criar usuário inativo
-      await sbPost('usuarios_permissoes', {
-        email, nome: nome||email, role:'visualizador',
-        acesso_gerenciador:false, acesso_chamamento:false, acesso_emendas:false, ativo:false
-      });
-      // Salvar senha via RPC
-      await fetch(SB_URL + '/rest/v1/rpc/definir_senha', {
-        method: 'POST', headers: SB_H(),
-        body: JSON.stringify({ p_email: email, p_senha: pw })
-      });
-      showAlert('✅ Conta criada! Aguarde liberação pelo administrador.', true);
+      const { error } = await sb.auth.signUp({ email, password: pw, options: { data: { nome } } });
+      if (error) {
+        const m = (error.message || '').toLowerCase();
+        showAlert(m.includes('already') ? 'Este e-mail já tem cadastro. Use a aba Entrar.' : 'Não foi possível criar a conta: ' + error.message);
+        setLoading(false); return;
+      }
+      await sb.auth.signOut();
+      switchTab('in');
+      showAlert('✅ Conta criada! Aguarde a liberação do administrador para entrar.', true);
     } else {
-      // Login via RPC verificar_senha
-      const r = await fetch(SB_URL + '/rest/v1/rpc/verificar_senha', {
-        method: 'POST', headers: SB_H(),
-        body: JSON.stringify({ p_email: email, p_senha: pw })
-      });
-      const ok = await r.json();
-      if (!ok) { showAlert('E-mail ou senha incorretos.'); setLoading(false); return; }
-      const users = await sbGet('usuarios_permissoes', 'email=eq.' + encodeURIComponent(email) + '&ativo=eq.true');
-      if (!users.length) { showAlert('Usuário inativo. Aguarde liberação.'); setLoading(false); return; }
-      localStorage.setItem('smct_session', JSON.stringify({ email, nome: users[0].nome }));
-      await showPainel({ email });
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+      if (error) {
+        const m = (error.message || '').toLowerCase();
+        showAlert(m.includes('confirm') ? 'Cadastro ainda não confirmado. Fale com o administrador.' : 'E-mail ou senha incorretos.');
+        setLoading(false); return;
+      }
+      _token = data.session.access_token;
+      await showPainel(data.user);
     }
   } catch(e) { showAlert('Erro: ' + e.message); }
   setLoading(false);
@@ -289,6 +278,8 @@ async function forgot() {
 }
 
 async function logout() {
+  try { await sb.auth.signOut(); } catch(e) {}
+  _token = null;
   localStorage.removeItem('smct_perfil');
   _curUser = null;
   document.getElementById('painel').style.display = 'none';
@@ -318,30 +309,27 @@ async function showPainel(user) {
   _curUser = user;
   hide('loading'); hide('login-box');
   document.getElementById('chip-email').textContent = user.email;
-  const isAdminFixed = user.email === ADMIN_EMAIL;
-  let perms = isAdminFixed
-    ? { role:'admin', acesso_gerenciador:true, acesso_chamamento:true, acesso_emendas:true, ativo:true, nome:'Fabiana Ferreira' }
-    : null;
-  if (!isAdminFixed) {
-    try {
-      const rows = await sbGet('usuarios_permissoes', 'email=eq.' + encodeURIComponent(user.email));
-      if (rows.length) perms = rows[0];
-    } catch(e) {}
-  }
-  const isAdmin = isAdminFixed || perms?.role === 'admin_temp';
-  if (isAdmin) { document.getElementById('btn-admin').style.display = ''; checkPendentes(); }
+  let perms = null;
+  try {
+    const rows = await sbGet('usuarios_permissoes', 'user_id=eq.' + user.id + '&select=id,email,nome,role,acesso_gerenciador,acesso_chamamento,acesso_emendas,ativo');
+    if (rows.length) perms = rows[0];
+  } catch(e) {}
+  const ativo = !!(perms && perms.ativo);
+  const isAdmin = ativo && (perms.role === 'admin' || perms.role === 'admin_temp');
+  document.getElementById('btn-admin').style.display = isAdmin ? '' : 'none';
+  if (isAdmin) checkPendentes();
   const contatoInfo = await getContatoAdminAtual();
   const perfilSessao = {
     email: user.email,
-    nome: perms?.nome || user.email,
-    role: isAdmin ? 'admin' : (perms?.role || 'visualizador'),
-    acesso_gerenciador: isAdmin || (perms?.acesso_gerenciador && perms?.ativo),
-    acesso_chamamento:  isAdmin || (perms?.acesso_chamamento  && perms?.ativo),
-    acesso_emendas:     isAdmin || (perms?.acesso_emendas     && perms?.ativo),
+    nome: (perms && perms.nome) || user.email,
+    role: isAdmin ? 'admin' : ((perms && perms.role) || 'visualizador'),
+    acesso_gerenciador: isAdmin || (ativo && !!perms.acesso_gerenciador),
+    acesso_chamamento:  isAdmin || (ativo && !!perms.acesso_chamamento),
+    acesso_emendas:     isAdmin || (ativo && !!perms.acesso_emendas),
     isAdmin, contatoAdmin: contatoInfo.label, contatoAdminEmail: contatoInfo.email
   };
   localStorage.setItem('smct_perfil', JSON.stringify(perfilSessao));
-  renderCards(perms, isAdmin);
+  renderCards(ativo ? perms : null, isAdmin);
   document.getElementById('painel').style.display = 'flex';
 }
 
@@ -450,7 +438,7 @@ function renderUserCard(u) {
         (u.ativo?'✅ Ativo':'❌ Inativo')+
       '</button>'+
       '<button onclick="delUser(\''+id+'\',\''+u.email+'\')" style="padding:5px 12px;border-radius:6px;border:1px solid #4a2a2a;background:transparent;color:#f08080;font-size:10px;cursor:pointer;font-family:inherit">✕ Remover</button>'+
-      '<button onclick="redefinirSenha(\''+u.email+'\')" style="padding:5px 12px;border-radius:6px;border:1px solid #2a4a6a;background:transparent;color:#7ab3f0;font-size:10px;cursor:pointer;font-family:inherit">🔑 Senha</button>'+
+      (u.user_id ? '<button onclick="redefinirSenha(\''+u.user_id+'\',\''+u.email+'\')" style="padding:5px 12px;border-radius:6px;border:1px solid #2a4a6a;background:transparent;color:#7ab3f0;font-size:10px;cursor:pointer;font-family:inherit">🔑 Senha</button>' : '')+
     '</div>'+
   '</div>';
 }
@@ -484,22 +472,19 @@ async function savePerm(id, campo, val) {
 }
 
 async function delUser(id, email) {
-  if (!confirm('Remover ' + email + '?')) return;
-  try { await sbDelete('usuarios_permissoes', 'id=eq.' + id); await loadUsers(); toast('✅ Removido!'); }
-  catch(e) { toast('❌ Erro.'); }
+  if (!confirm('Remover ' + email + '?\n\nA pessoa perde o acesso e precisará se cadastrar de novo.')) return;
+  try { await sbRpc('admin_remover_usuario', { p_id: Number(id) }); await loadUsers(); toast('✅ Removido!'); }
+  catch(e) { toast('❌ ' + e.message); }
 }
 
-async function redefinirSenha(email) {
-  var nova = prompt('Nova senha para ' + email + ' (mínimo 6 caracteres):');
-  if (!nova || nova.length < 6) { toast('❌ Senha muito curta.'); return; }
+async function redefinirSenha(userId, email) {
+  var nova = prompt('Nova senha para ' + email + ' (mínimo 6 caracteres).\nDepois, envie essa senha para a pessoa:');
+  if (nova === null) return;
+  if (nova.length < 6) { toast('❌ Senha muito curta.'); return; }
   try {
-    var r = await fetch(SB_URL + '/rest/v1/rpc/definir_senha', {
-      method: 'POST', headers: SB_H(),
-      body: JSON.stringify({ p_email: email, p_senha: nova })
-    });
-    if (r.ok) { toast('✅ Senha redefinida para ' + email + '!'); }
-    else { toast('❌ Erro ao redefinir senha.'); }
-  } catch(e) { toast('❌ Erro: ' + e.message); }
+    await sbRpc('admin_definir_senha', { p_user_id: userId, p_senha: nova });
+    toast('✅ Senha redefinida para ' + email + '!');
+  } catch(e) { toast('❌ ' + e.message); }
 }
 
 // ── Trocar a própria senha (usuário já logado) ──
@@ -523,21 +508,8 @@ async function trocarMinhaSenha() {
   const btn = document.getElementById('btn-ts-confirmar');
   btn.disabled = true; btn.textContent = 'Verificando...';
   try {
-    const email = _curUser?.email;
-    // Confirma que a senha atual está correta antes de trocar (evita que alguém
-    // com a sessão aberta troque a senha de outra pessoa por engano/mal-intencionadamente)
-    const rv = await fetch(SB_URL + '/rest/v1/rpc/verificar_senha', {
-      method: 'POST', headers: SB_H(),
-      body: JSON.stringify({ p_email: email, p_senha: atual })
-    });
-    const ok = await rv.json();
+    const ok = await sbRpc('trocar_minha_senha', { p_atual: atual, p_nova: nova });
     if (!ok) { mostrarErro('Senha atual incorreta.'); btn.disabled = false; btn.textContent = 'Trocar Senha'; return; }
-
-    const rd = await fetch(SB_URL + '/rest/v1/rpc/definir_senha', {
-      method: 'POST', headers: SB_H(),
-      body: JSON.stringify({ p_email: email, p_senha: nova })
-    });
-    if (!rd.ok) { mostrarErro('Erro ao salvar a nova senha. Tente novamente.'); btn.disabled = false; btn.textContent = 'Trocar Senha'; return; }
 
     closeModalTrocarSenha();
     toast('✅ Senha alterada com sucesso!');
@@ -546,29 +518,6 @@ async function trocarMinhaSenha() {
   } finally {
     btn.disabled = false; btn.textContent = 'Trocar Senha';
   }
-}
-
-function openAddUser() {
-  _np = {g:false,c:false,e:false};
-  ['g','c','e'].forEach(x => document.getElementById('pt-'+x).classList.remove('on'));
-  ['nu-email','nu-nome','nu-pw'].forEach(x => document.getElementById(x).value='');
-  document.getElementById('nu-role').value = 'visualizador';
-  document.getElementById('modal-user').style.display = 'flex';
-}
-function closeModal() { document.getElementById('modal-user').style.display='none'; }
-function tp(x) { _np[x]=!_np[x]; document.getElementById('pt-'+x).classList.toggle('on',_np[x]); }
-
-async function saveUser() {
-  const email = gv('nu-email'), nome = gv('nu-nome'), pw = gv('nu-pw'), role = document.getElementById('nu-role').value || 'visualizador';
-  if (!email||!pw) { alert('Preencha e-mail e senha.'); return; }
-  if (pw.length<6) { alert('Senha com pelo menos 6 caracteres.'); return; }
-  try {
-    await sbPost('usuarios_permissoes', { email, nome, role, acesso_gerenciador:_np.g, acesso_chamamento:_np.c, acesso_emendas:_np.e, ativo:true });
-    await fetch(SB_URL + '/rest/v1/rpc/definir_senha', {
-      method:'POST', headers: SB_H(), body: JSON.stringify({ p_email: email, p_senha: pw })
-    });
-    closeModal(); await loadUsers(); toast('✅ Usuário criado!');
-  } catch(e) { alert('Erro: ' + e.message); }
 }
 
 function gv(id) { return document.getElementById(id).value.trim(); }
