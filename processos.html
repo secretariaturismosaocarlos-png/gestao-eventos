@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📑 Processos de Contratação — SMCT São Carlos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{--ink:#0f1923;--ink2:#1a2535;--ink3:#253347;--border:#2a3a50;--muted:#8a9bb0;--sub:#6a8a9a;--text:#e8f0f8;--gold:#c9a84c;--gold-l:#2a1e06;--gold-m:#3d2e0a;--teal:#2e7d4f;--teal-l:#0e2418;--teal-m:#1e4d30;--rose:#c0392b;--rose-l:#2a0a0a;--rose-m:#4a1a1a;--blue:#3a7bd5;--blue-l:#0a1a3a;--blue-m:#1a3a6a;--amber:#e0a030;--amber-l:#2a1e06;--amber-m:#5a4010;--sans:'DM Sans',sans-serif;--serif:'DM Serif Display',serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--ink);color:var(--text);min-height:100vh}
+button,input,select,textarea{font-family:var(--sans)}
+.nav-bar{background:#0a1118;padding:7px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.nav-btn{display:flex;align-items:center;gap:6px;text-decoration:none;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;border:1px solid var(--border);color:var(--muted);background:var(--ink2);transition:.15s;cursor:pointer;white-space:nowrap}
+.nav-btn:hover{color:#fff;border-color:#3a5a70}
+.nav-btn.green{background:var(--teal-l);border-color:var(--teal-m);color:#4cd98a}
+.nav-btn.gold{background:var(--gold-l);border-color:var(--gold-m);color:var(--gold)}
+.nav-btn.blue{background:var(--blue-l);border-color:var(--blue-m);color:#7ab3f0}
+.nav-sep{width:1px;height:18px;background:var(--border);flex-shrink:0}
+.topbar{background:var(--ink2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar-logo{font-family:var(--serif);font-size:19px;color:#fff}
+.topbar-sep{flex:1}
+.pill{border-radius:8px;padding:5px 14px;font-size:11px;font-weight:700;white-space:nowrap;border:1px solid}
+.pill-teal{background:var(--teal-l);border-color:var(--teal-m);color:#4cd98a}
+.pill-rose{background:var(--rose-l);border-color:var(--rose-m);color:#f07a7a}
+.pill-gold{background:var(--gold-l);border-color:var(--gold-m);color:var(--gold)}
+.btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:.15s;white-space:nowrap}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{background:#3a9e65}
+.btn-gold{background:var(--gold);color:#1a1a0a}.btn-gold:hover{background:#dbb85a}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--muted)}.btn-ghost:hover{color:#fff;border-color:#3a5a70}
+.btn-rose{background:transparent;border-color:var(--rose-m);color:#f07a7a}.btn-rose:hover{background:var(--rose-l)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.sync{font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;color:#fff;opacity:0;transition:opacity .3s}
+.tabs{display:flex;gap:4px;padding:12px 20px 0;border-bottom:1px solid var(--border);background:var(--ink)}
+.tab{padding:9px 16px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;border-radius:8px 8px 0 0;border:1px solid transparent;border-bottom:none;display:flex;align-items:center;gap:7px}
+.tab:hover{color:#fff}
+.tab.active{background:var(--ink2);border-color:var(--border);color:#fff;margin-bottom:-1px}
+.tab .cnt{background:var(--rose);color:#fff;border-radius:10px;font-size:10px;padding:1px 7px}
+.main{padding:20px;max-width:1500px;margin:0 auto}
+.stat-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.sc{flex:1;min-width:150px;border:1px solid var(--border);border-radius:12px;padding:12px 16px;background:var(--ink2)}
+.sc.teal{background:var(--teal-l);border-color:var(--teal-m)}.sc.rose{background:var(--rose-l);border-color:var(--rose-m)}.sc.gold{background:var(--gold-l);border-color:var(--gold-m)}.sc.blue{background:var(--blue-l);border-color:var(--blue-m)}
+.sc-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--sub);margin-bottom:4px}
+.sc-val{font-family:var(--serif);font-size:22px}
+.sc.teal .sc-val{color:#4cd98a}.sc.rose .sc-val{color:#f07a7a}.sc.gold .sc-val{color:var(--gold)}.sc.blue .sc-val{color:#7ab3f0}
+.sc-sub{font-size:10px;color:var(--sub);margin-top:3px}
+.grupo{background:var(--ink2);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.grupo.critico{border-color:#6b2a2a}
+.grupo-hd{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--border)}
+.grupo-hd h3{font-family:var(--serif);font-size:17px;font-weight:400;color:#fff}
+.grupo-hd p{font-size:11px;color:var(--sub)}
+.grupo-hd .n{margin-left:auto;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;background:var(--ink3);color:var(--muted)}
+.grupo.critico .grupo-hd .n{background:var(--rose);color:#fff}
+.item{display:flex;align-items:center;gap:14px;padding:11px 18px;border-top:1px solid var(--border);flex-wrap:wrap}
+.item:first-of-type{border-top:none}
+.item:hover{background:var(--ink3)}
+.item-main{flex:1;min-width:220px;cursor:pointer}
+.item-tit{font-size:13px;font-weight:700;color:#fff}
+.item-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.item-val{font-size:12px;font-weight:700;color:var(--gold);min-width:100px;text-align:right}
+.chip{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;white-space:nowrap}
+.chip.ok{background:var(--teal-m);color:#4cd98a}.chip.atencao{background:var(--amber-m);color:#f0c060}.chip.atrasado{background:#6b1a1a;color:#ffb0b0}.chip.neutro{background:var(--ink3);color:var(--muted)}.chip.pago{background:var(--blue-m);color:#7ab3f0}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.3px;white-space:nowrap;background:var(--ink3);color:var(--muted)}
+.vazio{padding:18px;font-size:12px;color:#4cd98a;text-align:center}
+.tudo-ok{background:var(--teal-l);border:1px solid var(--teal-m);border-radius:14px;padding:28px;text-align:center;color:#4cd98a;font-size:14px}
+.filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.filtros input:not([type=checkbox]),.filtros select{background:var(--ink2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-size:12px;outline:none}
+.filtros input:not([type=checkbox]){min-width:240px}
+.filtros label{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
+.board{display:flex;gap:12px;overflow-x:auto;padding-bottom:14px;align-items:flex-start}
+.col{min-width:250px;width:250px;background:var(--ink2);border:1px solid var(--border);border-radius:12px;flex-shrink:0;max-height:calc(100vh - 230px);display:flex;flex-direction:column}
+.col.critico{border-color:#6b2a2a}
+.col-hd{padding:11px 13px;border-bottom:1px solid var(--border)}
+.col-hd .t{font-size:12px;font-weight:800;color:#fff;display:flex;justify-content:space-between;gap:6px}
+.col-hd .q{font-size:10px;color:var(--sub);margin-top:2px}
+.col-body{padding:9px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--ink);border:1px solid var(--border);border-left:4px solid var(--teal);border-radius:9px;padding:10px 11px;cursor:pointer;transition:.15s}
+.card:hover{border-color:#3a5a70;transform:translateY(-1px)}
+.card.atencao{border-left-color:var(--amber)}.card.atrasado{border-left-color:#e24b4a}.card.neutro{border-left-color:var(--border)}.card.pago{border-left-color:var(--blue)}
+.card .np{font-size:11px;font-weight:800;color:var(--gold)}
+.card .ob{font-size:12px;color:#fff;margin:4px 0;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .fo{font-size:10px;color:var(--muted)}
+.card .ft{display:flex;justify-content:space-between;align-items:center;margin-top:7px;gap:6px}
+.card .vl{font-size:11px;font-weight:700;color:var(--text)}
+.tbl-wrap{background:var(--ink2);border:1px solid var(--border);border-radius:12px;overflow:auto}
+table{width:100%;border-collapse:collapse}
+th{background:var(--ink);padding:9px 12px;font-size:9px;font-weight:800;letter-spacing:.7px;color:var(--sub);text-transform:uppercase;text-align:left;white-space:nowrap}
+td{padding:10px 12px;font-size:12px;color:var(--text);border-top:1px solid var(--border);vertical-align:middle}
+tr.click:hover td{background:var(--ink3);cursor:pointer}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:flex-start;justify-content:center;z-index:900;overflow-y:auto;padding:40px 16px}
+.modal-ov.open{display:flex}
+.modal{background:var(--ink2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:640px;padding:26px 28px}
+.modal.lg{max-width:900px}
+.modal-tit{font-family:var(--serif);font-size:20px;color:#fff;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fgrid .full{grid-column:1/-1}
+.fg label{display:block;font-size:10px;font-weight:800;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fg label .req{color:#f07a7a}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 12px;background:var(--ink);border:1.5px solid var(--border);border-radius:9px;color:#fff;font-size:13px;outline:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--teal)}
+.fg input[type=file]{padding:7px;font-size:12px}
+.fg textarea{min-height:64px;resize:vertical}
+.fg.erro input,.fg.erro select{border-color:#e24b4a}
+.sec-lbl{grid-column:1/-1;font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-top:8px;padding-top:10px;border-top:1px solid var(--border)}
+.check{display:flex;gap:10px;align-items:flex-start;background:var(--ink);border:1.5px solid var(--border);border-radius:9px;padding:11px 13px;cursor:pointer;font-size:13px;color:var(--text)}
+.check input{width:17px;height:17px;accent-color:var(--teal);margin-top:1px;flex-shrink:0}
+.check.erro{border-color:#e24b4a}
+.mfooter{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+.msg-erro{color:#f07a7a;font-size:12px;margin-top:12px;display:none}
+.aviso{background:var(--amber-l);border:1px solid var(--amber-m);color:#f0c060;border-radius:9px;padding:10px 13px;font-size:12px;margin-top:12px}
+.stepper{display:flex;gap:0;margin:14px 0 18px;overflow-x:auto;padding-bottom:4px}
+.st{flex:1;min-width:70px;text-align:center;position:relative}
+.st .dot{width:14px;height:14px;border-radius:50%;background:var(--ink3);border:2px solid var(--border);margin:0 auto 5px;position:relative;z-index:1}
+.st::before{content:'';position:absolute;top:7px;left:-50%;width:100%;height:2px;background:var(--border)}
+.st:first-child::before{display:none}
+.st.feito .dot{background:var(--teal);border-color:var(--teal)}.st.feito::before{background:var(--teal)}
+.st.atual .dot{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 4px rgba(201,168,76,.2)}.st.atual::before{background:var(--teal)}
+.st .nm{font-size:9px;color:var(--sub);line-height:1.25}
+.st.atual .nm{color:var(--gold);font-weight:800}
+.det-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 18px;margin-bottom:16px}
+.det-grid .k{font-size:9px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.5px}
+.det-grid .v{font-size:13px;color:#fff;margin-top:2px;word-break:break-word}
+.det-grid .v.vazio-v{color:#3a4a5a}
+.det-sec{font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;padding-top:12px;border-top:1px solid var(--border)}
+.acao-box{background:var(--teal-l);border:1px solid var(--teal-m);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.acao-box.critico{background:var(--rose-l);border-color:var(--rose-m)}
+.acao-box .txt{flex:1;min-width:200px;font-size:12px;color:var(--muted)}
+.acao-box .txt b{display:block;color:#fff;font-size:14px;margin-bottom:2px}
+.anx{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--ink);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:12px}
+.anx .nm{flex:1;color:#fff;cursor:pointer;word-break:break-all}.anx .nm:hover{text-decoration:underline}
+.hist{border-left:2px solid var(--border);margin-left:6px;padding-left:14px}
+.hist .h{position:relative;padding:4px 0 10px;font-size:12px;color:var(--text)}
+.hist .h::before{content:'';position:absolute;left:-19px;top:9px;width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.hist .h small{display:block;color:var(--sub);font-size:10px}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a3a2a;border:1px solid var(--teal);color:#4cd98a;padding:11px 18px;border-radius:10px;font-size:12px;font-weight:700;opacity:0;transition:opacity .3s;z-index:2000;pointer-events:none}
+.toast.erro{background:#2a1a1a;border-color:#6b2a2a;color:#f08080}
+.bloqueio{max-width:440px;margin:90px auto;text-align:center;background:var(--ink2);border:1px solid var(--border);border-radius:16px;padding:36px}
+.bloqueio h2{font-family:var(--serif);font-weight:400;color:#fff;margin:10px 0}
+.bloqueio p{font-size:13px;color:var(--muted);margin-bottom:18px}
+.legenda{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:12px}
+.legenda span{display:flex;align-items:center;gap:6px}
+.legenda i{width:10px;height:10px;border-radius:3px;display:inline-block}
+@media(max-width:760px){.fgrid,.det-grid{grid-template-columns:1fr}.filtros input{min-width:0;width:100%}.main{padding:14px}.item-val{text-align:left}}
+</style>
+</head>
+<body>
+
+<div id="smct-banner" style="display:none;background:#0a1a2a;border-bottom:2px solid #1a3a5a;padding:10px 20px;font-size:13px;color:#9ab8d0;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="background:#1a3a5a;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:#9ab8d0" id="banner-role"></span>
+    <span id="banner-info" style="color:#bcd0e0;font-size:12px"></span>
+  </div>
+  <span style="font-size:12px;color:#8aa5c0">Dúvidas ou solicitações: <strong id="banner-contato" style="color:#9ab8d0"></strong></span>
+</div>
+
+<div class="nav-bar">
+  <a class="nav-btn" href="index.html">← Início</a>
+  <div class="nav-sep"></div>
+  <span style="font-size:11px;color:#3a4a5a">Abrir:</span>
+  <a class="nav-btn green" href="gerenciador_eventos_v2.html">📁 Gerenciador</a>
+  <a class="nav-btn gold" href="artistas_chamamento.html">🎭 Chamamento</a>
+  <a class="nav-btn blue" href="emendas_parlamentares.html">💰 Emendas</a>
+</div>
+
+<div id="app" style="display:none">
+  <div class="topbar">
+    <span style="font-size:26px">📑</span>
+    <div class="topbar-logo">Processos de Contratação</div>
+    <span class="sync" id="sync"></span>
+    <div class="topbar-sep"></div>
+    <div class="pill pill-teal" id="pill-and">Em andamento: —</div>
+    <div class="pill pill-rose" id="pill-atr">Atrasados: —</div>
+    <div class="pill pill-gold" id="pill-pag">A pagar: —</div>
+    <button class="btn btn-ghost btn-sm" id="btn-prazos" onclick="abrirPrazos()" style="display:none">⚙ Prazos</button>
+    <button class="btn btn-teal" id="btn-novo" onclick="abrirForm()">＋ Novo processo</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" id="tab-hoje" onclick="setTab('hoje')">✅ O que fazer hoje <span class="cnt" id="cnt-hoje" style="display:none">0</span></div>
+    <div class="tab" id="tab-quadro" onclick="setTab('quadro')">🗂 Quadro de etapas</div>
+    <div class="tab" id="tab-lista" onclick="setTab('lista')">📋 Lista</div>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+
+<div id="carregando" style="text-align:center;padding:80px;color:var(--muted);font-size:13px">⏳ Carregando processos...</div>
+
+<!-- Modal: detalhe -->
+<div class="modal-ov" id="ov-det" onclick="if(event.target===this)fechar('ov-det')"><div class="modal lg" id="det-box"></div></div>
+<!-- Modal: novo / editar -->
+<div class="modal-ov" id="ov-form" onclick="if(event.target===this)fechar('ov-form')"><div class="modal lg" id="form-box"></div></div>
+<!-- Modal: avançar etapa -->
+<div class="modal-ov" id="ov-trans" onclick="if(event.target===this)fechar('ov-trans')"><div class="modal" id="trans-box"></div></div>
+<!-- Modal: prazos -->
+<div class="modal-ov" id="ov-prazos" onclick="if(event.target===this)fechar('ov-prazos')"><div class="modal" id="prazos-box"></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════ CONFIGURAÇÃO ═══════════════
+const SB_URL = 'https://kvwgjmnsfcvzxuoanjkk.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2d2dqbW5zZmN2enh1b2FuamtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MjUwOTAsImV4cCI6MjEwMDQwMTA5MH0.UDR2G2NiMHz2iyqun0TRtStHxlSvn2XGNkA7jRy_LCM';
+const SB_REST = SB_URL + '/rest/v1/app_data';
+const PREFIXO = 'processo_';      // um registro por processo em app_data
+const PREFIXO_ANX = 'procanexo_'; // um registro por arquivo anexado
+const CHAVE_CFG = 'proc_config';  // prazos por etapa
+const LIMITE_ARQ_MB = 8;
+
+const TIPOS = ['Compra','Consumo de ata','Contratação de artista','Prestação de serviço','Outro'];
+
+// Etapas do rito. prazo = dias máximos parado na etapa antes de ficar atrasado.
+const ETAPAS = [
+  { id:'aberto',       nome:'Aberto',                   quem:'SMCT',          prazo:2,  dica:'Solicitação anexada. Tramitar para Compras no GIAP.' },
+  { id:'compras_emp',  nome:'Em Compras — empenho',     quem:'Compras',       prazo:10, dica:'Compras está gerando o empenho.' },
+  { id:'assinatura',   nome:'Empenho para assinar',     quem:'Ordenador',     prazo:2,  dica:'Ordenador de despesas precisa assinar o empenho.' },
+  { id:'compras_af',   nome:'Em Compras — AF',          quem:'Compras',       prazo:5,  dica:'Compras está gerando a Autorização de Fornecimento.' },
+  { id:'af_emitida',   nome:'AF emitida — enviar',      quem:'SMCT',          prazo:1,  dica:'Enviar a AF ao fornecedor.', critico:true },
+  { id:'execucao',     nome:'Aguardando entrega/serviço', quem:'Fornecedor',  prazo:null, dica:'Fornecedor executa o serviço ou entrega o produto.' },
+  { id:'aguard_nf',    nome:'Aguardando NF',            quem:'Fornecedor',    prazo:5,  dica:'Fornecedor deve emitir e enviar a nota fiscal.' },
+  { id:'nf_recebida',  nome:'NF recebida — anexar',     quem:'SMCT',          prazo:1,  dica:'Anexar a NF no processo e tramitar para a Contabilidade.', critico:true },
+  { id:'contabilidade',nome:'Na contabilidade',         quem:'Contabilidade', prazo:15, dica:'Aguardando pagamento.' },
+  { id:'pago',         nome:'Pago',                     quem:'—',             prazo:null, dica:'Processo concluído.' }
+];
+const IDX = {}; ETAPAS.forEach((e,i)=>IDX[e.id]=i);
+
+// O que é preciso informar para avançar de cada etapa (as "travas").
+// base = campo de data que passa a contar o prazo da próxima etapa.
+const TRANS = {
+  aberto: { titulo:'Tramitei para Compras', base:'dataTramite', campos:[
+    {k:'dataTramite', l:'Data em que tramitou no GIAP', t:'date', req:true} ]},
+  compras_emp: { titulo:'Empenho gerado', base:'dataEmpenho', campos:[
+    {k:'numEmpenho', l:'Nº do empenho', t:'text', req:true},
+    {k:'valorEmpenho', l:'Valor empenhado (R$)', t:'money', req:true},
+    {k:'dataEmpenho', l:'Data em que chegou para assinatura', t:'date', req:true},
+    {k:'_arq', l:'PDF do empenho (opcional)', t:'file', cat:'Empenho'} ]},
+  assinatura: { titulo:'Ordenador assinou o empenho', base:'dataAssinatura', campos:[
+    {k:'dataAssinatura', l:'Data da assinatura', t:'date', req:true} ],
+    checks:[{k:'chkVoltaCompras', l:'Tramitei o processo de volta para Compras no GIAP'}]},
+  compras_af: { titulo:'AF gerada', base:'dataAF', campos:[
+    {k:'numAF', l:'Nº da AF', t:'text', req:true},
+    {k:'dataAF', l:'Data da AF', t:'date', req:true},
+    {k:'_arq', l:'PDF da AF (opcional)', t:'file', cat:'AF'} ]},
+  af_emitida: { titulo:'AF enviada ao fornecedor', base:'afEnviadaEm', campos:[
+    {k:'afEnviadaEm', l:'Data do envio', t:'date', req:true},
+    {k:'afEnviadaMeio', l:'Enviada por', t:'select', op:['E-mail','WhatsApp','Em mãos','Outro'], req:true},
+    {k:'dataPrevista', l:'Data prevista de entrega / realização do serviço', t:'date', req:true, full:true} ]},
+  execucao: { titulo:'Serviço realizado / produto entregue', base:'dataEntrega', campos:[
+    {k:'dataEntrega', l:'Data da entrega / realização', t:'date', req:true} ],
+    checks:[{k:'chkConferido', l:'Conferi a entrega ou a realização do serviço'}]},
+  aguard_nf: { titulo:'Nota fiscal recebida', base:'dataNF', campos:[
+    {k:'numNF', l:'Nº da nota fiscal', t:'text', req:true},
+    {k:'valorNF', l:'Valor da NF (R$)', t:'money', req:true},
+    {k:'dataNF', l:'Data em que a NF chegou', t:'date', req:true},
+    {k:'nfVia', l:'Chegou por', t:'select', op:['E-mail','WhatsApp','Em mãos','Outro'], req:true},
+    {k:'_arq', l:'PDF da nota fiscal', t:'file', cat:'Nota fiscal', req:true, full:true} ]},
+  nf_recebida: { titulo:'NF anexada e enviada para pagamento', base:'dataContabilidade', campos:[
+    {k:'dataContabilidade', l:'Data em que tramitou para a Contabilidade', t:'date', req:true, full:true} ],
+    checks:[{k:'chkNfAnexada', l:'Anexei a nota fiscal no processo, no GIAP'},
+            {k:'chkTramContab', l:'Tramitei o processo para a Contabilidade no GIAP'}]},
+  contabilidade: { titulo:'Pagamento confirmado', base:'dataPagamento', campos:[
+    {k:'dataPagamento', l:'Data do pagamento', t:'date', req:true} ]}
+};
+
+// ═══════════════ ESTADO ═══════════════
+let processos = {};          // id -> processo
+let prazos = {};             // id etapa -> dias
+let perfil = {};
+let tabAtual = 'hoje';
+let cloudOk = true;
+let detId = null;
+let filtro = { q:'', tipo:'', etapa:'', sit:'', cancelados:false };
+
+// ═══════════════ UTILITÁRIOS ═══════════════
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function hojeISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseData(s){ if(!s) return null; const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function diasEntre(a,b){ return Math.round((parseData(b)-parseData(a))/86400000); }
+function fmtData(s){ if(!s) return '—'; const [y,m,d]=s.split('-'); return d+'/'+m+'/'+y; }
+function fmtDH(iso){ const d=new Date(iso); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function fmtBRL(v){ return (v==null||v==='')?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function parseBRL(s){ if(s==null) return null; s=String(s).trim().replace(/R\$\s?/,''); if(!s) return null; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isNaN(n)?null:n; }
+function moneyInput(v){ return v==null?'':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function novoId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function nomeUsuario(){ return perfil.nome || perfil.email || 'Usuário'; }
+function podeEditar(){ return perfil.isAdmin===true || perfil.role==='editor' || perfil.role==='admin' || perfil.role==='admin_temp'; }
+function toast(msg, erro){ const t=$('toast'); t.textContent=msg; t.className='toast'+(erro?' erro':''); t.style.opacity='1'; clearTimeout(window._tt); window._tt=setTimeout(()=>t.style.opacity='0', 2800); }
+function abrir(id){ $(id).classList.add('open'); }
+function fechar(id){ $(id).classList.remove('open'); if(id==='ov-det') detId=null; }
+function sync(st){ const el=$('sync'); const m={saving:['⏳ Salvando...','#1a3a6a'],saved:['☁ Salvo','#1e4d30'],error:['⚠ Erro ao salvar','#8b1a1a'],live:['🔄 Atualizado','#1a3a6a']}[st]; el.textContent=m[0]; el.style.background=m[1]; el.style.opacity='1'; clearTimeout(window._st); if(st!=='saving'&&st!=='error') window._st=setTimeout(()=>el.style.opacity='0',2200); }
+function lerValor(v){ if(typeof v==='string'){ try{ return JSON.parse(v); }catch(e){ return null; } } return v; }
+function prazoDe(etapaId){ return prazos[etapaId]!=null ? prazos[etapaId] : ETAPAS[IDX[etapaId]].prazo; }
+
+// ═══════════════ SUPABASE ═══════════════
+const H = () => ({ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Content-Type':'application/json' });
+async function sbUpsert(chave, obj){
+  const r = await fetch(SB_REST+'?on_conflict=chave', { method:'POST', headers:{...H(),'Prefer':'resolution=merge-duplicates'}, body:JSON.stringify([{chave, valor:JSON.stringify(obj)}]) });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+}
+async function sbGetChave(chave){
+  const r = await fetch(SB_REST+'?chave=eq.'+encodeURIComponent(chave)+'&select=valor', { headers:H() });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const rows = await r.json(); return rows.length ? lerValor(rows[0].valor) : null;
+}
+async function carregarTudo(){
+  const r = await fetch(SB_REST+'?chave=like.'+PREFIXO+'*&select=chave,valor', { headers:H() });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const rows = await r.json();
+  processos = {};
+  rows.forEach(row=>{ const p=lerValor(row.valor); if(p && p.id && !p.excluido) processos[p.id]=p; });
+  try { const cfg = await sbGetChave(CHAVE_CFG); prazos = (cfg && cfg.prazos) || {}; } catch(e){ prazos = {}; }
+}
+async function salvarProcesso(p){
+  if(!cloudOk){ alert('⚠ A conexão com o servidor falhou ao abrir esta página. Para proteger os dados, salvar está bloqueado. Recarregue a página (F5).'); throw new Error('bloqueado'); }
+  p.atualizadoEm = new Date().toISOString(); p.atualizadoPor = nomeUsuario();
+  sync('saving');
+  try { await sbUpsert(PREFIXO+p.id, p); processos[p.id]=p; sync('saved'); }
+  catch(e){ sync('error'); toast('⚠ Não foi possível salvar. Verifique a internet e tente de novo.', true); throw e; }
+}
+function ouvirTempoReal(){
+  try {
+    const cli = supabase.createClient(SB_URL, SB_KEY);
+    cli.channel('processos-rt').on('postgres_changes', { event:'*', schema:'public', table:'app_data' }, payload=>{
+      const row = payload.new; if(!row || !row.chave || !row.chave.startsWith(PREFIXO)) return;
+      const p = lerValor(row.valor); if(!p || !p.id) return;
+      if(p.excluido) delete processos[p.id]; else processos[p.id]=p;
+      renderTudo(); if(detId===p.id) abrirDetalhe(p.id); sync('live');
+    }).subscribe();
+  } catch(e){ console.warn('realtime', e); }
+}
+
+// ═══════════════ SITUAÇÃO / PRAZOS ═══════════════
+// Retorna {cls:'ok'|'atencao'|'atrasado'|'neutro'|'pago', txt, dias, atraso}
+function situacao(p){
+  if(p.cancelado) return {cls:'neutro', txt:'Cancelado', atraso:-999};
+  if(p.etapa==='pago') return {cls:'pago', txt:'Pago em '+fmtData(p.dataPagamento), atraso:-999};
+  const hoje = hojeISO();
+  if(p.etapa==='execucao'){
+    if(!p.dataPrevista) return {cls:'atencao', txt:'Sem data prevista', atraso:0};
+    const falta = diasEntre(hoje, p.dataPrevista);
+    if(falta<0) return {cls:'atrasado', txt:'Entrega vencida há '+(-falta)+'d', atraso:-falta};
+    if(falta<=1) return {cls:'atencao', txt:falta===0?'Entrega prevista hoje':'Entrega amanhã', atraso:0};
+    return {cls:'ok', txt:'Entrega em '+fmtData(p.dataPrevista), atraso:-falta};
+  }
+  const dias = Math.max(0, diasEntre(p.etapaDesde||hoje, hoje));
+  const prazo = prazoDe(p.etapa);
+  const txt = dias===0 ? 'Entrou hoje' : (dias===1?'Há 1 dia':'Há '+dias+' dias');
+  if(prazo==null) return {cls:'ok', txt, dias, atraso:0};
+  if(dias>prazo) return {cls:'atrasado', txt:txt+' · prazo '+prazo+'d', dias, atraso:dias-prazo};
+  if(dias>=prazo) return {cls:'atencao', txt:txt+' · prazo '+prazo+'d', dias, atraso:0};
+  return {cls:'ok', txt, dias, atraso:dias-prazo};
+}
+function ativos(){ return Object.values(processos).filter(p=>!p.cancelado && p.etapa!=='pago'); }
+
+// ═══════════════ RENDER ═══════════════
+function setTab(t){ tabAtual=t; ['hoje','quadro','lista'].forEach(x=>$('tab-'+x).classList.toggle('active',x===t)); renderTudo(); }
+function renderTudo(){
+  const at = ativos();
+  const atr = at.filter(p=>situacao(p).cls==='atrasado').length;
+  const aPagar = at.filter(p=>IDX[p.etapa]>=IDX['execucao']).reduce((s,p)=>s+(Number(p.valorNF||p.valorEmpenho||p.valorEstimado)||0),0);
+  $('pill-and').textContent = 'Em andamento: '+at.length;
+  $('pill-atr').textContent = 'Atrasados: '+atr;
+  $('pill-pag').textContent = 'A pagar: '+fmtBRL(aPagar);
+  const nHoje = gruposHoje().reduce((s,g)=>s+(g.urgente?g.itens.length:0),0);
+  $('cnt-hoje').textContent = nHoje; $('cnt-hoje').style.display = nHoje? '' : 'none';
+  if(tabAtual==='hoje') renderHoje(); else if(tabAtual==='quadro') renderQuadro(); else renderLista();
+}
+
+function gruposHoje(){
+  const at = ativos(); const hoje = hojeISO();
+  const ord = arr => arr.sort((a,b)=>situacao(b).atraso-situacao(a).atraso);
+  return [
+    { ic:'🚨', tit:'Enviar a AF ao fornecedor', sub:'AF já emitida. Se não for enviada, o fornecedor não começa e o prazo corre.', critico:true, urgente:true, acao:'Marcar AF enviada',
+      itens: ord(at.filter(p=>p.etapa==='af_emitida')) },
+    { ic:'📎', tit:'Anexar a NF e enviar para pagamento', sub:'Nota já recebida. Anexe no GIAP e tramite para a Contabilidade.', critico:true, urgente:true, acao:'Marcar como enviada',
+      itens: ord(at.filter(p=>p.etapa==='nf_recebida')) },
+    { ic:'📦', tit:'Entrega ou serviço com data vencida', sub:'Confirme se foi realizado ou cobre o fornecedor.', urgente:true, acao:'Confirmar entrega',
+      itens: ord(at.filter(p=>p.etapa==='execucao' && (!p.dataPrevista || p.dataPrevista<hoje))) },
+    { ic:'🧾', tit:'Cobrar a nota fiscal do fornecedor', sub:'Serviço feito, mas a NF não chegou dentro do prazo.', urgente:true, acao:'Registrar NF',
+      itens: ord(at.filter(p=>p.etapa==='aguard_nf' && situacao(p).cls==='atrasado')) },
+    { ic:'✍️', tit:'Aguardando assinatura do ordenador', sub:'Empenhos que precisam ser assinados.', urgente:false, acao:'Marcar assinado',
+      itens: ord(at.filter(p=>p.etapa==='assinatura')) },
+    { ic:'⏳', tit:'Parados além do prazo', sub:'Processos em outras etapas que passaram do tempo combinado.', urgente:true, acao:null,
+      itens: ord(at.filter(p=>['aberto','compras_emp','compras_af','contabilidade'].includes(p.etapa) && situacao(p).cls==='atrasado')) }
+  ];
+}
+
+function renderHoje(){
+  const at = ativos(); const hoje = hojeISO(); const mes = hoje.slice(0,7);
+  const pagosMes = Object.values(processos).filter(p=>p.etapa==='pago' && (p.dataPagamento||'').startsWith(mes));
+  const naContab = at.filter(p=>p.etapa==='contabilidade');
+  const grupos = gruposHoje();
+  let h = `<div class="stat-row">
+    <div class="sc teal"><div class="sc-lbl">Em andamento</div><div class="sc-val">${at.length}</div><div class="sc-sub">processos abertos</div></div>
+    <div class="sc rose"><div class="sc-lbl">Atrasados</div><div class="sc-val">${at.filter(p=>situacao(p).cls==='atrasado').length}</div><div class="sc-sub">passaram do prazo da etapa</div></div>
+    <div class="sc blue"><div class="sc-lbl">Na contabilidade</div><div class="sc-val">${naContab.length}</div><div class="sc-sub">${fmtBRL(naContab.reduce((s,p)=>s+(Number(p.valorNF)||0),0))} aguardando pagamento</div></div>
+    <div class="sc gold"><div class="sc-lbl">Pagos no mês</div><div class="sc-val">${pagosMes.length}</div><div class="sc-sub">${fmtBRL(pagosMes.reduce((s,p)=>s+(Number(p.valorNF)||0),0))}</div></div>
+  </div>`;
+  const comItens = grupos.filter(g=>g.itens.length);
+  if(!at.length){
+    h += `<div class="tudo-ok">Nenhum processo cadastrado ainda.<br><br>${podeEditar()?'<button class="btn btn-teal" onclick="abrirForm()">＋ Cadastrar o primeiro processo</button>':''}</div>`;
+  } else if(!comItens.length){
+    h += `<div class="tudo-ok">✅ Tudo em dia. Nenhuma pendência para hoje.</div>`;
+  }
+  comItens.forEach(g=>{
+    h += `<div class="grupo${g.critico?' critico':''}"><div class="grupo-hd"><span style="font-size:22px">${g.ic}</span><div><h3>${g.tit}</h3><p>${g.sub}</p></div><span class="n">${g.itens.length}</span></div>`;
+    g.itens.forEach(p=>{ h += linhaItem(p, g.acao); });
+    h += `</div>`;
+  });
+  $('main').innerHTML = h;
+}
+function linhaItem(p, acao){
+  const s = situacao(p);
+  const btn = (acao && podeEditar() && TRANS[p.etapa]) ? `<button class="btn btn-teal btn-sm" onclick="abrirTransicao('${p.id}')">${esc(acao)}</button>` : '';
+  return `<div class="item">
+    <div class="item-main" onclick="abrirDetalhe('${p.id}')">
+      <div class="item-tit">Proc. ${esc(p.numProcesso)} · ${esc(p.objeto)}</div>
+      <div class="item-sub">${esc(p.fornecedor||'Fornecedor não informado')}${p.contato?' · '+esc(p.contato):''}${p.numAF?' · AF '+esc(p.numAF):''}${p.numEmpenho?' · Empenho '+esc(p.numEmpenho):''}</div>
+    </div>
+    <span class="chip ${s.cls}">${esc(s.txt)}</span>
+    <div class="item-val">${fmtBRL(p.valorNF||p.valorEmpenho||p.valorEstimado)}</div>
+    ${btn}<button class="btn btn-ghost btn-sm" onclick="abrirDetalhe('${p.id}')">Abrir</button>
+  </div>`;
+}
+
+function filtrados(){
+  const q = filtro.q.trim().toLowerCase();
+  return Object.values(processos).filter(p=>{
+    if(!filtro.cancelados && p.cancelado) return false;
+    if(filtro.tipo && p.tipo!==filtro.tipo) return false;
+    if(filtro.etapa && p.etapa!==filtro.etapa) return false;
+    if(filtro.sit && situacao(p).cls!==filtro.sit) return false;
+    if(q){ const alvo=[p.numProcesso,p.objeto,p.fornecedor,p.numEmpenho,p.numAF,p.numNF,p.evento,p.responsavel].join(' ').toLowerCase(); if(!alvo.includes(q)) return false; }
+    return true;
+  });
+}
+function barraFiltros(comEtapa){
+  return `<div class="filtros">
+    <input id="f-q" placeholder="🔍 Buscar nº do processo, objeto, fornecedor, empenho, AF, NF..." value="${esc(filtro.q)}" oninput="filtro.q=this.value;atualizarFiltro()">
+    <select onchange="filtro.tipo=this.value;renderTudo()"><option value="">Todos os tipos</option>${TIPOS.map(t=>`<option ${filtro.tipo===t?'selected':''}>${t}</option>`).join('')}</select>
+    ${comEtapa?`<select onchange="filtro.etapa=this.value;renderTudo()"><option value="">Todas as etapas</option>${ETAPAS.map(e=>`<option value="${e.id}" ${filtro.etapa===e.id?'selected':''}>${e.nome}</option>`).join('')}</select>`:''}
+    <select onchange="filtro.sit=this.value;renderTudo()"><option value="">Qualquer situação</option><option value="atrasado" ${filtro.sit==='atrasado'?'selected':''}>Atrasados</option><option value="atencao" ${filtro.sit==='atencao'?'selected':''}>Atenção</option><option value="ok" ${filtro.sit==='ok'?'selected':''}>Em dia</option></select>
+    <label><input type="checkbox" ${filtro.cancelados?'checked':''} onchange="filtro.cancelados=this.checked;renderTudo()"> Mostrar cancelados</label>
+    ${!comEtapa?'':`<button class="btn btn-ghost btn-sm" onclick="exportarCSV()" style="margin-left:auto">⬇ Exportar planilha (CSV)</button>`}
+  </div>`;
+}
+function atualizarFiltro(){ clearTimeout(window._ft); window._ft=setTimeout(()=>{ renderTudo(); const i=$('f-q'); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length);} },250); }
+
+function renderQuadro(){
+  const lista = filtrados(); const hoje = hojeISO();
+  let h = barraFiltros(false);
+  h += `<div class="legenda"><span><i style="background:var(--teal)"></i>Em dia</span><span><i style="background:var(--amber)"></i>No limite do prazo</span><span><i style="background:#e24b4a"></i>Atrasado</span><span style="margin-left:auto;color:var(--sub)">Pagos: mostrando só os últimos 30 dias</span></div>`;
+  h += `<div class="board">`;
+  ETAPAS.forEach(e=>{
+    let itens = lista.filter(p=>p.etapa===e.id);
+    if(e.id==='pago') itens = itens.filter(p=>!p.dataPagamento || diasEntre(p.dataPagamento, hoje)<=30);
+    itens.sort((a,b)=>situacao(b).atraso-situacao(a).atraso);
+    const pz = prazoDe(e.id);
+    h += `<div class="col${e.critico?' critico':''}"><div class="col-hd"><div class="t"><span>${e.critico?'🚨 ':''}${esc(e.nome)}</span><span class="badge">${itens.length}</span></div>
+      <div class="q">${esc(e.quem)}${pz!=null?' · prazo '+pz+' dia'+(pz>1?'s':''):''}</div></div><div class="col-body">`;
+    if(!itens.length) h += `<div style="font-size:11px;color:#3a4a5a;text-align:center;padding:12px">—</div>`;
+    itens.forEach(p=>{ const s=situacao(p);
+      h += `<div class="card ${s.cls}" onclick="abrirDetalhe('${p.id}')">
+        <div style="display:flex;justify-content:space-between;gap:6px"><span class="np">${esc(p.numProcesso)}</span><span class="badge">${esc(p.tipo)}</span></div>
+        <div class="ob">${esc(p.objeto)}</div><div class="fo">${esc(p.fornecedor||'—')}</div>
+        <div class="ft"><span class="vl">${fmtBRL(p.valorNF||p.valorEmpenho||p.valorEstimado)}</span><span class="chip ${s.cls}">${esc(s.txt)}</span></div></div>`;
+    });
+    h += `</div></div>`;
+  });
+  h += `</div>`;
+  $('main').innerHTML = h;
+}
+
+function renderLista(){
+  const lista = filtrados().sort((a,b)=>(b.dataAbertura||'').localeCompare(a.dataAbertura||''));
+  let h = barraFiltros(true);
+  h += `<div class="tbl-wrap"><table><thead><tr><th>Processo</th><th>Tipo</th><th>Objeto</th><th>Fornecedor</th><th>Valor</th><th>Etapa</th><th>Situação</th><th>Abertura</th></tr></thead><tbody>`;
+  if(!lista.length) h += `<tr><td colspan="8" style="text-align:center;color:var(--sub);padding:24px">Nenhum processo encontrado.</td></tr>`;
+  lista.forEach(p=>{ const s=situacao(p);
+    h += `<tr class="click" onclick="abrirDetalhe('${p.id}')"><td style="font-weight:800;color:var(--gold)">${esc(p.numProcesso)}</td><td>${esc(p.tipo)}</td><td>${esc(p.objeto)}</td><td>${esc(p.fornecedor||'—')}</td>
+      <td style="white-space:nowrap">${fmtBRL(p.valorNF||p.valorEmpenho||p.valorEstimado)}</td><td>${p.cancelado?'Cancelado':esc(ETAPAS[IDX[p.etapa]].nome)}</td><td><span class="chip ${s.cls}">${esc(s.txt)}</span></td><td>${fmtData(p.dataAbertura)}</td></tr>`;
+  });
+  h += `</tbody></table></div><div style="font-size:11px;color:var(--sub);margin-top:8px">${lista.length} processo(s)</div>`;
+  $('main').innerHTML = h;
+}
+
+function exportarCSV(){
+  const cols = [['numProcesso','Processo'],['tipo','Tipo'],['objeto','Objeto'],['fornecedor','Fornecedor'],['evento','Evento'],['responsavel','Responsável'],['dataAbertura','Abertura'],['valorEstimado','Valor estimado'],['numEmpenho','Empenho'],['valorEmpenho','Valor empenho'],['numAF','AF'],['dataAF','Data AF'],['afEnviadaEm','AF enviada em'],['dataPrevista','Entrega prevista'],['dataEntrega','Entregue em'],['numNF','NF'],['valorNF','Valor NF'],['dataNF','NF recebida em'],['dataContabilidade','Enviado contabilidade'],['dataPagamento','Pago em']];
+  const linhas = [cols.map(c=>c[1]).concat(['Etapa','Situação'])];
+  filtrados().forEach(p=>{ linhas.push(cols.map(c=>{ const v=p[c[0]]; if(v==null) return ''; if(c[0].startsWith('valor')) return String(v).replace('.',','); if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return fmtData(v); return v; }).concat([p.cancelado?'Cancelado':ETAPAS[IDX[p.etapa]].nome, situacao(p).txt])); });
+  const csv = '﻿'+linhas.map(l=>l.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download = 'processos_'+hojeISO()+'.csv'; a.click();
+}
+
+// ═══════════════ DETALHE ═══════════════
+function campo(k, v){ const vazio = v==null||v===''||v==='—'; return `<div><div class="k">${k}</div><div class="v${vazio?' vazio-v':''}">${vazio?'—':esc(v)}</div></div>`; }
+function abrirDetalhe(id){
+  const p = processos[id]; if(!p) return; detId = id;
+  const s = situacao(p); const ed = podeEditar(); const i = IDX[p.etapa]; const e = ETAPAS[i];
+  let h = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+    <div><div class="modal-tit">Processo ${esc(p.numProcesso)}</div><div class="modal-sub" style="margin-bottom:0">${esc(p.tipo)} · ${esc(p.objeto)}</div></div>
+    <div style="display:flex;gap:8px;align-items:center"><span class="chip ${s.cls}">${esc(s.txt)}</span><button class="btn btn-ghost btn-sm" onclick="fechar('ov-det')">✕</button></div></div>`;
+  h += `<div class="stepper">${ETAPAS.map((x,j)=>`<div class="st ${p.cancelado?'':(j<i||p.etapa==='pago'?'feito':j===i?'atual':'')}" title="${esc(x.dica)}"><div class="dot"></div><div class="nm">${esc(x.nome)}</div></div>`).join('')}</div>`;
+  if(p.cancelado){
+    h += `<div class="aviso">Processo cancelado em ${fmtDH(p.canceladoEm)} por ${esc(p.canceladoPor||'—')}. Motivo: ${esc(p.motivoCancel||'—')}</div>`;
+  } else if(TRANS[p.etapa]){
+    h += `<div class="acao-box${e.critico?' critico':''}"><div class="txt"><b>${e.critico?'🚨 ':''}Etapa atual: ${esc(e.nome)}</b>${esc(e.dica)} Responsável: ${esc(e.quem)}.</div>
+      ${ed?`<button class="btn btn-teal" onclick="abrirTransicao('${p.id}')">▶ ${esc(TRANS[p.etapa].titulo)}</button>`:''}</div>`;
+  } else {
+    h += `<div class="acao-box"><div class="txt"><b>✅ Processo concluído</b>Pago em ${fmtData(p.dataPagamento)}.</div></div>`;
+  }
+  h += `<div class="det-sec">Dados do processo</div><div class="det-grid">
+    ${campo('Nº do processo (GIAP)',p.numProcesso)}${campo('Tipo',p.tipo)}${campo('Data de abertura',fmtData(p.dataAbertura))}
+    ${campo('Fornecedor',p.fornecedor)}${campo('Contato do fornecedor',p.contato)}${campo('Valor estimado',p.valorEstimado!=null?fmtBRL(p.valorEstimado):'')}
+    ${campo('Evento vinculado',p.evento)}${campo('Responsável na SMCT',p.responsavel)}${campo('Nº da solicitação',p.numSolicitacao)}</div>
+    <div class="det-sec">Empenho e AF</div><div class="det-grid">
+    ${campo('Nº do empenho',p.numEmpenho)}${campo('Valor empenhado',p.valorEmpenho!=null?fmtBRL(p.valorEmpenho):'')}${campo('Assinado em',fmtData(p.dataAssinatura))}
+    ${campo('Nº da AF',p.numAF)}${campo('Data da AF',fmtData(p.dataAF))}${campo('AF enviada ao fornecedor',p.afEnviadaEm?fmtData(p.afEnviadaEm)+' · '+(p.afEnviadaMeio||''):'')}</div>
+    <div class="det-sec">Entrega, nota fiscal e pagamento</div><div class="det-grid">
+    ${campo('Entrega prevista',fmtData(p.dataPrevista))}${campo('Entregue / realizado em',fmtData(p.dataEntrega))}${campo('Nº da NF',p.numNF)}
+    ${campo('Valor da NF',p.valorNF!=null?fmtBRL(p.valorNF):'')}${campo('NF recebida em',p.dataNF?fmtData(p.dataNF)+' · '+(p.nfVia||''):'')}${campo('Enviado à contabilidade',fmtData(p.dataContabilidade))}
+    ${campo('Pago em',fmtData(p.dataPagamento))}</div>`;
+  if(p.valorNF!=null && p.valorEmpenho!=null && Math.abs(p.valorNF-p.valorEmpenho)>0.009)
+    h += `<div class="aviso">⚠ O valor da NF (${fmtBRL(p.valorNF)}) é diferente do valor empenhado (${fmtBRL(p.valorEmpenho)}).</div>`;
+  if(p.obs) h += `<div class="det-sec">Observações</div><div style="font-size:13px;white-space:pre-wrap">${esc(p.obs)}</div>`;
+  h += `<div class="det-sec">Documentos anexados</div>`;
+  const anx = p.anexos||[];
+  if(!anx.length) h += `<div style="font-size:12px;color:var(--sub);margin-bottom:8px">Nenhum documento anexado.</div>`;
+  anx.forEach(a=>{ h += `<div class="anx"><span class="badge">${esc(a.cat)}</span><span class="nm" onclick="baixarAnexo('${p.id}','${a.id}')">📄 ${esc(a.nome)}</span><span style="font-size:10px;color:var(--sub)">${fmtDH(a.em)} · ${esc(a.por)}</span>${ed?`<button class="btn btn-rose btn-sm" onclick="removerAnexo('${p.id}','${a.id}')">✕</button>`:''}</div>`; });
+  if(ed) h += `<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><select id="anx-cat" style="background:var(--ink);border:1px solid var(--border);color:#fff;border-radius:8px;padding:7px 10px;font-size:12px"><option>Solicitação</option><option>Empenho</option><option>AF</option><option>Nota fiscal</option><option>Comprovante de envio</option><option>Outro</option></select>
+    <label class="btn btn-ghost btn-sm" style="cursor:pointer">📎 Anexar documento<input type="file" style="display:none" onchange="anexarAvulso('${p.id}',this)"></label></div>`;
+  h += `<div class="det-sec">Histórico</div><div class="hist">${(p.historico||[]).slice().reverse().map(x=>`<div class="h">${esc(x.acao)}${x.obs?' — '+esc(x.obs):''}<small>${fmtDH(x.em)} · ${esc(x.por)}</small></div>`).join('')}</div>`;
+  if(ed){
+    h += `<div class="mfooter" style="justify-content:space-between"><div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${!p.cancelado && i>0 ? `<button class="btn btn-ghost btn-sm" onclick="voltarEtapa('${p.id}')">↩ Voltar etapa</button>`:''}
+      ${!p.cancelado ? `<button class="btn btn-rose btn-sm" onclick="cancelarProcesso('${p.id}')">Cancelar processo</button>` : `<button class="btn btn-ghost btn-sm" onclick="reativarProcesso('${p.id}')">Reativar processo</button>`}
+      ${perfil.isAdmin===true ? `<button class="btn btn-rose btn-sm" onclick="excluirProcesso('${p.id}')">🗑 Excluir</button>`:''}</div>
+      <button class="btn btn-gold" onclick="abrirForm('${p.id}')">✏️ Editar dados</button></div>`;
+  }
+  $('det-box').innerHTML = h; abrir('ov-det');
+}
+
+// ═══════════════ NOVO / EDITAR ═══════════════
+function inp(k, l, v, t, extra){
+  extra = extra||{}; const req = extra.req?' <span class="req">*</span>':'';
+  let ctl;
+  if(t==='select') ctl = `<select id="ff-${k}">${extra.vazio?'<option value="">—</option>':''}${extra.op.map(o=>{ const val=typeof o==='object'?o.v:o, txt=typeof o==='object'?o.t:o; return `<option value="${esc(val)}" ${String(v)===String(val)?'selected':''}>${esc(txt)}</option>`; }).join('')}</select>`;
+  else if(t==='textarea') ctl = `<textarea id="ff-${k}">${esc(v||'')}</textarea>`;
+  else if(t==='money') ctl = `<input id="ff-${k}" inputmode="decimal" placeholder="0,00" value="${esc(moneyInput(v))}">`;
+  else ctl = `<input id="ff-${k}" type="${t}" value="${esc(v||'')}" ${extra.ph?`placeholder="${esc(extra.ph)}"`:''}>`;
+  return `<div class="fg${extra.full?' full':''}" id="fgw-${k}"><label>${l}${req}</label>${ctl}</div>`;
+}
+function abrirForm(id){
+  if(!podeEditar()){ alert('Seu perfil é somente leitura. Solicite edição a '+(perfil.contatoAdmin||'o administrador')+'.'); return; }
+  const p = id ? processos[id] : { tipo:'Compra', dataAbertura:hojeISO(), responsavel:nomeUsuario(), etapa:'aberto' };
+  const novo = !id;
+  let h = `<div class="modal-tit">${novo?'Novo processo':'Editar processo '+esc(p.numProcesso)}</div><div class="modal-sub">${novo?'Cadastre assim que abrir o processo no GIAP. Só os campos com * são obrigatórios.':'Corrija ou complete as informações. Para mudar de etapa, use o botão de ação no processo.'}</div><div class="fgrid">
+    ${inp('numProcesso','Nº do processo no GIAP',p.numProcesso,'text',{req:true,ph:'ex.: 1234/2026'})}
+    ${inp('tipo','Tipo',p.tipo,'select',{req:true,op:TIPOS})}
+    ${inp('objeto','Objeto (o que está sendo contratado)',p.objeto,'text',{req:true,full:true,ph:'ex.: Locação de palco para o Festival Prensado na Estação'})}
+    ${inp('fornecedor','Fornecedor',p.fornecedor,'text')}
+    ${inp('contato','Contato do fornecedor (telefone / e-mail)',p.contato,'text')}
+    ${inp('valorEstimado','Valor estimado (R$)',p.valorEstimado,'money')}
+    ${inp('dataAbertura','Data de abertura',p.dataAbertura,'date',{req:true})}
+    ${inp('evento','Evento vinculado',p.evento,'text')}
+    ${inp('responsavel','Responsável na SMCT',p.responsavel,'text')}
+    ${inp('numSolicitacao','Nº da solicitação de compra',p.numSolicitacao,'text',{ph:'ex.: 1150/2026'})}`;
+  if(novo){
+    h += `<div class="sec-lbl">Processo que já está andando?</div>
+      ${inp('etapaInicial','Começar o acompanhamento na etapa',p.etapa,'select',{full:true,op:ETAPAS.filter(e=>e.id!=='pago').map(e=>({v:e.id,t:e.nome+' ('+e.quem+')'}))})}
+      <div class="full" style="font-size:11px;color:var(--sub);margin-top:-4px">Para processos antigos, escolha a etapa em que ele está hoje e preencha abaixo o que já tiver (empenho, AF, NF).</div>`;
+  }
+  h += `<div class="sec-lbl">Empenho e AF</div>
+    ${inp('numEmpenho','Nº do empenho',p.numEmpenho,'text')}${inp('valorEmpenho','Valor empenhado (R$)',p.valorEmpenho,'money')}
+    ${inp('dataAssinatura','Empenho assinado em',p.dataAssinatura,'date')}${inp('numAF','Nº da AF',p.numAF,'text')}
+    ${inp('dataAF','Data da AF',p.dataAF,'date')}${inp('afEnviadaEm','AF enviada ao fornecedor em',p.afEnviadaEm,'date')}
+    <div class="sec-lbl">Entrega, nota fiscal e pagamento</div>
+    ${inp('dataPrevista','Entrega / serviço previsto para',p.dataPrevista,'date')}${inp('dataEntrega','Entregue / realizado em',p.dataEntrega,'date')}
+    ${inp('numNF','Nº da NF',p.numNF,'text')}${inp('valorNF','Valor da NF (R$)',p.valorNF,'money')}
+    ${inp('dataNF','NF recebida em',p.dataNF,'date')}${inp('dataContabilidade','Enviado à contabilidade em',p.dataContabilidade,'date')}
+    ${inp('obs','Observações',p.obs,'textarea',{full:true})}
+  </div><div class="msg-erro" id="form-erro"></div>
+  <div class="mfooter"><button class="btn btn-ghost" onclick="fechar('ov-form')">Cancelar</button><button class="btn btn-teal" id="btn-salvar-form" onclick="salvarForm(${id?`'${id}'`:'null'})">${novo?'Cadastrar processo':'Salvar alterações'}</button></div>`;
+  $('form-box').innerHTML = h; abrir('ov-form'); setTimeout(()=>{ const f=$('ff-numProcesso'); if(f) f.focus(); },50);
+}
+async function salvarForm(id){
+  const g = k => { const el=$('ff-'+k); return el ? el.value.trim() : undefined; };
+  document.querySelectorAll('#form-box .fg').forEach(x=>x.classList.remove('erro'));
+  const faltando = ['numProcesso','objeto','dataAbertura'].filter(k=>!g(k));
+  if(faltando.length){ faltando.forEach(k=>$('fgw-'+k).classList.add('erro')); $('form-erro').textContent='Preencha os campos obrigatórios marcados em vermelho.'; $('form-erro').style.display='block'; return; }
+  const num = g('numProcesso');
+  const dup = Object.values(processos).find(x=>x.id!==id && !x.cancelado && x.numProcesso.replace(/\s/g,'')===num.replace(/\s/g,''));
+  if(dup && !confirm('Já existe um processo com o nº '+num+' ('+dup.objeto+').\n\nCadastrar mesmo assim?')) return;
+  const p = id ? JSON.parse(JSON.stringify(processos[id])) : { id:novoId(), criadoEm:new Date().toISOString(), criadoPor:nomeUsuario(), anexos:[], historico:[] };
+  ['numProcesso','tipo','objeto','fornecedor','contato','dataAbertura','evento','responsavel','numSolicitacao','numEmpenho','dataAssinatura','numAF','dataAF','afEnviadaEm','dataPrevista','dataEntrega','numNF','dataNF','dataContabilidade','obs']
+    .forEach(k=>{ const v=g(k); p[k] = v ? v : null; });
+  ['valorEstimado','valorEmpenho','valorNF'].forEach(k=>{ p[k] = parseBRL(g(k)); });
+  if(!id){
+    p.etapa = g('etapaInicial') || 'aberto';
+    p.etapaDesde = p.etapa==='aberto' ? p.dataAbertura : hojeISO();
+    p.historico.push({ em:new Date().toISOString(), por:nomeUsuario(), acao:'Processo cadastrado' + (p.etapa!=='aberto' ? ' já na etapa "'+ETAPAS[IDX[p.etapa]].nome+'"' : '') });
+  } else {
+    p.historico.push({ em:new Date().toISOString(), por:nomeUsuario(), acao:'Dados editados' });
+  }
+  $('btn-salvar-form').disabled = true;
+  try { await salvarProcesso(p); fechar('ov-form'); toast(id?'✅ Processo atualizado':'✅ Processo cadastrado'); renderTudo(); if(id) abrirDetalhe(id); }
+  catch(e){ $('btn-salvar-form').disabled = false; }
+}
+
+// ═══════════════ AVANÇAR ETAPA (com travas) ═══════════════
+function abrirTransicao(id){
+  if(!podeEditar()) return;
+  const p = processos[id]; const tr = TRANS[p.etapa]; if(!tr) return;
+  const prox = ETAPAS[IDX[p.etapa]+1];
+  let h = `<div class="modal-tit">${esc(tr.titulo)}</div><div class="modal-sub">Processo ${esc(p.numProcesso)} · ${esc(p.objeto)}<br>Depois de confirmar, o processo passa para <b style="color:#fff">${esc(prox.nome)}</b>.</div><div class="fgrid">`;
+  tr.campos.forEach(c=>{
+    const id2 = 'tr-'+c.k; const req = c.req?' <span class="req">*</span>':'';
+    let ctl;
+    let v = p[c.k]; if(c.t==='date' && !v) v = hojeISO(); if(c.k==='dataPrevista' && !p.dataPrevista) v = '';
+    if(c.t==='select') ctl = `<select id="${id2}"><option value="">Selecione...</option>${c.op.map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select>`;
+    else if(c.t==='money') ctl = `<input id="${id2}" inputmode="decimal" placeholder="0,00" value="${esc(moneyInput(v!=null?v:(c.k==='valorNF'?p.valorEmpenho:null)))}">`;
+    else if(c.t==='file') ctl = `<input id="${id2}" type="file" accept=".pdf,image/*">`;
+    else ctl = `<input id="${id2}" type="${c.t}" value="${esc(v||'')}">`;
+    h += `<div class="fg${c.full?' full':''}" id="w-${id2}"><label>${esc(c.l)}${req}</label>${ctl}</div>`;
+  });
+  (tr.checks||[]).forEach(c=>{ h += `<label class="check full" id="w-tr-${c.k}"><input type="checkbox" id="tr-${c.k}"> ${esc(c.l)}</label>`; });
+  h += `${inp('trObs','Observação (opcional)','','text',{full:true})}</div><div id="tr-aviso"></div><div class="msg-erro" id="tr-erro"></div>
+    <div class="mfooter"><button class="btn btn-ghost" onclick="fechar('ov-trans')">Cancelar</button><button class="btn btn-teal" id="btn-tr" onclick="confirmarTransicao('${id}')">Confirmar</button></div>`;
+  $('trans-box').innerHTML = h; abrir('ov-trans');
+}
+function lerArquivo(file){ return new Promise((ok,err)=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=err; r.readAsDataURL(file); }); }
+async function guardarAnexo(p, file, cat){
+  if(file.size > LIMITE_ARQ_MB*1024*1024) throw new Error('O arquivo "'+file.name+'" tem mais de '+LIMITE_ARQ_MB+' MB. Reduza o tamanho e tente de novo.');
+  const dados = await lerArquivo(file);
+  const a = { id:novoId(), cat, nome:file.name, em:new Date().toISOString(), por:nomeUsuario() };
+  await sbUpsert(PREFIXO_ANX+p.id+'_'+a.id, { nome:file.name, tipo:file.type, dados });
+  p.anexos = (p.anexos||[]).concat([a]);
+  return a;
+}
+async function confirmarTransicao(id){
+  const p0 = processos[id]; const tr = TRANS[p0.etapa];
+  document.querySelectorAll('#trans-box .fg,#trans-box .check').forEach(x=>x.classList.remove('erro'));
+  const erros = []; const vals = {}; let arq = null, arqCat = null;
+  tr.campos.forEach(c=>{
+    const el = $('tr-'+c.k);
+    if(c.t==='file'){ if(el.files[0]){ arq=el.files[0]; arqCat=c.cat; } else if(c.req){ erros.push(c.l); $('w-tr-'+c.k).classList.add('erro'); } return; }
+    let v = el.value.trim(); if(c.t==='money') v = parseBRL(v);
+    if(c.req && (v===''||v==null)){ erros.push(c.l); $('w-tr-'+c.k).classList.add('erro'); }
+    vals[c.k] = (v===''?null:v);
+  });
+  (tr.checks||[]).forEach(c=>{ if(!$('tr-'+c.k).checked){ erros.push(c.l); $('w-tr-'+c.k).classList.add('erro'); } });
+  if(erros.length){ $('tr-erro').innerHTML = 'Para avançar, falta:<br>• '+erros.map(esc).join('<br>• '); $('tr-erro').style.display='block'; return; }
+  if(vals.dataPrevista && vals.afEnviadaEm && vals.dataPrevista < vals.afEnviadaEm){ $('tr-erro').textContent='A data prevista de entrega não pode ser antes do envio da AF.'; $('tr-erro').style.display='block'; return; }
+  if(vals.valorNF!=null && p0.valorEmpenho!=null && Math.abs(vals.valorNF-p0.valorEmpenho)>0.009){
+    if(!confirm('⚠ O valor da NF ('+fmtBRL(vals.valorNF)+') é diferente do valor empenhado ('+fmtBRL(p0.valorEmpenho)+').\n\nConfirme com o fornecedor antes de enviar para pagamento.\n\nRegistrar mesmo assim?')) return;
+  }
+  const btn = $('btn-tr'); btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    // confere se ninguém mexeu neste processo enquanto o formulário estava aberto
+    const atual = await sbGetChave(PREFIXO+id);
+    if(atual && atual.etapa !== p0.etapa){ processos[id]=atual; fechar('ov-trans'); renderTudo(); abrirDetalhe(id); alert('Outra pessoa já atualizou este processo. A tela foi recarregada com a versão mais recente.'); return; }
+    const p = JSON.parse(JSON.stringify(atual || p0));
+    if(arq) await guardarAnexo(p, arq, arqCat);
+    Object.assign(p, vals);
+    const de = p.etapa, para = ETAPAS[IDX[de]+1].id;
+    p.etapa = para; p.etapaDesde = vals[tr.base] || hojeISO();
+    const obs = $('ff-trObs').value.trim();
+    p.historico = (p.historico||[]).concat([{ em:new Date().toISOString(), por:nomeUsuario(), acao:tr.titulo+' → '+ETAPAS[IDX[para]].nome, obs }]);
+    await salvarProcesso(p);
+    fechar('ov-trans'); toast('✅ '+tr.titulo); renderTudo(); if(detId===id) abrirDetalhe(id);
+  } catch(e){ if(e.message && e.message!=='bloqueado' && !e.message.startsWith('HTTP')) alert(e.message); btn.disabled=false; btn.textContent='Confirmar'; }
+}
+
+async function voltarEtapa(id){
+  const p = JSON.parse(JSON.stringify(processos[id])); const i = IDX[p.etapa]; if(i<=0) return;
+  const ant = ETAPAS[i-1];
+  const motivo = prompt('Voltar o processo para "'+ant.nome+'".\n\nMotivo (ex.: Compras devolveu para correção):'); if(motivo===null) return;
+  p.etapa = ant.id; p.etapaDesde = hojeISO();
+  p.historico.push({ em:new Date().toISOString(), por:nomeUsuario(), acao:'Voltou para "'+ant.nome+'"', obs:motivo });
+  try { await salvarProcesso(p); toast('↩ Etapa revertida'); renderTudo(); abrirDetalhe(id); } catch(e){}
+}
+async function cancelarProcesso(id){
+  const motivo = prompt('Motivo do cancelamento:'); if(motivo===null) return;
+  const p = JSON.parse(JSON.stringify(processos[id]));
+  Object.assign(p, { cancelado:true, canceladoEm:new Date().toISOString(), canceladoPor:nomeUsuario(), motivoCancel:motivo });
+  p.historico.push({ em:p.canceladoEm, por:nomeUsuario(), acao:'Processo cancelado', obs:motivo });
+  try { await salvarProcesso(p); toast('Processo cancelado'); renderTudo(); abrirDetalhe(id); } catch(e){}
+}
+async function reativarProcesso(id){
+  const p = JSON.parse(JSON.stringify(processos[id])); p.cancelado=false; p.etapaDesde=hojeISO();
+  p.historico.push({ em:new Date().toISOString(), por:nomeUsuario(), acao:'Processo reativado' });
+  try { await salvarProcesso(p); toast('Processo reativado'); renderTudo(); abrirDetalhe(id); } catch(e){}
+}
+async function excluirProcesso(id){
+  const p = processos[id];
+  if(!confirm('Excluir o processo '+p.numProcesso+' do acompanhamento?\n\nUse isso só para cadastros feitos por engano. Para processos que não vão seguir, prefira "Cancelar processo".')) return;
+  const q = JSON.parse(JSON.stringify(p)); q.excluido = true; q.excluidoPor = nomeUsuario(); q.excluidoEm = new Date().toISOString();
+  try { await salvarProcesso(q); delete processos[id]; fechar('ov-det'); toast('🗑 Processo excluído'); renderTudo(); } catch(e){}
+}
+
+// ═══════════════ ANEXOS ═══════════════
+async function anexarAvulso(id, input){
+  const f = input.files[0]; if(!f) return;
+  const p = JSON.parse(JSON.stringify(processos[id])); const cat = $('anx-cat').value;
+  try {
+    toast('⏳ Enviando '+f.name+'...');
+    await guardarAnexo(p, f, cat);
+    p.historico.push({ em:new Date().toISOString(), por:nomeUsuario(), acao:'Documento anexado: '+cat, obs:f.name });
+    await salvarProcesso(p); toast('📎 Documento anexado'); abrirDetalhe(id);
+  } catch(e){ if(e.message && !e.message.startsWith('HTTP') && e.message!=='bloqueado') alert(e.message); }
+}
+async function baixarAnexo(pid, aid){
+  try {
+    toast('⏳ Abrindo documento...');
+    const d = await sbGetChave(PREFIXO_ANX+pid+'_'+aid);
+    if(!d || !d.dados){ toast('Documento não encontrado', true); return; }
+    const bin = atob(d.dados.split(',')[1]); const arr = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([arr], {type:d.tipo||'application/octet-stream'}));
+    const w = window.open(url, '_blank');
+    if(!w){ const a=document.createElement('a'); a.href=url; a.download=d.nome; a.click(); }
+  } catch(e){ toast('⚠ Não foi possível abrir o documento', true); }
+}
+async function removerAnexo(pid, aid){
+  const p = JSON.parse(JSON.stringify(processos[pid])); const a = p.anexos.find(x=>x.id===aid);
+  if(!confirm('Remover o documento "'+a.nome+'" deste processo?')) return;
+  p.anexos = p.anexos.filter(x=>x.id!==aid);
+  p.historico.push({ em:new Date().toISOString(), por:nomeUsuario(), acao:'Documento removido: '+a.cat, obs:a.nome });
+  try { await salvarProcesso(p); try{ await sbUpsert(PREFIXO_ANX+pid+'_'+aid, { removido:true }); }catch(e){} abrirDetalhe(pid); } catch(e){}
+}
+
+// ═══════════════ PRAZOS (admin) ═══════════════
+function abrirPrazos(){
+  let h = `<div class="modal-tit">Prazos por etapa</div><div class="modal-sub">Quantos dias um processo pode ficar parado em cada etapa antes de aparecer como atrasado. Vale para todos os usuários.</div><div class="fgrid">`;
+  ETAPAS.filter(e=>e.prazo!=null).forEach(e=>{ h += `<div class="fg"><label>${esc(e.nome)}</label><input type="number" min="0" id="pz-${e.id}" value="${prazoDe(e.id)}"></div>`; });
+  h += `</div><div style="font-size:11px;color:var(--sub);margin-top:10px">"Aguardando entrega/serviço" usa a data prevista informada no envio da AF.</div>
+    <div class="mfooter"><button class="btn btn-ghost" onclick="fechar('ov-prazos')">Cancelar</button><button class="btn btn-teal" onclick="salvarPrazos()">Salvar prazos</button></div>`;
+  $('prazos-box').innerHTML = h; abrir('ov-prazos');
+}
+async function salvarPrazos(){
+  const novo = {}; ETAPAS.filter(e=>e.prazo!=null).forEach(e=>{ const v=parseInt($('pz-'+e.id).value); if(!isNaN(v)&&v>=0) novo[e.id]=v; });
+  try { await sbUpsert(CHAVE_CFG, { prazos:novo }); prazos = novo; fechar('ov-prazos'); toast('✅ Prazos salvos'); renderTudo(); }
+  catch(e){ toast('⚠ Não foi possível salvar os prazos', true); }
+}
+
+// ═══════════════ INÍCIO ═══════════════
+(async function iniciar(){
+  try { perfil = JSON.parse(localStorage.getItem('smct_perfil')||'{}'); } catch(e){ perfil = {}; }
+  if(!perfil.email){
+    $('carregando').innerHTML = `<div class="bloqueio"><div style="font-size:40px">🔒</div><h2>Entre pelo portal</h2><p>Este módulo usa o seu login do GestCultura.</p><a class="btn btn-teal" href="index.html" style="text-decoration:none;display:inline-block">Ir para o portal</a></div>`;
+    return;
+  }
+  const b = $('smct-banner'); b.style.display='flex';
+  $('banner-role').textContent = (perfil.isAdmin?'⚡ Admin':perfil.role==='editor'?'✏️ Editor':'👁 Visualizador')+' — '+nomeUsuario();
+  $('banner-contato').textContent = perfil.contatoAdmin || 'o administrador';
+  $('banner-info').textContent = podeEditar() ? 'Você pode cadastrar processos e registrar o andamento.' : 'Acesso somente leitura. Para registrar andamentos, solicite ao administrador.';
+  if(!podeEditar()) $('btn-novo').style.display='none';
+  if(perfil.isAdmin===true) $('btn-prazos').style.display='';
+  try { await carregarTudo(); }
+  catch(e){ cloudOk = false; toast('⚠ Não foi possível carregar os processos. Recarregue a página.', true); }
+  $('carregando').style.display='none'; $('app').style.display='block';
+  renderTudo(); ouvirTempoReal();
+  document.addEventListener('visibilitychange', async ()=>{ if(document.visibilityState==='visible' && cloudOk){ try{ await carregarTudo(); renderTudo(); if(detId) abrirDetalhe(detId); }catch(e){} } });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') ['ov-trans','ov-form','ov-prazos','ov-det'].some(o=>{ if($(o).classList.contains('open')){ fechar(o); return true; } }); });
+})();
+</script>
+</body>
+</html>
