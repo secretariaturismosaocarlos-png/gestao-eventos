@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Documento · Secretaria Municipal de Cultura e Turismo · São Carlos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#f3f5f7;color:#1a2535;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 14px}
+.cab{text-align:center;margin-bottom:18px}
+.cab b{display:block;font-size:16px}.cab span{display:block;font-size:12px;color:#556}
+.box{background:#fff;border:1px solid #dde3ea;border-radius:14px;padding:22px;width:100%;max-width:900px;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+h1{font-size:17px;margin-bottom:4px}.sub{font-size:13px;color:#556;margin-bottom:16px;word-break:break-all}
+.btn{display:inline-block;background:#1a4731;color:#fff;text-decoration:none;padding:12px 22px;border-radius:9px;font-weight:700;font-size:14px}
+iframe,img{width:100%;height:75vh;border:1px solid #dde3ea;border-radius:8px;margin-top:16px;background:#fafafa}
+img{height:auto}
+.msg{font-size:14px;color:#556;text-align:center;padding:30px 10px}
+</style>
+</head>
+<body>
+<div class="cab"><b>Prefeitura Municipal de São Carlos</b><span>São Carlos, Capital da Tecnologia</span><span>Secretaria Municipal de Cultura e Turismo</span></div>
+<div class="box" id="box"><div class="msg">Carregando documento...</div></div>
+<script>
+const SB_URL = 'https://kvwgjmnsfcvzxuoanjkk.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2d2dqbW5zZmN2enh1b2FuamtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MjUwOTAsImV4cCI6MjEwMDQwMTA5MH0.UDR2G2NiMHz2iyqun0TRtStHxlSvn2XGNkA7jRy_LCM';
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+(async function(){
+  const box = document.getElementById('box');
+  const d = new URLSearchParams(location.search).get('d') || '';
+  if(!/^[a-z0-9]+_[a-z0-9]+$/.test(d)){ box.innerHTML = '<div class="msg">Link de documento inválido.</div>'; return; }
+  try {
+    const r = await fetch(SB_URL+'/rest/v1/app_data?chave=eq.procanexo_'+d+'&select=valor', { headers:{ apikey:SB_KEY, Authorization:'Bearer '+SB_KEY } });
+    const rows = r.ok ? await r.json() : [];
+    let v = rows.length ? rows[0].valor : null; if(typeof v==='string') v = JSON.parse(v);
+    if(!v || !v.dados || v.removido){ box.innerHTML = '<div class="msg">Este documento não está mais disponível. Entre em contato com a Secretaria.</div>'; return; }
+    const bin = atob(v.dados.split(',')[1]); const arr = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([arr], {type:v.tipo||'application/pdf'}));
+    const ehImg = /^image\//.test(v.tipo||'');
+    box.innerHTML = '<h1>Documento enviado pela Secretaria</h1><div class="sub">'+esc(v.nome)+'</div><a class="btn" href="'+url+'" download="'+esc(v.nome)+'">⬇ Baixar documento</a>' +
+      (ehImg ? '<img src="'+url+'" alt="">' : '<iframe src="'+url+'" title="Documento"></iframe>');
+  } catch(e){ box.innerHTML = '<div class="msg">Não foi possível abrir o documento agora. Tente de novo em alguns minutos.</div>'; }
+})();
+</script>
+</body>
+</html>

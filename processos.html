@@ -182,6 +182,7 @@ tr.click:hover td{background:var(--ink3);cursor:pointer}
     <div class="tab active" id="tab-hoje" onclick="setTab('hoje')">✅ O que fazer hoje <span class="cnt" id="cnt-hoje" style="display:none">0</span></div>
     <div class="tab" id="tab-quadro" onclick="setTab('quadro')">🗂 Quadro de etapas</div>
     <div class="tab" id="tab-lista" onclick="setTab('lista')">📋 Lista</div>
+    <div class="tab" id="tab-forn" onclick="setTab('forn')">🏢 Fornecedores</div>
   </div>
   <div class="main" id="main"></div>
 </div>
@@ -207,6 +208,7 @@ const SB_REST = SB_URL + '/rest/v1/app_data';
 const PREFIXO = 'processo_';      // um registro por processo em app_data
 const PREFIXO_ANX = 'procanexo_'; // um registro por arquivo anexado
 const CHAVE_CFG = 'proc_config';  // prazos por etapa
+const PX_FORN = 'cadforn_';       // cadastro de fornecedores (um registro por fornecedor)
 const LIMITE_ARQ_MB = 8;
 
 const TIPOS = ['Compra','Consumo de ata','Contratação de artista','Prestação de serviço','Outro'];
@@ -266,6 +268,7 @@ const TRANS = {
 
 // ═══════════════ ESTADO ═══════════════
 let processos = {};          // id -> processo
+let fornecedores = {};       // id -> fornecedor
 let prazos = {};             // id etapa -> dias
 let perfil = {};
 let tabAtual = 'hoje';
@@ -312,6 +315,10 @@ async function carregarTudo(){
   processos = {};
   rows.forEach(row=>{ const p=lerValor(row.valor); if(p && p.id && !p.excluido) processos[p.id]=p; });
   try { const cfg = await sbGetChave(CHAVE_CFG); prazos = (cfg && cfg.prazos) || {}; } catch(e){ prazos = {}; }
+  const rf = await fetch(SB_REST+'?chave=like.'+PX_FORN+'*&select=chave,valor', { headers:H() });
+  if(!rf.ok) throw new Error('HTTP '+rf.status);
+  fornecedores = {};
+  (await rf.json()).forEach(row=>{ const f=lerValor(row.valor); if(f && f.id && !f.excluido) fornecedores[f.id]=f; });
 }
 async function salvarProcesso(p){
   if(!cloudOk){ alert('⚠ A conexão com o servidor falhou ao abrir esta página. Para proteger os dados, salvar está bloqueado. Recarregue a página (F5).'); throw new Error('bloqueado'); }
@@ -324,7 +331,9 @@ function ouvirTempoReal(){
   try {
     const cli = supabase.createClient(SB_URL, SB_KEY);
     cli.channel('processos-rt').on('postgres_changes', { event:'*', schema:'public', table:'app_data' }, payload=>{
-      const row = payload.new; if(!row || !row.chave || !row.chave.startsWith(PREFIXO)) return;
+      const row = payload.new; if(!row || !row.chave) return;
+      if(row.chave.startsWith(PX_FORN)){ const f=lerValor(row.valor); if(f&&f.id){ if(f.excluido) delete fornecedores[f.id]; else fornecedores[f.id]=f; renderTudo(); } return; }
+      if(!row.chave.startsWith(PREFIXO)) return;
       const p = lerValor(row.valor); if(!p || !p.id) return;
       if(p.excluido) delete processos[p.id]; else processos[p.id]=p;
       renderTudo(); if(detId===p.id) abrirDetalhe(p.id); sync('live');
@@ -356,7 +365,7 @@ function situacao(p){
 function ativos(){ return Object.values(processos).filter(p=>!p.cancelado && p.etapa!=='pago'); }
 
 // ═══════════════ RENDER ═══════════════
-function setTab(t){ tabAtual=t; ['hoje','quadro','lista'].forEach(x=>$('tab-'+x).classList.toggle('active',x===t)); renderTudo(); }
+function setTab(t){ tabAtual=t; ['hoje','quadro','lista','forn'].forEach(x=>$('tab-'+x).classList.toggle('active',x===t)); renderTudo(); }
 function renderTudo(){
   const at = ativos();
   const atr = at.filter(p=>situacao(p).cls==='atrasado').length;
@@ -366,7 +375,7 @@ function renderTudo(){
   $('pill-pag').textContent = 'A pagar: '+fmtBRL(aPagar);
   const nHoje = gruposHoje().reduce((s,g)=>s+(g.urgente?g.itens.length:0),0);
   $('cnt-hoje').textContent = nHoje; $('cnt-hoje').style.display = nHoje? '' : 'none';
-  if(tabAtual==='hoje') renderHoje(); else if(tabAtual==='quadro') renderQuadro(); else renderLista();
+  if(tabAtual==='hoje') renderHoje(); else if(tabAtual==='quadro') renderQuadro(); else if(tabAtual==='forn') renderFornecedores(); else renderLista();
 }
 
 function gruposHoje(){
@@ -379,7 +388,7 @@ function gruposHoje(){
       itens: ord(at.filter(p=>p.etapa==='nf_recebida')) },
     { ic:'📦', tit:'Entrega ou serviço com data vencida', sub:'Confirme se foi realizado ou cobre o fornecedor.', urgente:true, acao:'Confirmar entrega',
       itens: ord(at.filter(p=>p.etapa==='execucao' && (!p.dataPrevista || p.dataPrevista<hoje))) },
-    { ic:'🧾', tit:'Cobrar a nota fiscal do fornecedor', sub:'Serviço feito, mas a NF não chegou dentro do prazo.', urgente:true, acao:'Registrar NF',
+    { ic:'🧾', tit:'Cobrar a nota fiscal do fornecedor', sub:'Serviço feito, mas a NF não chegou dentro do prazo.', urgente:true, acao:'Registrar NF', cobrar:true,
       itens: ord(at.filter(p=>p.etapa==='aguard_nf' && situacao(p).cls==='atrasado')) },
     { ic:'✍️', tit:'Aguardando assinatura do ordenador', sub:'Empenhos que precisam ser assinados.', urgente:false, acao:'Marcar assinado',
       itens: ord(at.filter(p=>p.etapa==='assinatura')) },
@@ -407,14 +416,15 @@ function renderHoje(){
   }
   comItens.forEach(g=>{
     h += `<div class="grupo${g.critico?' critico':''}"><div class="grupo-hd"><span style="font-size:22px">${g.ic}</span><div><h3>${g.tit}</h3><p>${g.sub}</p></div><span class="n">${g.itens.length}</span></div>`;
-    g.itens.forEach(p=>{ h += linhaItem(p, g.acao); });
+    g.itens.forEach(p=>{ h += linhaItem(p, g.acao, g.cobrar); });
     h += `</div>`;
   });
   $('main').innerHTML = h;
 }
-function linhaItem(p, acao){
+function linhaItem(p, acao, cobrar){
   const s = situacao(p);
-  const btn = (acao && podeEditar() && TRANS[p.etapa]) ? `<button class="btn btn-teal btn-sm" onclick="abrirTransicao('${p.id}')">${esc(acao)}</button>` : '';
+  let btn = (acao && podeEditar() && TRANS[p.etapa]) ? `<button class="btn btn-teal btn-sm" onclick="abrirTransicao('${p.id}')">${esc(acao)}</button>` : '';
+  if(cobrar && podeEditar()) btn = `<button class="btn btn-gold btn-sm" onclick="abrirMensagem('${p.id}','nf')">📲 Cobrar NF</button>` + btn;
   return `<div class="item">
     <div class="item-main" onclick="abrirDetalhe('${p.id}')">
       <div class="item-tit">Proc. ${esc(p.numProcesso)} · ${esc(p.objeto)}</div>
@@ -508,6 +518,8 @@ function abrirDetalhe(id){
     h += `<div class="aviso">Processo cancelado em ${fmtDH(p.canceladoEm)} por ${esc(p.canceladoPor||'—')}. Motivo: ${esc(p.motivoCancel||'—')}</div>`;
   } else if(TRANS[p.etapa]){
     h += `<div class="acao-box${e.critico?' critico':''}"><div class="txt"><b>${e.critico?'🚨 ':''}Etapa atual: ${esc(e.nome)}</b>${esc(e.dica)} Responsável: ${esc(e.quem)}.</div>
+      ${ed&&(p.etapa==='execucao'||p.etapa==='aguard_nf')?`<button class="btn btn-gold" onclick="abrirMensagem('${p.id}','nf')">📲 Cobrar NF</button>`:''}
+      ${ed&&IDX[p.etapa]>IDX['af_emitida']&&p.numAF?`<button class="btn btn-ghost" onclick="abrirMensagem('${p.id}','af')">📲 Reenviar AF</button>`:''}
       ${ed?`<button class="btn btn-teal" onclick="abrirTransicao('${p.id}')">▶ ${esc(TRANS[p.etapa].titulo)}</button>`:''}</div>`;
   } else {
     h += `<div class="acao-box"><div class="txt"><b>✅ Processo concluído</b>Pago em ${fmtData(p.dataPagamento)}.</div></div>`;
@@ -561,7 +573,7 @@ function abrirForm(id){
     ${inp('numProcesso','Nº do processo no GIAP',p.numProcesso,'text',{req:true,ph:'ex.: 1234/2026'})}
     ${inp('tipo','Tipo',p.tipo,'select',{req:true,op:TIPOS})}
     ${inp('objeto','Objeto (o que está sendo contratado)',p.objeto,'text',{req:true,full:true,ph:'ex.: Locação de palco para o Festival Prensado na Estação'})}
-    ${inp('fornecedor','Fornecedor',p.fornecedor,'text')}
+    <div class="fg"><label>Fornecedor</label><input id="ff-fornecedor" list="dl-forn" value="${esc(p.fornecedor||'')}" placeholder="Digite ou escolha do cadastro" oninput="preencherContatoForn(this.value)"><datalist id="dl-forn">${listaForn().map(f=>`<option value="${esc(f.nome)}">`).join('')}</datalist></div>
     ${inp('contato','Contato do fornecedor (telefone / e-mail)',p.contato,'text')}
     ${inp('valorEstimado','Valor estimado (R$)',p.valorEstimado,'money')}
     ${inp('dataAbertura','Data de abertura',p.dataAbertura,'date',{req:true})}
@@ -598,6 +610,7 @@ async function salvarForm(id){
   ['numProcesso','tipo','objeto','fornecedor','contato','dataAbertura','evento','responsavel','numSolicitacao','numEmpenho','dataAssinatura','numAF','dataAF','afEnviadaEm','dataPrevista','dataEntrega','numNF','dataNF','dataContabilidade','obs']
     .forEach(k=>{ const v=g(k); p[k] = v ? v : null; });
   ['valorEstimado','valorEmpenho','valorNF'].forEach(k=>{ p[k] = parseBRL(g(k)); });
+  const fCad = p.fornecedor ? fornPorNome(p.fornecedor) : null; p.fornecedorId = fCad ? fCad.id : null; if(fCad) p.fornecedor = fCad.nome;
   if(!id){
     p.etapa = g('etapaInicial') || 'aberto';
     p.etapaDesde = p.etapa==='aberto' ? p.dataAbertura : hojeISO();
@@ -610,9 +623,169 @@ async function salvarForm(id){
   catch(e){ $('btn-salvar-form').disabled = false; }
 }
 
+// ═══════════════ FORNECEDORES ═══════════════
+function listaForn(){ return Object.values(fornecedores).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')); }
+function fornPorNome(n){ const k=norm(n); return listaForn().find(f=>norm(f.nome)===k) || null; }
+function fornDoProc(p){ return (p.fornecedorId && fornecedores[p.fornecedorId]) || (p.fornecedor ? fornPorNome(p.fornecedor) : null); }
+function norm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim(); }
+function soDigitos(s){ return String(s||'').replace(/\D/g,''); }
+function fmtFone(s){ const d=soDigitos(s).replace(/^55(?=\d{10,11}$)/,''); if(d.length===11) return '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7); if(d.length===10) return '('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6); return s||''; }
+function linkWhats(numero, texto){ let d=soDigitos(numero); if(d.length===10||d.length===11) d='55'+d; return 'https://wa.me/'+d+'?text='+encodeURIComponent(texto); }
+function emailValido(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e||'').trim()); }
+function preencherContatoForn(nome){ const f=fornPorNome(nome); const c=$('ff-contato'); if(f && c && !c.value) c.value=[f.whatsapp?fmtFone(f.whatsapp):'', f.email||''].filter(Boolean).join(' · '); }
+
+function renderFornecedores(){
+  const q = norm(filtro.q); const lista = listaForn().filter(f=>!q || norm([f.nome,f.cnpj,f.email,f.contato].join(' ')).includes(q));
+  const usoPorNome = {}; Object.values(processos).forEach(p=>{ const f=fornDoProc(p); if(f) usoPorNome[f.id]=(usoPorNome[f.id]||0)+1; });
+  let h = `<div class="filtros"><input id="f-q" placeholder="🔍 Buscar fornecedor, CNPJ, e-mail..." value="${esc(filtro.q)}" oninput="filtro.q=this.value;atualizarFiltro()">
+    ${podeEditar()?`<button class="btn btn-teal btn-sm" onclick="editarFornecedor()">＋ Novo fornecedor</button><button class="btn btn-ghost btn-sm" onclick="importarFornAtas()">⬇ Trazer fornecedores das atas</button>`:''}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Fornecedor</th><th>CNPJ</th><th>Contato</th><th>E-mail</th><th>WhatsApp</th><th>Processos</th><th></th></tr></thead><tbody>`;
+  if(!lista.length) h += `<tr><td colspan="7" style="text-align:center;color:var(--sub);padding:24px">${listaForn().length?'Nenhum fornecedor encontrado.':'Nenhum fornecedor cadastrado ainda. Cadastre com e-mail e WhatsApp para enviar AF e cobrar NF com um clique.'}</td></tr>`;
+  lista.forEach(f=>{ const falta = !f.email && !f.whatsapp;
+    h += `<tr class="click" onclick="editarFornecedor('${f.id}')"><td style="font-weight:700">${esc(f.nome)}</td><td>${esc(f.cnpj||'—')}</td><td>${esc(f.contato||'—')}</td>
+      <td>${f.email?esc(f.email):'<span style="color:#f0c060">falta</span>'}</td><td>${f.whatsapp?esc(fmtFone(f.whatsapp)):'<span style="color:#f0c060">falta</span>'}</td><td>${usoPorNome[f.id]||0}</td>
+      <td>${falta?'<span class="chip atencao">Sem contato</span>':''}</td></tr>`; });
+  h += `</tbody></table></div><div style="font-size:11px;color:var(--sub);margin-top:8px">${lista.length} fornecedor(es)</div>`;
+  $('main').innerHTML = h;
+}
+function editarFornecedor(id){
+  if(!podeEditar()) return;
+  const f = id ? fornecedores[id] : {};
+  $('form-box').innerHTML = `<div class="modal-tit">${id?'Editar fornecedor':'Novo fornecedor'}</div><div class="modal-sub">Com e-mail e WhatsApp cadastrados, a AF e a cobrança da NF saem com um clique.</div><div class="fgrid">
+    ${inp('fNome','Razão social / nome',f.nome,'text',{req:true,full:true})}
+    ${inp('fCnpj','CNPJ',f.cnpj,'text',{ph:'00.000.000/0000-00'})}${inp('fContato','Pessoa de contato',f.contato,'text')}
+    ${inp('fEmail','E-mail',f.email,'email',{ph:'contato@empresa.com.br'})}${inp('fWhats','WhatsApp (com DDD)',f.whatsapp?fmtFone(f.whatsapp):'','text',{ph:'(16) 99999-9999'})}
+    ${inp('fObs','Observações',f.obs,'textarea',{full:true})}</div><div class="msg-erro" id="form-erro"></div>
+    <div class="mfooter" style="justify-content:space-between">${id&&isAdminP()?`<button class="btn btn-rose btn-sm" onclick="excluirFornecedor('${id}')">🗑 Excluir</button>`:'<span></span>'}<div style="display:flex;gap:10px"><button class="btn btn-ghost" onclick="fechar('ov-form')">Cancelar</button><button class="btn btn-teal" onclick="salvarFornecedor(${id?`'${id}'`:'null'})">Salvar</button></div></div>`;
+  abrir('ov-form');
+}
+function isAdminP(){ return perfil.isAdmin===true; }
+async function gravarFornecedor(f){
+  if(!cloudOk){ alert('⚠ Salvar está bloqueado nesta sessão. Recarregue a página (F5).'); throw new Error('bloqueado'); }
+  f.atualizadoEm = new Date().toISOString(); f.atualizadoPor = nomeUsuario();
+  sync('saving');
+  try { await sbUpsert(PX_FORN+f.id, f); fornecedores[f.id]=f; sync('saved'); } catch(e){ sync('error'); toast('⚠ Não foi possível salvar o fornecedor.', true); throw e; }
+}
+async function salvarFornecedor(id){
+  const g = k => $('ff-'+k).value.trim();
+  const erros = [];
+  if(!g('fNome')) erros.push('Informe o nome do fornecedor.');
+  if(g('fEmail') && !emailValido(g('fEmail'))) erros.push('O e-mail parece incompleto.');
+  const w = soDigitos(g('fWhats')); if(w && !(w.length>=10 && w.length<=13)) erros.push('O WhatsApp precisa ter DDD e número.');
+  const dup = fornPorNome(g('fNome')); if(dup && dup.id!==id) erros.push('Já existe um fornecedor com esse nome.');
+  if(erros.length){ $('form-erro').innerHTML=erros.map(esc).join('<br>'); $('form-erro').style.display='block'; return; }
+  const f = Object.assign({}, id?fornecedores[id]:{ id:novoId(), criadoEm:new Date().toISOString(), criadoPor:nomeUsuario() },
+    { nome:g('fNome'), cnpj:g('fCnpj'), contato:g('fContato'), email:g('fEmail'), whatsapp:w, obs:g('fObs') });
+  try { await gravarFornecedor(f); fechar('ov-form'); toast('✅ Fornecedor salvo'); renderTudo(); } catch(e){}
+}
+async function excluirFornecedor(id){
+  const f = fornecedores[id]; if(!confirm('Excluir o fornecedor "'+f.nome+'" do cadastro?\n\nOs processos dele continuam com o nome.')) return;
+  try { await gravarFornecedor({...f, excluido:true}); delete fornecedores[id]; fechar('ov-form'); toast('Fornecedor excluído'); renderTudo(); } catch(e){}
+}
+async function importarFornAtas(){
+  let base; try { base = await sbGetChave('atas_base'); } catch(e){ toast('⚠ Não foi possível ler as atas', true); return; }
+  if(!base || !base.atas){ toast('Nenhuma ata encontrada no Controle de Atas', true); return; }
+  const nomes = [...new Set(base.atas.map(a=>(a.fornecedor||'').trim()).filter(Boolean))].filter(n=>!fornPorNome(n));
+  if(!nomes.length){ toast('Todos os fornecedores das atas já estão cadastrados'); return; }
+  if(!confirm('Cadastrar '+nomes.length+' fornecedor(es) das atas?\n\n'+nomes.join('\n')+'\n\nDepois, complete o e-mail e o WhatsApp de cada um.')) return;
+  try { for(const n of nomes) await gravarFornecedor({ id:novoId(), nome:n, criadoEm:new Date().toISOString(), criadoPor:nomeUsuario(), origem:'atas' }); toast('✅ '+nomes.length+' fornecedor(es) cadastrado(s)'); renderTudo(); } catch(e){}
+}
+
+// ═══════════════ ENVIAR AF / COBRAR NF (WhatsApp e e-mail) ═══════════════
+function anexoAF(p){ const a=(p.anexos||[]).filter(x=>x.cat==='AF'); return a.length ? a[a.length-1] : null; }
+function linkDocumento(p, a){ return location.href.replace(/[?#].*$/,'').replace(/[^/]*$/,'') + 'documento.html?d=' + encodeURIComponent(p.id+'_'+a.id); }
+function textoMensagem(tipo, p, link, dataPrevista){
+  const assin = '\n\nAtenciosamente,\n'+nomeUsuario()+'\nSecretaria Municipal de Cultura e Turismo\nPrefeitura Municipal de São Carlos';
+  const f = fornDoProc(p); const ola = 'Olá'+(f&&f.contato?', '+f.contato.split(' ')[0]:'')+'!';
+  if(tipo==='af') return ola+'\n\nSegue a Autorização de Fornecimento (AF) nº '+(p.numAF||'')+', referente ao processo nº '+p.numProcesso+' ('+p.objeto+').'+
+    (link?'\n\nPDF da AF: '+link:'')+(dataPrevista?'\n\nData prevista para a entrega / realização do serviço: '+fmtData(dataPrevista)+'.':'')+
+    '\n\nApós a entrega ou a realização do serviço, envie a nota fiscal por este mesmo canal, informando o nº da AF.'+assin;
+  return ola+'\n\nReferente à AF nº '+(p.numAF||'—')+' (processo nº '+p.numProcesso+' — '+p.objeto+')'+(p.dataEntrega?', com serviço/entrega realizado em '+fmtData(p.dataEntrega):'')+
+    ', ainda não recebemos a nota fiscal.\n\nPor favor, envie a NF por este mesmo canal, informando o nº da AF, para darmos andamento ao pagamento.'+assin;
+}
+function abrirMensagem(id, tipo){
+  if(!podeEditar()) return;
+  const p = processos[id]; const f = fornDoProc(p); const af = anexoAF(p);
+  const ehAF = tipo==='af'; const avanca = ehAF && p.etapa==='af_emitida';
+  const temWhats = !!(f && f.whatsapp), temEmail = !!(f && f.email);
+  let h = `<div class="modal-tit">${ehAF?(avanca?'📤 Enviar AF ao fornecedor':'📤 Reenviar AF'):'📲 Cobrar nota fiscal'}</div>
+    <div class="modal-sub">Processo ${esc(p.numProcesso)} · ${esc(p.objeto)}<br>Fornecedor: <b style="color:#fff">${esc(p.fornecedor||'não informado')}</b>${f?'':' <span style="color:#f0c060">(sem cadastro)</span>'}</div>
+    <div class="fgrid">
+      <label class="check"><input type="checkbox" id="mg-usaW" ${temWhats||!temEmail?'checked':''}> WhatsApp</label>
+      <label class="check"><input type="checkbox" id="mg-usaE" ${temEmail?'checked':''}> E-mail</label>
+      ${inp('mgWhats','WhatsApp do fornecedor',f&&f.whatsapp?fmtFone(f.whatsapp):'','text',{ph:'(16) 99999-9999'})}
+      ${inp('mgEmail','E-mail do fornecedor',f&&f.email||'','email',{ph:'contato@empresa.com.br'})}
+      <label class="check full" style="font-size:12px"><input type="checkbox" id="mg-salvarForn" checked> Guardar este contato no cadastro do fornecedor</label>`;
+  if(ehAF){
+    if(avanca) h += `${inp('mgPrevista','Data prevista de entrega / realização do serviço',p.dataPrevista||'','date',{req:true,full:true})}`;
+    h += af ? `<div class="full" style="font-size:12px;color:#4cd98a">📎 O link do PDF da AF vai junto: ${esc(af.nome)}</div>`
+            : `<div class="fg full"><label>PDF da AF (para o fornecedor baixar pelo link)</label><input type="file" id="mg-arqAF" accept=".pdf,image/*"><div style="font-size:11px;color:#f0c060;margin-top:4px">Sem o PDF, a mensagem vai sem o link e você precisa anexar a AF manualmente na conversa.</div></div>`;
+  }
+  h += `<div class="fg full"><label>Mensagem (pode editar)</label><textarea id="mg-texto" style="min-height:190px">${esc(textoMensagem(tipo, p, af?linkDocumento(p,af):'', p.dataPrevista))}</textarea></div></div>
+    <div class="msg-erro" id="mg-erro"></div>
+    <div style="font-size:11px;color:var(--sub);margin-top:10px">Ao clicar, o WhatsApp abre numa nova aba e o e-mail abre no seu programa de e-mail, com tudo preenchido. Confira e aperte enviar em cada um.${avanca?' O processo passa sozinho para "Aguardando entrega/serviço".':''}</div>
+    <div class="mfooter"><button class="btn btn-ghost" onclick="fechar('ov-trans')">Cancelar</button><button class="btn btn-teal" id="btn-mg" onclick="enviarMensagem('${id}','${tipo}')">${ehAF?'📤 Enviar AF':'📲 Enviar cobrança'}</button></div>`;
+  $('trans-box').innerHTML = h; abrir('ov-trans');
+  const prev = $('ff-mgPrevista'); if(prev) prev.addEventListener('change', ()=>{ const t=$('mg-texto'); t.value = t.value.replace(/Data prevista para a entrega \/ realização do serviço: [^\n]*\n?/, '').replace(/\n\nApós a entrega/, (prev.value?'\n\nData prevista para a entrega / realização do serviço: '+fmtData(prev.value)+'.':'')+'\n\nApós a entrega'); });
+}
+async function enviarMensagem(id, tipo){
+  const p0 = processos[id]; const ehAF = tipo==='af'; const avanca = ehAF && p0.etapa==='af_emitida';
+  const usaW = $('mg-usaW').checked, usaE = $('mg-usaE').checked;
+  const whats = soDigitos($('ff-mgWhats').value), email = $('ff-mgEmail').value.trim();
+  const prevista = avanca ? $('ff-mgPrevista').value : null;
+  let texto = $('mg-texto').value.trim();
+  const erros = [];
+  if(!usaW && !usaE) erros.push('Marque WhatsApp, e-mail ou os dois.');
+  if(usaW && !(whats.length>=10 && whats.length<=13)) erros.push('Informe o WhatsApp com DDD.');
+  if(usaE && !emailValido(email)) erros.push('Informe um e-mail válido.');
+  if(avanca && !prevista) erros.push('Informe a data prevista de entrega / realização.');
+  if(!texto) erros.push('A mensagem está vazia.');
+  if(erros.length){ $('mg-erro').innerHTML=erros.map(esc).join('<br>'); $('mg-erro').style.display='block'; return; }
+  const btn = $('btn-mg'); btn.disabled = true; btn.textContent = 'Preparando...';
+  // abre a aba já no clique, para o navegador não bloquear como pop-up
+  const aba = usaW ? window.open('', '_blank') : null;
+  try {
+    const p = JSON.parse(JSON.stringify(p0));
+    const arq = $('mg-arqAF') && $('mg-arqAF').files[0];
+    if(arq){
+      const a = await guardarAnexo(p, arq, 'AF');
+      const link = linkDocumento(p, a);
+      texto = /PDF da AF: /.test(texto) ? texto : texto.replace(/(referente ao processo[^\n]*)/, '$1\n\nPDF da AF: '+link);
+    }
+    const meios = [usaW?'WhatsApp':null, usaE?'e-mail':null].filter(Boolean).join(' e ');
+    if(usaW){ const url = linkWhats(whats, texto); if(aba) aba.location.href = url; else window.open(url, '_blank'); }
+    if(usaE){
+      const assunto = ehAF ? 'Autorização de Fornecimento nº '+(p.numAF||'')+' · Processo '+p.numProcesso+' · SMCT São Carlos' : 'Nota fiscal pendente · AF nº '+(p.numAF||'')+' · Processo '+p.numProcesso;
+      setTimeout(()=>{ location.href = 'mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(texto); }, usaW?600:0);
+    }
+    if($('mg-salvarForn').checked){
+      const f0 = fornDoProc(p);
+      const f = Object.assign({}, f0 || { id:novoId(), nome:p.fornecedor || 'Fornecedor do processo '+p.numProcesso, criadoEm:new Date().toISOString(), criadoPor:nomeUsuario() });
+      let mudou = !f0; if(usaW && f.whatsapp!==whats){ f.whatsapp=whats; mudou=true; } if(usaE && f.email!==email){ f.email=email; mudou=true; }
+      if(mudou) await gravarFornecedor(f);
+      p.fornecedorId = f.id; if(!p.fornecedor) p.fornecedor = f.nome;
+    }
+    const agora = new Date().toISOString();
+    if(avanca){
+      Object.assign(p, { afEnviadaEm:hojeISO(), afEnviadaMeio:meios, dataPrevista:prevista, etapa:'execucao', etapaDesde:hojeISO() });
+      p.historico = (p.historico||[]).concat([{ em:agora, por:nomeUsuario(), acao:'AF enviada ao fornecedor por '+meios+' → Aguardando entrega/serviço', obs:'Entrega prevista: '+fmtData(prevista) }]);
+    } else {
+      p.historico = (p.historico||[]).concat([{ em:agora, por:nomeUsuario(), acao:(ehAF?'AF reenviada':'NF cobrada do fornecedor')+' por '+meios }]);
+      if(!ehAF) p.ultimaCobrancaNF = agora;
+    }
+    await salvarProcesso(p);
+    fechar('ov-trans'); toast(ehAF?(avanca?'📤 AF enviada · processo avançou':'📤 AF reenviada'):'📲 Cobrança registrada'); renderTudo(); if(detId===id) abrirDetalhe(id);
+  } catch(e){
+    if(aba) aba.close();
+    if(e.message && !e.message.startsWith('HTTP') && e.message!=='bloqueado') alert(e.message);
+    btn.disabled=false; btn.textContent = ehAF?'📤 Enviar AF':'📲 Enviar cobrança';
+  }
+}
+
 // ═══════════════ AVANÇAR ETAPA (com travas) ═══════════════
 function abrirTransicao(id){
   if(!podeEditar()) return;
+  if(processos[id] && processos[id].etapa==='af_emitida') return abrirMensagem(id, 'af');
   const p = processos[id]; const tr = TRANS[p.etapa]; if(!tr) return;
   const prox = ETAPAS[IDX[p.etapa]+1];
   let h = `<div class="modal-tit">${esc(tr.titulo)}</div><div class="modal-sub">Processo ${esc(p.numProcesso)} · ${esc(p.objeto)}<br>Depois de confirmar, o processo passa para <b style="color:#fff">${esc(prox.nome)}</b>.</div><div class="fgrid">`;
