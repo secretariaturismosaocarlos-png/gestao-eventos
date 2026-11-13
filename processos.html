@@ -752,6 +752,10 @@ async function salvarPrazos(){
     $('carregando').innerHTML = `<div class="bloqueio"><div style="font-size:40px">🔒</div><h2>Entre pelo portal</h2><p>Este módulo usa o seu login do GestCultura.</p><a class="btn btn-teal" href="index.html" style="text-decoration:none;display:inline-block">Ir para o portal</a></div>`;
     return;
   }
+  if(perfil.isAdmin!==true && perfil.acesso_processos===false){
+    $('carregando').innerHTML = `<div class="bloqueio"><div style="font-size:40px">🔒</div><h2>Sem acesso a Processos de Contratação</h2><p>Peça a liberação para ${esc(perfil.contatoAdmin||'o administrador')}.</p><a class="btn btn-teal" href="index.html" style="text-decoration:none;display:inline-block">Voltar ao portal</a></div>`;
+    return;
+  }
   const b = $('smct-banner'); b.style.display='flex';
   $('banner-role').textContent = (perfil.isAdmin?'⚡ Admin':perfil.role==='editor'?'✏️ Editor':'👁 Visualizador')+' — '+nomeUsuario();
   $('banner-contato').textContent = perfil.contatoAdmin || 'o administrador';

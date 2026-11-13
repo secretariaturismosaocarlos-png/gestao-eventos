@@ -323,7 +323,7 @@ async function showPainel(user) {
   document.getElementById('chip-email').textContent = user.email;
   let perms = null;
   try {
-    const rows = await sbGet('usuarios_permissoes', 'user_id=eq.' + user.id + '&select=id,email,nome,role,acesso_gerenciador,acesso_chamamento,acesso_emendas,ativo');
+    const rows = await sbGet('usuarios_permissoes', 'user_id=eq.' + user.id + '&select=id,email,nome,role,acesso_gerenciador,acesso_chamamento,acesso_emendas,acesso_processos,acesso_atas,ativo');
     if (rows.length) perms = rows[0];
   } catch(e) {}
   const ativo = !!(perms && perms.ativo);
@@ -338,6 +338,8 @@ async function showPainel(user) {
     acesso_gerenciador: isAdmin || (ativo && !!perms.acesso_gerenciador),
     acesso_chamamento:  isAdmin || (ativo && !!perms.acesso_chamamento),
     acesso_emendas:     isAdmin || (ativo && !!perms.acesso_emendas),
+    acesso_processos:   isAdmin || (ativo && !!perms.acesso_processos),
+    acesso_atas:        isAdmin || (ativo && !!perms.acesso_atas),
     isAdmin, contatoAdmin: contatoInfo.label, contatoAdminEmail: contatoInfo.email
   };
   localStorage.setItem('smct_perfil', JSON.stringify(perfilSessao));
@@ -350,6 +352,8 @@ function renderCards(perms, isAdmin) {
   const g = isAdmin || (perms?.acesso_gerenciador && perms?.ativo);
   const c = isAdmin || (perms?.acesso_chamamento  && perms?.ativo);
   const e = isAdmin || (perms?.acesso_emendas     && perms?.ativo);
+  const pr = isAdmin || (perms?.acesso_processos && perms?.ativo);
+  const at = isAdmin || (perms?.acesso_atas       && perms?.ativo);
   if (!perms && !isAdmin) {
     el.innerHTML = `<div class="no-access"><div class="ico">⏳</div><p style="color:#8a9bb0;font-size:15px;font-family:'DM Serif Display',serif">Aguardando liberação de acesso</p><p style="color:#5a6a7a;font-size:12px;margin-top:8px">Sua conta foi criada. Um administrador precisa liberar seu acesso.</p></div>`;
     return;
@@ -357,8 +361,8 @@ function renderCards(perms, isAdmin) {
   let html = '';
   if (g) html += mkCard('green','Gerenciador','📁','Gerenciador de Eventos','Gestão completa de produção: staff, estrutura, hospedagem, contratos e resumo executivo consolidado.',['Staff detalhado por bloco e função','Estrutura e equipamentos por seção','Hospedagem com cálculo automático','Atas & Contratos com extração por IA','Exportação Excel e PDF'],'gerenciador_eventos_v2.html','📂 Abrir Gerenciador');
   if (c) html += mkCard('gold','Chamamento Público','🎭','Artistas · Chamamento','Banco de artistas do chamamento público com programação, cachês e fila rotativa.',['188 artistas pré-cadastrados','Fila rotativa com regras de reoferta','Detecção de conflito de horário','Confirmação e status','Geração de PDF'],'artistas_chamamento.html','🎤 Abrir Chamamento');
-  if (g) html += mkCard('purple','Financeiro','📑','Processos de Contratação','Acompanhamento do rito de cada processo, da abertura no GIAP até o pagamento da nota fiscal.',['Quadro por etapa com prazos','O que fazer hoje: AF a enviar, NF a anexar','Travas para não esquecer nenhum passo','Anexos de empenho, AF e NF','Histórico de quem fez o quê'],'processos.html','📑 Abrir Processos');
-  if (g) html += mkCard('teal','Atas de Registro de Preço','📦','Controle de Atas','Saldo de cada ata por secretaria, com registro de consumo em eventos e remanejamentos.',['Caixinhas de saldo por secretaria','Quadro de saldos item a item','Consumo por evento','Alertas de saldo e de vigência','Relatórios em PDF e planilha'],'atas.html','📦 Abrir Atas');
+  if (pr) html += mkCard('purple','Financeiro','📑','Processos de Contratação','Acompanhamento do rito de cada processo, da abertura no GIAP até o pagamento da nota fiscal.',['Quadro por etapa com prazos','O que fazer hoje: AF a enviar, NF a anexar','Travas para não esquecer nenhum passo','Anexos de empenho, AF e NF','Histórico de quem fez o quê'],'processos.html','📑 Abrir Processos');
+  if (at) html += mkCard('teal','Atas de Registro de Preço','📦','Controle de Atas','Saldo de cada ata por secretaria, com registro de consumo em eventos e remanejamentos.',['Caixinhas de saldo por secretaria','Quadro de saldos item a item','Consumo por evento','Alertas de saldo e de vigência','Relatórios em PDF e planilha'],'atas.html','📦 Abrir Atas');
   if (e) html += mkCard('blue','Parlamentar','💰','Emendas Parlamentares','Gestão das emendas LOA 2026 dos vereadores com vinculação a eventos.',['23 emendas pré-carregadas','Filtro por vereador, evento ou status','Vinculação emenda → evento → artista','Painel com totais','Exportação em PDF'],'emendas_parlamentares.html','💰 Abrir Emendas');
   if (!html) {
     el.innerHTML = `<div class="no-access"><div class="ico">🔒</div><p style="color:#8a9bb0;font-size:15px;font-family:'DM Serif Display',serif">Sem acessos liberados</p><p style="color:#5a6a7a;font-size:12px;margin-top:8px">Fale com o administrador para solicitar acesso.</p></div>`;
@@ -445,6 +449,8 @@ function renderUserCard(u) {
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
       perm('acesso_gerenciador','📁','Gerenciador','#2e7d4f')+
       perm('acesso_chamamento','🎭','Chamamento','#c9a84c')+
+      perm('acesso_processos','📑','Processos','#7f77dd')+
+      perm('acesso_atas','📦','Atas','#1d9e75')+
       perm('acesso_emendas','💰','Emendas','#3a7bd5')+
     '</div>'+
     '<div style="display:flex;flex-direction:column;align-items:center;gap:8px">'+
@@ -465,7 +471,7 @@ async function savePerm(id, campo, val) {
   try {
     const payload = {};
     if (campo === 'role') payload.role = val;
-    else if (['acesso_gerenciador','acesso_chamamento','acesso_emendas','ativo'].includes(campo)) payload[campo] = val === true || val === 'true';
+    else if (['acesso_gerenciador','acesso_chamamento','acesso_emendas','acesso_processos','acesso_atas','ativo'].includes(campo)) payload[campo] = val === true || val === 'true';
     else payload[campo] = val;
 
     // Só pode existir um Admin Temporário por vez — promover alguém novo rebaixa quem já era
