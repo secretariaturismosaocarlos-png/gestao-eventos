@@ -726,8 +726,10 @@ function abrirMensagem(id, tipo){
       <label class="check full" style="font-size:12px"><input type="checkbox" id="mg-salvarForn" checked> Guardar este contato no cadastro do fornecedor</label>`;
   if(ehAF){
     if(avanca) h += `${inp('mgPrevista','Data prevista de entrega / realização do serviço',p.dataPrevista||'','date',{req:true,full:true})}`;
-    h += af ? `<div class="full" style="font-size:12px;color:#4cd98a">📎 O link do PDF da AF vai junto: ${esc(af.nome)}</div>`
-            : `<div class="fg full"><label>PDF da AF (para o fornecedor baixar pelo link)</label><input type="file" id="mg-arqAF" accept=".pdf,image/*"><div style="font-size:11px;color:#f0c060;margin-top:4px">Sem o PDF, a mensagem vai sem o link e você precisa anexar a AF manualmente na conversa.</div></div>`;
+    h += af ? `<div class="full" style="font-size:12px;color:#4cd98a">📎 PDF da AF no processo: ${esc(af.nome)}</div>`
+            : `<div class="fg full" id="w-mg-arqAF"><label>PDF da AF <span class="req">*</span></label><input type="file" id="mg-arqAF" accept=".pdf,image/*"><div style="font-size:11px;color:var(--sub);margin-top:4px">Baixe a AF do GIAP e escolha o arquivo aqui. Ele fica guardado no processo.</div></div>
+               <label class="check full" style="font-size:12px"><input type="checkbox" id="mg-semPDF"> Enviar sem o PDF (vou mandar a AF de outro jeito)</label>`;
+    h += `<label class="check full" style="font-size:12px"><input type="checkbox" id="mg-baixar" checked> Baixar o PDF da AF para eu arrastar para a conversa (o WhatsApp e o e-mail não aceitam anexar o arquivo sozinhos)</label>`;
   }
   h += `<div class="fg full"><label>Mensagem (pode editar)</label><textarea id="mg-texto" style="min-height:190px">${esc(textoMensagem(tipo, p, af?linkDocumento(p,af):'', p.dataPrevista))}</textarea></div></div>
     <div class="msg-erro" id="mg-erro"></div>
@@ -735,6 +737,18 @@ function abrirMensagem(id, tipo){
     <div class="mfooter"><button class="btn btn-ghost" onclick="fechar('ov-trans')">Cancelar</button><button class="btn btn-teal" id="btn-mg" onclick="enviarMensagem('${id}','${tipo}')">${ehAF?'📤 Enviar AF':'📲 Enviar cobrança'}</button></div>`;
   $('trans-box').innerHTML = h; abrir('ov-trans');
   const prev = $('ff-mgPrevista'); if(prev) prev.addEventListener('change', ()=>{ const t=$('mg-texto'); t.value = t.value.replace(/Data prevista para a entrega \/ realização do serviço: [^\n]*\n?/, '').replace(/\n\nApós a entrega/, (prev.value?'\n\nData prevista para a entrega / realização do serviço: '+fmtData(prev.value)+'.':'')+'\n\nApós a entrega'); });
+}
+async function baixarAnexoArquivo(pid, a, arqLocal){
+  try {
+    let blob, nome = a.nome;
+    if(arqLocal){ blob = arqLocal; }
+    else {
+      const d = await sbGetChave(PREFIXO_ANX+pid+'_'+a.id); if(!d || !d.dados) throw new Error('vazio');
+      const bin = atob(d.dados.split(',')[1]); const arr = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+      blob = new Blob([arr], {type:d.tipo||'application/pdf'}); nome = d.nome || nome;
+    }
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = nome; document.body.appendChild(link); link.click(); link.remove();
+  } catch(e){ toast('⚠ Não consegui baixar o PDF da AF', true); }
 }
 async function enviarMensagem(id, tipo){
   const p0 = processos[id]; const ehAF = tipo==='af'; const avanca = ehAF && p0.etapa==='af_emitida';
@@ -747,6 +761,7 @@ async function enviarMensagem(id, tipo){
   if(usaW && !(whats.length>=10 && whats.length<=13)) erros.push('Informe o WhatsApp com DDD.');
   if(usaE && !emailValido(email)) erros.push('Informe um e-mail válido.');
   if(avanca && !prevista) erros.push('Informe a data prevista de entrega / realização.');
+  if(ehAF && !anexoAF(p0) && !($('mg-arqAF') && $('mg-arqAF').files[0]) && !($('mg-semPDF') && $('mg-semPDF').checked)) erros.push('Escolha o PDF da AF, ou marque "Enviar sem o PDF".');
   if(!texto) erros.push('A mensagem está vazia.');
   if(erros.length){ $('mg-erro').innerHTML=erros.map(esc).join('<br>'); $('mg-erro').style.display='block'; return; }
   const btn = $('btn-mg'); btn.disabled = true; btn.textContent = 'Preparando...';
@@ -782,7 +797,20 @@ async function enviarMensagem(id, tipo){
       if(!ehAF) p.ultimaCobrancaNF = agora;
     }
     await salvarProcesso(p);
-    fechar('ov-trans'); toast(ehAF?(avanca?'📤 AF enviada · processo avançou':'📤 AF reenviada'):'📲 Cobrança registrada'); renderTudo(); if(detId===id) abrirDetalhe(id);
+    renderTudo(); if(detId===id) abrirDetalhe(id);
+    const afFinal = ehAF ? anexoAF(p) : null;
+    if(afFinal && $('mg-baixar') && $('mg-baixar').checked){
+      await baixarAnexoArquivo(p.id, afFinal, arq);
+      $('trans-box').innerHTML = `<div class="modal-tit">✅ ${avanca?'AF enviada e processo atualizado':'AF reenviada'}</div>
+        <div class="modal-sub">O PDF da AF foi baixado no seu computador: <b style="color:#fff">${esc(afFinal.nome)}</b></div>
+        <div style="font-size:13px;line-height:1.7;color:var(--text)">Para mandar o arquivo junto:<br>
+        ${usaW?'• <b>WhatsApp:</b> arraste o PDF da barra de downloads do navegador para a conversa que abriu e aperte enviar.<br>':''}
+        ${usaE?'• <b>E-mail:</b> arraste o mesmo PDF para a mensagem antes de enviar.<br>':''}
+        <span style="color:var(--sub);font-size:12px">A mensagem também leva o link para o fornecedor baixar a AF, caso o arquivo não vá.</span></div>
+        <div class="mfooter"><button class="btn btn-ghost" onclick="baixarAnexoArquivo('${p.id}', anexoAF(processos['${p.id}']))">⬇ Baixar de novo</button><button class="btn btn-teal" onclick="fechar('ov-trans')">Fechar</button></div>`;
+    } else {
+      fechar('ov-trans'); toast(ehAF?(avanca?'📤 AF enviada · processo avançou':'📤 AF reenviada'):'📲 Cobrança registrada');
+    }
   } catch(e){
     if(aba) aba.close();
     if(e.message && !e.message.startsWith('HTTP') && e.message!=='bloqueado') alert(e.message);
