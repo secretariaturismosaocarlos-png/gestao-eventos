@@ -279,13 +279,25 @@ const listaEvt = () => Object.values(evts).filter(e=>!e.excluido);
 function limite(){ return Number(base.config && base.config.limiteAlerta) || 20; }
 function ultimaRenovacao(a){ const r=(a.renovacoes||[]).filter(x=>x.ate); return r.length ? r.slice().sort((x,y)=>x.ate.localeCompare(y.ate))[r.length-1] : null; }
 function fimVigente(a){ const r=ultimaRenovacao(a); return r ? r.ate : a.vigenciaFim; }
+// Avisos de vencimento: 6, 5 e 4 meses (preparar licitação/renovação) e crítico a partir de 3 meses.
+function somaMeses(iso, n){ const d=parseData(iso); const dia=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+n); const ult=new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); d.setDate(Math.min(dia, ult)); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+const NIVEIS = {
+  vencida: { ordem:0, cls:'atrasado', rotulo:'Vencida',            acao:'Registre a renovação, se houve. Sem renovação, a ata não pode mais ser usada.' },
+  critico: { ordem:1, cls:'atrasado', rotulo:'Crítico · faltam 3 meses ou menos', acao:'A renovação ou a nova licitação já precisa estar em andamento.' },
+  m4:      { ordem:2, cls:'atencao',  rotulo:'Faltam 4 meses',             acao:'Hora de abrir o processo de renovação ou de nova licitação.' },
+  m5:      { ordem:3, cls:'atencao',  rotulo:'Faltam 5 meses',             acao:'Levante a demanda das secretarias e prepare o termo de referência.' },
+  m6:      { ordem:4, cls:'pago',     rotulo:'Faltam 6 meses',             acao:'Comece a planejar a renovação ou a nova licitação.' }
+};
 function vigencia(a){
-  const fim = fimVigente(a); const ren = !!ultimaRenovacao(a);
-  if(!fim) return { cls:'neutro', txt:'Sem vigência informada', vencida:false, ren };
-  const d = diasAte(fim);
-  if(d<0) return { cls:'atrasado', txt:(ren?'Renovação vencida em ':'Vencida em ')+fmtData(fim), vencida:true, ren };
-  if(d<=60) return { cls:'atencao', txt:(ren?'Renovada · vence em ':'Vence em ')+d+' dia'+(d===1?'':'s'), vencida:false, ren };
-  return { cls:'ok', txt:(ren?'🔄 Renovada até ':'Vigente até ')+fmtData(fim), vencida:false, ren };
+  const fim = fimVigente(a); const ren = !!ultimaRenovacao(a); const hoje = hojeISO();
+  if(!fim) return { cls:'neutro', txt:'Sem vigência informada', vencida:false, ren, nivel:null };
+  const d = diasAte(fim); const pre = ren ? 'Renovada · ' : '';
+  let nivel = null;
+  if(d<0) nivel='vencida'; else if(fim<=somaMeses(hoje,3)) nivel='critico'; else if(fim<=somaMeses(hoje,4)) nivel='m4'; else if(fim<=somaMeses(hoje,5)) nivel='m5'; else if(fim<=somaMeses(hoje,6)) nivel='m6';
+  if(nivel==='vencida') return { cls:'atrasado', txt:(ren?'Renovação vencida em ':'Vencida em ')+fmtData(fim), vencida:true, ren, nivel, fim };
+  if(nivel==='critico') return { cls:'atrasado', txt:'🚨 '+pre+'vence em '+d+' dia'+(d===1?'':'s')+' ('+fmtData(fim)+')', vencida:false, ren, nivel, fim };
+  if(nivel) return { cls:NIVEIS[nivel].cls, txt:pre+'Vence em '+fmtData(fim)+' · '+d+' dias', vencida:false, ren, nivel, fim };
+  return { cls:'ok', txt:(ren?'🔄 Renovada até ':'Vigente até ')+fmtData(fim), vencida:false, ren, nivel:null, fim };
 }
 
 // ═══════════════ SUPABASE ═══════════════
@@ -407,17 +419,21 @@ function renderPainel(){
   const vig = base.atas.filter(a=>!vigencia(a).vencida).length;
   const ms = listaMov(); const mes = hojeISO().slice(0,7);
   const al = alertasSaldo();
-  const vencidas = base.atas.filter(a=>vigencia(a).vencida);
-  const vencendo = base.atas.filter(a=>vigencia(a).cls==='atencao');
+  const comAviso = base.atas.map(a=>({a, v:vigencia(a)})).filter(x=>x.v.nivel).sort((x,y)=>NIVEIS[x.v.nivel].ordem-NIVEIS[y.v.nivel].ordem || (x.v.fim||'').localeCompare(y.v.fim||''));
+  const nCrit = comAviso.filter(x=>x.v.nivel==='vencida'||x.v.nivel==='critico').length;
   let disp=0; base.secretarias.forEach(s=>disp+=resumoSec(s.id).disp);
   let h = `<div class="stat-row">
     <div class="sc teal"><div class="sc-lbl">Disponível nas caixinhas</div><div class="sc-val">${fmtBRL(disp)}</div><div class="sc-sub">${base.secretarias.length} secretarias</div></div>
-    <div class="sc gold"><div class="sc-lbl">Atas vigentes</div><div class="sc-val">${vig} de ${base.atas.length}</div><div class="sc-sub">${base.itens.length} itens registrados</div></div>
+    <div class="sc gold"><div class="sc-lbl">Atas vigentes</div><div class="sc-val">${vig} de ${base.atas.length}</div><div class="sc-sub">${comAviso.filter(x=>!x.v.vencida).length} vencendo nos próximos 6 meses</div></div>
     <div class="sc blue"><div class="sc-lbl">Movimentações</div><div class="sc-val">${ms.length}</div><div class="sc-sub">${ms.filter(m=>(m.data||'').startsWith(mes)).length} neste mês</div></div>
     <div class="sc rose"><div class="sc-lbl">Alertas de saldo</div><div class="sc-val">${al.length}</div><div class="sc-sub">restando ${limite()}% ou menos</div></div></div>`;
-  if(vencidas.length || vencendo.length){
-    h += `<div class="grupo critico"><div class="grupo-hd"><span style="font-size:22px">📅</span><div><h3>Vigência das atas</h3><p>Ata vencida não pode receber novos pedidos, a não ser que tenha sido renovada. Se foi, clique em "Registrar renovação".</p></div><span class="n">${vencidas.length+vencendo.length}</span></div>`;
-    vencidas.concat(vencendo).forEach(a=>{ const v=vigencia(a); h += `<div class="item"><div class="item-main" onclick="setTab('atas');atasAbertas.add('${a.id}');renderTudo()"><div class="item-tit">Ata ${esc(a.numero)} · ${esc(a.fornecedor)}</div><div class="item-sub">${esc(a.objeto)}</div></div><span class="chip ${v.cls}">${esc(v.txt)}</span>${podeEditar()?`<button class="btn btn-teal btn-sm" onclick="renovarAta('${a.id}')">🔄 Registrar renovação</button>`:''}</div>`; });
+  if(comAviso.length){
+    h += `<div class="grupo${nCrit?' critico':''}"><div class="grupo-hd"><span style="font-size:22px">📅</span><div><h3>Vencimento das atas</h3><p>Como é licitação, os avisos começam 6 meses antes do vencimento. A partir de 3 meses, o alerta é crítico.</p></div><span class="n">${comAviso.length}</span></div>`;
+    let ultimo = '';
+    comAviso.forEach(({a,v})=>{
+      if(v.nivel!==ultimo){ ultimo=v.nivel; const N=NIVEIS[v.nivel]; h += `<div style="padding:9px 18px;background:var(--ink);font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:${N.cls==='atrasado'?'#f07a7a':N.cls==='atencao'?'#f0c060':'#7ab3f0'};border-top:1px solid var(--border)">${N.rotulo} <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--sub)">— ${N.acao}</span></div>`; }
+      h += `<div class="item"><div class="item-main" onclick="setTab('atas');atasAbertas.add('${a.id}');renderTudo()"><div class="item-tit">Ata ${esc(a.numero)} · ${esc(a.fornecedor)}</div><div class="item-sub">${esc(a.objeto)}</div></div><span class="chip ${v.cls}">${esc(v.txt)}</span>${podeEditar()?`<button class="btn btn-teal btn-sm" onclick="renovarAta('${a.id}')">🔄 Registrar renovação</button>`:''}</div>`;
+    });
     h += `</div>`;
   }
   if(al.length){
