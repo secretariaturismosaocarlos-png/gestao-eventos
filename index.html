@@ -75,6 +75,11 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
 .card.purple .card-features li::before{color:#9f97f0}
 .card.purple .card-btn{background:#534ab7;color:#fff}.card.purple .card-btn:hover{background:#6a61cc}
 .card.purple .badge{background:#1e1a4a;color:#b0a8f5}
+.card.teal::before{background:linear-gradient(135deg,rgba(29,158,117,.15),rgba(15,110,86,.1))}
+.card.teal:hover{border-color:#1d9e7544}.card.teal:hover::before{opacity:1}
+.card.teal .card-features li::before{color:#5dcaa5}
+.card.teal .card-btn{background:#0f6e56;color:#fff}.card.teal .card-btn:hover{background:#1d9e75}
+.card.teal .badge{background:#04342c;color:#9fe1cb}
 .no-access{text-align:center;padding:60px 20px;color:#3a4a5a;width:100%}
 .no-access .ico{font-size:48px;margin-bottom:16px}
 .admin-panel{display:none;width:100%;max-width:960px;margin-top:40px;background:#1a2535;border:1px solid #2a3a50;border-radius:16px;overflow:hidden}
@@ -351,6 +356,7 @@ function renderCards(perms, isAdmin) {
   if (g) html += mkCard('green','Gerenciador','📁','Gerenciador de Eventos','Gestão completa de produção: staff, estrutura, hospedagem, contratos e resumo executivo consolidado.',['Staff detalhado por bloco e função','Estrutura e equipamentos por seção','Hospedagem com cálculo automático','Atas & Contratos com extração por IA','Exportação Excel e PDF'],'gerenciador_eventos_v2.html','📂 Abrir Gerenciador');
   if (c) html += mkCard('gold','Chamamento Público','🎭','Artistas · Chamamento','Banco de artistas do chamamento público com programação, cachês e fila rotativa.',['188 artistas pré-cadastrados','Fila rotativa com regras de reoferta','Detecção de conflito de horário','Confirmação e status','Geração de PDF'],'artistas_chamamento.html','🎤 Abrir Chamamento');
   if (g) html += mkCard('purple','Financeiro','📑','Processos de Contratação','Acompanhamento do rito de cada processo, da abertura no GIAP até o pagamento da nota fiscal.',['Quadro por etapa com prazos','O que fazer hoje: AF a enviar, NF a anexar','Travas para não esquecer nenhum passo','Anexos de empenho, AF e NF','Histórico de quem fez o quê'],'processos.html','📑 Abrir Processos');
+  if (g) html += mkCard('teal','Atas de Registro de Preço','📦','Controle de Atas','Saldo de cada ata por secretaria, com registro de consumo em eventos e remanejamentos.',['Caixinhas de saldo por secretaria','Quadro de saldos item a item','Consumo por evento','Alertas de saldo e de vigência','Relatórios em PDF e planilha'],'atas.html','📦 Abrir Atas');
   if (e) html += mkCard('blue','Parlamentar','💰','Emendas Parlamentares','Gestão das emendas LOA 2026 dos vereadores com vinculação a eventos.',['23 emendas pré-carregadas','Filtro por vereador, evento ou status','Vinculação emenda → evento → artista','Painel com totais','Exportação em PDF'],'emendas_parlamentares.html','💰 Abrir Emendas');
   if (!html) {
     el.innerHTML = `<div class="no-access"><div class="ico">🔒</div><p style="color:#8a9bb0;font-size:15px;font-family:'DM Serif Display',serif">Sem acessos liberados</p><p style="color:#5a6a7a;font-size:12px;margin-top:8px">Fale com o administrador para solicitar acesso.</p></div>`;
