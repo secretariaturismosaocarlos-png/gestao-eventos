@@ -176,6 +176,7 @@ tr.click:hover td{background:var(--ink3);cursor:pointer}
     <div class="pill pill-rose" id="pill-atr">Atrasados: —</div>
     <div class="pill pill-gold" id="pill-pag">A pagar: —</div>
     <button class="btn btn-ghost btn-sm" id="btn-prazos" onclick="abrirPrazos()" style="display:none">⚙ Prazos</button>
+    <button class="btn btn-gold" id="btn-docs" onclick="abrirEnvioDocs()">📥 Enviar documento</button>
     <button class="btn btn-teal" id="btn-novo" onclick="abrirForm()">＋ Novo processo</button>
   </div>
   <div class="tabs">
@@ -195,6 +196,8 @@ tr.click:hover td{background:var(--ink3);cursor:pointer}
 <div class="modal-ov" id="ov-form" onclick="if(event.target===this)fechar('ov-form')"><div class="modal lg" id="form-box"></div></div>
 <!-- Modal: avançar etapa -->
 <div class="modal-ov" id="ov-trans" onclick="if(event.target===this)fechar('ov-trans')"><div class="modal" id="trans-box"></div></div>
+<!-- Modal: enviar documentos -->
+<div class="modal-ov" id="ov-docs" onclick="if(event.target===this)fechar('ov-docs')"><div class="modal lg" id="docs-box"></div></div>
 <!-- Modal: prazos -->
 <div class="modal-ov" id="ov-prazos" onclick="if(event.target===this)fechar('ov-prazos')"><div class="modal" id="prazos-box"></div></div>
 
@@ -547,7 +550,7 @@ function abrirDetalhe(id){
   if(!anx.length) h += `<div style="font-size:12px;color:var(--sub);margin-bottom:8px">Nenhum documento anexado.</div>`;
   anx.forEach(a=>{ h += `<div class="anx"><span class="badge">${esc(a.cat)}</span><span class="nm" onclick="baixarAnexo('${p.id}','${a.id}')">📄 ${esc(a.nome)}</span><span style="font-size:10px;color:var(--sub)">${fmtDH(a.em)} · ${esc(a.por)}</span>${ed?`<button class="btn btn-rose btn-sm" onclick="removerAnexo('${p.id}','${a.id}')">✕</button>`:''}</div>`; });
   if(ed) h += `<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><select id="anx-cat" style="background:var(--ink);border:1px solid var(--border);color:#fff;border-radius:8px;padding:7px 10px;font-size:12px"><option>Solicitação</option><option>Empenho</option><option>AF</option><option>Nota fiscal</option><option>Comprovante de envio</option><option>Outro</option></select>
-    <label class="btn btn-ghost btn-sm" style="cursor:pointer">📎 Anexar documento<input type="file" style="display:none" onchange="anexarAvulso('${p.id}',this)"></label></div>`;
+    <button class="btn btn-gold btn-sm" onclick="abrirEnvioDocs('${p.id}')">📥 Enviar e ler documento</button><label class="btn btn-ghost btn-sm" style="cursor:pointer">📎 Só anexar<input type="file" style="display:none" onchange="anexarAvulso('${p.id}',this)"></label></div>`;
   h += `<div class="det-sec">Histórico</div><div class="hist">${(p.historico||[]).slice().reverse().map(x=>`<div class="h">${esc(x.acao)}${x.obs?' — '+esc(x.obs):''}<small>${fmtDH(x.em)} · ${esc(x.por)}</small></div>`).join('')}</div>`;
   if(ed){
     h += `<div class="mfooter" style="justify-content:space-between"><div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -786,6 +789,222 @@ async function enviarMensagem(id, tipo){
   }
 }
 
+// ═══════════════ ENVIAR DOCUMENTOS (leitura automática por IA) ═══════════════
+// O usuário solta AF, empenho, NF ou solicitação baixados do GIAP. A IA lê, o sistema acha o processo,
+// mostra o que vai fazer e, depois da conferência, anexa, preenche os campos e avança a etapa.
+const IA_MODELO = 'claude-sonnet-4-6';
+const TIPOS_DOC = ['AF','Empenho','Nota fiscal','Solicitação','Outro'];
+let docsFila = [];   // {id, file, status:'lendo'|'conferir'|'aplicado'|'erro'|'ignorado', dados, procId, msg, assinado}
+let docProcFixo = null;
+
+function chaveIA(){ return (localStorage.getItem('anthropic_api_key')||'').trim(); }
+function chaveNum(s){
+  if(!s) return '';
+  const m = String(s).match(/(\d+)\s*[\/\-.]\s*(\d{2,4})\b/);
+  if(m){ const ano = m[2].length===2 ? '20'+m[2] : m[2]; return parseInt(m[1],10)+'/'+ano; }
+  const d = String(s).replace(/\D/g,''); return d ? String(parseInt(d,10)) : '';
+}
+function abrirEnvioDocs(procId){
+  if(!podeEditar()){ alert('Seu perfil é somente leitura.'); return; }
+  docProcFixo = procId || null;
+  docsFila = docsFila.filter(d=>d.status==='lendo' || d.status==='conferir');
+  renderEnvioDocs(); abrir('ov-docs');
+}
+function renderEnvioDocs(){
+  const temChave = chaveIA().length>20;
+  const pFixo = docProcFixo && processos[docProcFixo];
+  let h = `<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="modal-tit">📥 Enviar documentos</div>
+    <div class="modal-sub" style="margin-bottom:12px">${pFixo?'Para o processo <b style="color:#fff">'+esc(pFixo.numProcesso)+'</b>. ':''}Solte aqui a AF, o empenho, a nota fiscal ou a solicitação, em PDF ou foto. O sistema lê o documento, encontra o processo, preenche os campos e avança a etapa. Você confere antes de aplicar.</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="fechar('ov-docs')">✕</button></div>`;
+  if(!temChave){
+    h += `<div class="aviso" style="margin:0 0 12px">🔑 Para a leitura automática, informe a chave da IA (a mesma usada no Gerenciador e nas Emendas). Sem ela, você ainda pode enviar o documento e preencher os campos à mão.
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="ia-chave" type="password" placeholder="sk-ant-..." style="flex:1;min-width:220px;background:var(--ink);border:1px solid var(--border);border-radius:8px;color:#fff;padding:7px 10px">
+      <button class="btn btn-teal btn-sm" onclick="localStorage.setItem('anthropic_api_key',$('ia-chave').value.trim());renderEnvioDocs()">Salvar chave</button>
+      <a href="https://console.anthropic.com/settings/keys" target="_blank" style="font-size:11px;color:var(--gold);align-self:center">Obter chave →</a></div></div>`;
+  }
+  h += `<label id="docs-drop" style="display:block;border:2px dashed #3a5a70;border-radius:14px;padding:26px;text-align:center;cursor:pointer;background:var(--ink);transition:.15s"
+      ondragover="event.preventDefault();this.style.borderColor='#4cd98a'" ondragleave="this.style.borderColor='#3a5a70'" ondrop="event.preventDefault();this.style.borderColor='#3a5a70';receberDocs(event.dataTransfer.files)">
+      <div style="font-size:30px">📄</div><div style="font-size:14px;font-weight:700;color:#fff;margin-top:6px">Arraste os arquivos para cá ou clique para escolher</div>
+      <div style="font-size:11px;color:var(--sub);margin-top:4px">PDF ou imagem · pode mandar vários de uma vez</div>
+      <input type="file" multiple accept=".pdf,image/*" style="display:none" onchange="receberDocs(this.files);this.value=''"></label>`;
+  if(docsFila.length) h += `<div style="margin-top:14px;display:flex;flex-direction:column;gap:12px">${docsFila.map(cardDoc).join('')}</div>`;
+  $('docs-box').innerHTML = h;
+}
+function receberDocs(files){
+  [...files].forEach(f=>{
+    if(f.size > LIMITE_ARQ_MB*1024*1024){ toast('"'+f.name+'" tem mais de '+LIMITE_ARQ_MB+' MB', true); return; }
+    const d = { id:novoId(), file:f, status: chaveIA().length>20 ? 'lendo' : 'conferir', dados:{ tipo:palpiteTipo(f.name) }, procId:docProcFixo, msg:'' };
+    docsFila.push(d);
+    if(d.status==='lendo') lerDocumento(d); else localizarProcesso(d);
+  });
+  renderEnvioDocs();
+}
+function palpiteTipo(nome){ const n=norm(nome); if(/\baf\b|autoriza/.test(n)) return 'AF'; if(/empenho|\bne\b/.test(n)) return 'Empenho'; if(/\bnf|nota|danfe|nfs/.test(n)) return 'Nota fiscal'; if(/solicit|sc\b/.test(n)) return 'Solicitação'; return 'Outro'; }
+
+async function lerDocumento(d){
+  try {
+    const b64 = (await lerArquivo(d.file)).split(',')[1];
+    const ehPdf = d.file.type==='application/pdf' || /\.pdf$/i.test(d.file.name);
+    const bloco = ehPdf ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:b64 } }
+                        : { type:'image', source:{ type:'base64', media_type:d.file.type||'image/jpeg', data:b64 } };
+    const prompt = `Você lê documentos de compras públicas da Prefeitura Municipal de São Carlos (SP), baixados do sistema GIAP ou enviados por fornecedores.
+Identifique o tipo e extraia os dados. Responda SOMENTE com um JSON válido, sem texto antes ou depois, neste formato:
+{"tipo":"AF"|"Empenho"|"Nota fiscal"|"Solicitação"|"Outro",
+ "numProcesso":"número do processo administrativo, ex. 8521/2026, ou null",
+ "numSolicitacao":"nº da solicitação de compra ou null",
+ "numEmpenho":"nº da nota de empenho ou null","valorEmpenho":número ou null,"dataEmpenho":"AAAA-MM-DD ou null",
+ "numAF":"nº da autorização de fornecimento ou null","dataAF":"AAAA-MM-DD ou null",
+ "numNF":"nº da nota fiscal ou null","valorNF":número ou null,"dataEmissaoNF":"AAAA-MM-DD ou null",
+ "fornecedor":"razão social do fornecedor/credor ou null","cnpj":"CNPJ do fornecedor ou null",
+ "objeto":"descrição curta do que foi contratado, até 90 caracteres, ou null",
+ "valorTotal":número ou null,
+ "duvidas":"o que ficou ilegível ou incerto, ou null"}
+Regras: AF = Autorização de Fornecimento. Empenho = Nota de Empenho. Na nota fiscal, procure o nº do processo, da AF e do empenho nas informações complementares. Valores em número com ponto decimal (ex. 1800.5). Não invente: se não encontrar, use null. Números de documento no formato que aparecem (ex. 115/2026).`;
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method:'POST',
+      headers:{ 'Content-Type':'application/json', 'x-api-key':chaveIA(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify({ model:IA_MODELO, max_tokens:1200, messages:[{ role:'user', content:[ bloco, { type:'text', text:prompt } ] }] }) });
+    const j = await r.json();
+    if(!r.ok) throw new Error(r.status===401 ? 'A chave da IA não foi aceita. Confira a chave.' : ((j.error&&j.error.message)||('Erro '+r.status)));
+    const txt = (j.content||[]).map(c=>c.text||'').join('');
+    const ini = txt.indexOf('{'), fim = txt.lastIndexOf('}');
+    if(ini<0||fim<0) throw new Error('A IA não devolveu os dados no formato esperado.');
+    const dados = JSON.parse(txt.slice(ini, fim+1));
+    if(!TIPOS_DOC.includes(dados.tipo)) dados.tipo = 'Outro';
+    d.dados = dados; d.status = 'conferir';
+  } catch(e){
+    d.status = 'conferir'; d.msg = '⚠ Não consegui ler o documento automaticamente ('+e.message+'). Preencha os campos abaixo.';
+  }
+  localizarProcesso(d);
+  if($('ov-docs').classList.contains('open')) renderEnvioDocs();
+}
+function localizarProcesso(d){
+  d.sugestao = false; d.duvida = '';
+  if(docProcFixo){ d.procId = docProcFixo; d.achadoPor = 'escolhido'; return; }
+  const x = d.dados; const lista = Object.values(processos).filter(p=>!p.cancelado);
+  const regras = [['numProcesso','numProcesso','nº do processo'],['numAF','numAF','nº da AF'],['numEmpenho','numEmpenho','nº do empenho'],['numSolicitacao','numSolicitacao','nº da solicitação']];
+  for(const [kDoc,kProc,rotulo] of regras){
+    const alvo = chaveNum(x[kDoc]); if(!alvo) continue;
+    const achados = lista.filter(p=>chaveNum(p[kProc])===alvo);
+    if(achados.length===1){ d.procId = achados[0].id; d.achadoPor = rotulo; return; }
+    if(achados.length>1){ d.procId = ''; d.achadoPor = ''; d.duvida = 'Mais de um processo tem o mesmo '+rotulo+'. Escolha o certo.'; return; }
+  }
+  // sem número que bata: sugere pelo fornecedor, se só um processo em andamento for dele
+  if(x.fornecedor){
+    const k = norm(x.fornecedor).slice(0,12);
+    const pelos = lista.filter(p=>p.etapa!=='pago' && p.fornecedor && norm(p.fornecedor).slice(0,12)===k);
+    if(pelos.length===1){ d.procId = pelos[0].id; d.achadoPor = 'fornecedor'; d.sugestao = true; return; }
+  }
+  d.procId = ''; d.achadoPor = '';
+  d.duvida = x.numProcesso ? 'Não encontrei o processo '+x.numProcesso+' no acompanhamento. Escolha um processo ou crie um novo.' : 'O documento não informa o nº do processo. Escolha o processo correto.';
+}
+function etapaAlvo(tipo, assinado){
+  return { 'Empenho': assinado?'compras_af':'assinatura', 'AF':'af_emitida', 'Nota fiscal':'nf_recebida', 'Solicitação':'aberto' }[tipo] || null;
+}
+const CAMPOS_DOC = {
+  'AF':          [['numAF','Nº da AF','text'],['dataAF','Data da AF','date'],['numEmpenho','Nº do empenho','text'],['valorEmpenho','Valor (R$)','money']],
+  'Empenho':     [['numEmpenho','Nº do empenho','text'],['valorEmpenho','Valor empenhado (R$)','money'],['dataEmpenho','Data do empenho','date']],
+  'Nota fiscal': [['numNF','Nº da NF','text'],['valorNF','Valor da NF (R$)','money'],['dataEmissaoNF','Emissão','date'],['numAF','Nº da AF citada','text']],
+  'Solicitação': [['numSolicitacao','Nº da solicitação','text'],['valorTotal','Valor estimado (R$)','money']],
+  'Outro':       []
+};
+function cardDoc(d){
+  const x = d.dados || {};
+  if(d.status==='lendo') return `<div class="grupo" style="margin:0;padding:14px 16px"><b style="color:#fff">⏳ Lendo ${esc(d.file.name)}...</b><div style="font-size:11px;color:var(--sub);margin-top:3px">Leva alguns segundos.</div></div>`;
+  if(d.status==='aplicado') return `<div class="grupo" style="margin:0;padding:12px 16px;border-color:var(--teal-m);background:var(--teal-l)"><b style="color:#4cd98a">✅ ${esc(d.file.name)}</b><div style="font-size:12px;color:var(--text);margin-top:3px">${d.msg}</div></div>`;
+  if(d.status==='ignorado') return `<div class="grupo" style="margin:0;padding:10px 16px;opacity:.6"><span style="color:var(--muted);font-size:12px">${esc(d.file.name)} · ignorado</span></div>`;
+  const ativos = Object.values(processos).filter(p=>!p.cancelado && p.etapa!=='pago').sort((a,b)=>String(a.numProcesso).localeCompare(String(b.numProcesso),'pt-BR',{numeric:true}));
+  const p = d.procId && d.procId!=='novo' ? processos[d.procId] : null;
+  const alvo = etapaAlvo(x.tipo, d.assinado);
+  let efeito = '';
+  if(p){ efeito = alvo && IDX[alvo] > IDX[p.etapa] ? `O processo vai de <b>${esc(ETAPAS[IDX[p.etapa]].nome)}</b> para <b style="color:#4cd98a">${esc(ETAPAS[IDX[alvo]].nome)}</b>.` : `O documento será anexado e os campos atualizados. A etapa continua <b>${esc(ETAPAS[IDX[p.etapa]].nome)}</b>.`; }
+  else if(d.procId==='novo') efeito = `Será criado um processo novo${alvo&&alvo!=='aberto'?', já na etapa <b style="color:#4cd98a">'+esc(ETAPAS[IDX[alvo]].nome)+'</b>':''}.`;
+  let aviso = '';
+  const vNF = parseBRL(x.valorNF), vEmp = p ? (parseBRL(x.valorEmpenho) ?? p.valorEmpenho) : parseBRL(x.valorEmpenho);
+  if(x.tipo==='Nota fiscal' && vNF!=null && vEmp!=null && Math.abs(vNF-vEmp)>0.009) aviso = `⚠ O valor da NF (${fmtBRL(vNF)}) é diferente do empenho (${fmtBRL(vEmp)}).`;
+  if(p && x.fornecedor && p.fornecedor && norm(x.fornecedor).slice(0,12)!==norm(p.fornecedor).slice(0,12)) aviso += (aviso?'<br>':'')+`⚠ O fornecedor do documento (${esc(x.fornecedor)}) parece diferente do processo (${esc(p.fornecedor)}).`;
+  const campo = (k,l,t) => { let v = x[k]; if(t==='money') v = v!=null&&v!==''?moneyInput(parseBRL(v)):''; return `<div class="fg"><label>${esc(l)}</label><input data-doc="${d.id}" data-k="${k}" data-t="${t}" type="${t==='money'?'text':t}" ${t==='money'?'inputmode="decimal"':''} value="${esc(v==null?'':v)}" onchange="lerCamposDoc('${d.id}')"></div>`; };
+  return `<div class="grupo" style="margin:0;padding:16px 18px;${d.duvida&&!d.procId?'border-color:#6b4a10':''}">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><b style="color:#fff;word-break:break-all">📄 ${esc(d.file.name)}</b>
+      ${d.achadoPor&&d.achadoPor!=='escolhido'?(d.sugestao?`<span class="chip atencao">❓ Sugestão pelo fornecedor: confira o processo</span>`:`<span class="chip ok">✓ Encontrei pelo ${esc(d.achadoPor)}</span>`):''}</div>
+    ${d.msg?`<div class="aviso" style="margin:0 0 10px">${esc(d.msg)}</div>`:''}
+    ${x.duvidas?`<div style="font-size:11px;color:#f0c060;margin-bottom:8px">A leitura teve dúvidas: ${esc(x.duvidas)}</div>`:''}
+    <div class="fgrid">
+      <div class="fg"><label>Tipo de documento</label><select onchange="docsFila.find(q=>q.id==='${d.id}').dados.tipo=this.value;renderEnvioDocs()">${TIPOS_DOC.map(t=>`<option ${x.tipo===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label>Processo ${d.duvida&&!d.procId?'<span class="req">— escolha</span>':''}</label><select onchange="escolherProcDoc('${d.id}',this.value)">
+        <option value="">Escolha o processo...</option>${ativos.map(q=>`<option value="${q.id}" ${d.procId===q.id?'selected':''}>${esc(q.numProcesso)} · ${esc(String(q.objeto).slice(0,50))}</option>`).join('')}
+        <option value="novo" ${d.procId==='novo'?'selected':''}>＋ Criar processo novo com este documento</option></select></div>
+      ${d.procId==='novo'?campo('numProcesso','Nº do processo no GIAP *','text')+campo('objeto','Objeto *','text')+campo('fornecedor','Fornecedor','text')+'<div class="fg"><label>Tipo do processo</label><select data-doc="'+d.id+'" data-k="tipoProc" data-t="text" onchange="lerCamposDoc(\''+d.id+'\')">'+TIPOS.map(t=>`<option ${x.tipoProc===t?'selected':''}>${t}</option>`).join('')+'</select></div>':''}
+      ${(CAMPOS_DOC[x.tipo]||[]).map(([k,l,t])=>campo(k,l,t)).join('')}
+      ${x.tipo==='Empenho'?`<label class="check full"><input type="checkbox" ${d.assinado?'checked':''} onchange="docsFila.find(q=>q.id==='${d.id}').assinado=this.checked;renderEnvioDocs()"> Este empenho já está assinado pelo ordenador de despesas</label>`:''}
+    </div>
+    ${d.duvida&&!d.procId?`<div style="font-size:12px;color:#f0c060;margin-top:10px">❓ ${esc(d.duvida)}</div>`:''}
+    ${efeito?`<div style="font-size:12px;color:var(--muted);margin-top:10px">➜ ${efeito}</div>`:''}
+    ${aviso?`<div class="aviso">${aviso}</div>`:''}
+    <div class="mfooter" style="margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="docsFila.find(q=>q.id==='${d.id}').status='ignorado';renderEnvioDocs()">Ignorar</button>
+      <button class="btn btn-teal btn-sm" id="ap-${d.id}" onclick="aplicarDoc('${d.id}')" ${d.procId?'':'disabled'}>✔ Confirmar e aplicar</button></div></div>`;
+}
+function lerCamposDoc(id){
+  const d = docsFila.find(q=>q.id===id);
+  document.querySelectorAll(`[data-doc="${id}"]`).forEach(el=>{ let v=el.value.trim(); if(el.dataset.t==='money') v = parseBRL(v); d.dados[el.dataset.k] = (v===''?null:v); });
+}
+function escolherProcDoc(id, procId){
+  lerCamposDoc(id); const d = docsFila.find(q=>q.id===id); d.procId = procId; d.sugestao = false; d.achadoPor = procId && procId!=='novo' ? 'escolhido' : '';
+  if(procId==='novo'){ d.dados.objeto = d.dados.objeto || ''; d.dados.tipoProc = d.dados.tipoProc || 'Compra'; }
+  renderEnvioDocs();
+}
+async function aplicarDoc(id){
+  lerCamposDoc(id);
+  const d = docsFila.find(q=>q.id===id); const x = d.dados; const btn = $('ap-'+id);
+  const agora = new Date().toISOString(), hoje = hojeISO();
+  let p;
+  if(d.procId==='novo'){
+    if(!x.numProcesso || !x.objeto){ alert('Para criar o processo, informe o nº do processo e o objeto.'); return; }
+    const dup = Object.values(processos).find(q=>!q.cancelado && chaveNum(q.numProcesso)===chaveNum(x.numProcesso));
+    if(dup && !confirm('Já existe o processo '+dup.numProcesso+' ('+dup.objeto+'). Criar outro mesmo assim?')) return;
+    p = { id:novoId(), numProcesso:x.numProcesso, tipo:x.tipoProc||'Compra', objeto:x.objeto, fornecedor:x.fornecedor||null, dataAbertura:hoje, responsavel:nomeUsuario(), etapa:'aberto', etapaDesde:hoje,
+          criadoEm:agora, criadoPor:nomeUsuario(), anexos:[], historico:[{ em:agora, por:nomeUsuario(), acao:'Processo criado a partir do documento '+d.file.name }] };
+  } else {
+    if(!processos[d.procId]){ alert('Escolha o processo.'); return; }
+    p = JSON.parse(JSON.stringify(processos[d.procId]));
+  }
+  btn.disabled = true; btn.textContent = 'Aplicando...';
+  try {
+    await guardarAnexo(p, d.file, x.tipo==='Solicitação'?'Solicitação':x.tipo);
+    const muda = [];
+    const set = (k, v, rot) => { if(v==null || v==='') return; if(p[k]!==v){ p[k]=v; muda.push(rot); } };
+    set('numSolicitacao', x.numSolicitacao, 'solicitação');
+    if(x.tipo==='Empenho' || x.tipo==='AF'){ set('numEmpenho', x.numEmpenho, 'nº do empenho'); set('valorEmpenho', parseBRL(x.valorEmpenho), 'valor do empenho'); }
+    if(x.tipo==='Empenho'){ set('dataEmpenho', x.dataEmpenho, 'data do empenho'); if(d.assinado) set('dataAssinatura', x.dataEmpenho||hoje, 'assinatura'); }
+    if(x.tipo==='AF'){ set('numAF', x.numAF, 'nº da AF'); set('dataAF', x.dataAF||hoje, 'data da AF'); }
+    if(x.tipo==='Nota fiscal'){ set('numNF', x.numNF, 'nº da NF'); set('valorNF', parseBRL(x.valorNF), 'valor da NF'); if(!p.dataNF) set('dataNF', hoje, 'data de recebimento'); if(!p.nfVia) p.nfVia='Upload no sistema'; if(!p.numAF) set('numAF', x.numAF, 'nº da AF'); }
+    if(x.tipo==='Solicitação' && p.valorEstimado==null) set('valorEstimado', parseBRL(x.valorTotal), 'valor estimado');
+    if(!p.fornecedor && x.fornecedor) set('fornecedor', x.fornecedor, 'fornecedor');
+    // fornecedor: vincula ao cadastro, criando se ainda não existir
+    if(p.fornecedor){
+      let f = fornPorNome(p.fornecedor);
+      if(!f){ f = { id:novoId(), nome:p.fornecedor, cnpj:x.cnpj||'', criadoEm:agora, criadoPor:nomeUsuario(), origem:'documento' }; await gravarFornecedor(f); }
+      else if(x.cnpj && !f.cnpj){ await gravarFornecedor({...f, cnpj:x.cnpj}); }
+      p.fornecedorId = f.id; p.fornecedor = f.nome;
+    }
+    const alvo = etapaAlvo(x.tipo, d.assinado); let txtEtapa = '';
+    if(alvo && IDX[alvo] > IDX[p.etapa]){
+      const de = ETAPAS[IDX[p.etapa]].nome;
+      p.etapa = alvo; p.etapaDesde = (alvo==='af_emitida' ? (x.dataAF||hoje) : hoje);
+      txtEtapa = ' · etapa: '+de+' → '+ETAPAS[IDX[alvo]].nome;
+    }
+    p.historico = (p.historico||[]).concat([{ em:agora, por:nomeUsuario(), acao:x.tipo+' recebido(a) e lido(a) pelo sistema'+txtEtapa, obs:d.file.name+(muda.length?' · atualizou: '+muda.join(', '):'') }]);
+    await salvarProcesso(p);
+    d.status = 'aplicado'; d.procId = p.id;
+    // documentos que ainda não tinham processo podem ser encontrados agora (ex.: NF que cita a AF recém-aplicada)
+    docsFila.filter(q=>q.status==='conferir' && (!q.procId || q.sugestao)).forEach(localizarProcesso);
+    d.msg = 'Anexado ao processo <b>'+esc(p.numProcesso)+'</b>'+(muda.length?' · preenchido: '+esc(muda.join(', ')):'')+(txtEtapa?' · <b>'+esc(txtEtapa.replace(' · etapa: ','etapa: '))+'</b>':'');
+    renderEnvioDocs(); renderTudo(); if(detId===p.id) abrirDetalhe(p.id);
+  } catch(e){
+    if(e.message && !e.message.startsWith('HTTP') && e.message!=='bloqueado') alert(e.message);
+    btn.disabled = false; btn.textContent = '✔ Confirmar e aplicar';
+  }
+}
+
 // ═══════════════ AVANÇAR ETAPA (com travas) ═══════════════
 function abrirTransicao(id){
   if(!podeEditar()) return;
@@ -937,14 +1156,14 @@ async function salvarPrazos(){
   $('banner-role').textContent = (perfil.isAdmin?'⚡ Admin':perfil.role==='editor'?'✏️ Editor':'👁 Visualizador')+' — '+nomeUsuario();
   $('banner-contato').textContent = perfil.contatoAdmin || 'o administrador';
   $('banner-info').textContent = podeEditar() ? 'Você pode cadastrar processos e registrar o andamento.' : 'Acesso somente leitura. Para registrar andamentos, solicite ao administrador.';
-  if(!podeEditar()) $('btn-novo').style.display='none';
+  if(!podeEditar()){ $('btn-novo').style.display='none'; $('btn-docs').style.display='none'; }
   if(perfil.isAdmin===true) $('btn-prazos').style.display='';
   try { await carregarTudo(); }
   catch(e){ cloudOk = false; toast('⚠ Não foi possível carregar os processos. Recarregue a página.', true); }
   $('carregando').style.display='none'; $('app').style.display='block';
   renderTudo(); ouvirTempoReal();
   document.addEventListener('visibilitychange', async ()=>{ if(document.visibilityState==='visible' && cloudOk){ try{ await carregarTudo(); renderTudo(); if(detId) abrirDetalhe(detId); }catch(e){} } });
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape') ['ov-trans','ov-form','ov-prazos','ov-det'].some(o=>{ if($(o).classList.contains('open')){ fechar(o); return true; } }); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') ['ov-trans','ov-docs','ov-form','ov-prazos','ov-det'].some(o=>{ if($(o).classList.contains('open')){ fechar(o); return true; } }); });
 })();
 </script>
 </body>
