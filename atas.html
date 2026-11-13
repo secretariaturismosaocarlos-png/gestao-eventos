@@ -277,12 +277,15 @@ const itensDaAta = id => base.itens.filter(i=>i.ataId===id);
 const listaMov = () => Object.values(movs).filter(m=>!m.excluido);
 const listaEvt = () => Object.values(evts).filter(e=>!e.excluido);
 function limite(){ return Number(base.config && base.config.limiteAlerta) || 20; }
+function ultimaRenovacao(a){ const r=(a.renovacoes||[]).filter(x=>x.ate); return r.length ? r.slice().sort((x,y)=>x.ate.localeCompare(y.ate))[r.length-1] : null; }
+function fimVigente(a){ const r=ultimaRenovacao(a); return r ? r.ate : a.vigenciaFim; }
 function vigencia(a){
-  if(!a.vigenciaFim) return { cls:'neutro', txt:'Sem vigência informada', vencida:false };
-  const d = diasAte(a.vigenciaFim);
-  if(d<0) return { cls:'atrasado', txt:'Vencida em '+fmtData(a.vigenciaFim), vencida:true };
-  if(d<=60) return { cls:'atencao', txt:'Vence em '+d+' dia'+(d===1?'':'s'), vencida:false };
-  return { cls:'ok', txt:'Vigente até '+fmtData(a.vigenciaFim), vencida:false };
+  const fim = fimVigente(a); const ren = !!ultimaRenovacao(a);
+  if(!fim) return { cls:'neutro', txt:'Sem vigência informada', vencida:false, ren };
+  const d = diasAte(fim);
+  if(d<0) return { cls:'atrasado', txt:(ren?'Renovação vencida em ':'Vencida em ')+fmtData(fim), vencida:true, ren };
+  if(d<=60) return { cls:'atencao', txt:(ren?'Renovada · vence em ':'Vence em ')+d+' dia'+(d===1?'':'s'), vencida:false, ren };
+  return { cls:'ok', txt:(ren?'🔄 Renovada até ':'Vigente até ')+fmtData(fim), vencida:false, ren };
 }
 
 // ═══════════════ SUPABASE ═══════════════
@@ -413,8 +416,8 @@ function renderPainel(){
     <div class="sc blue"><div class="sc-lbl">Movimentações</div><div class="sc-val">${ms.length}</div><div class="sc-sub">${ms.filter(m=>(m.data||'').startsWith(mes)).length} neste mês</div></div>
     <div class="sc rose"><div class="sc-lbl">Alertas de saldo</div><div class="sc-val">${al.length}</div><div class="sc-sub">restando ${limite()}% ou menos</div></div></div>`;
   if(vencidas.length || vencendo.length){
-    h += `<div class="grupo critico"><div class="grupo-hd"><span style="font-size:22px">📅</span><div><h3>Vigência das atas</h3><p>Ata vencida não pode receber novos pedidos, a não ser que tenha sido prorrogada. Se foi, atualize a data em "Atas e itens".</p></div><span class="n">${vencidas.length+vencendo.length}</span></div>`;
-    vencidas.concat(vencendo).forEach(a=>{ const v=vigencia(a); h += `<div class="item"><div class="item-main" onclick="setTab('atas');atasAbertas.add('${a.id}');renderTudo()"><div class="item-tit">Ata ${esc(a.numero)} · ${esc(a.fornecedor)}</div><div class="item-sub">${esc(a.objeto)}</div></div><span class="chip ${v.cls}">${esc(v.txt)}</span></div>`; });
+    h += `<div class="grupo critico"><div class="grupo-hd"><span style="font-size:22px">📅</span><div><h3>Vigência das atas</h3><p>Ata vencida não pode receber novos pedidos, a não ser que tenha sido renovada. Se foi, clique em "Registrar renovação".</p></div><span class="n">${vencidas.length+vencendo.length}</span></div>`;
+    vencidas.concat(vencendo).forEach(a=>{ const v=vigencia(a); h += `<div class="item"><div class="item-main" onclick="setTab('atas');atasAbertas.add('${a.id}');renderTudo()"><div class="item-tit">Ata ${esc(a.numero)} · ${esc(a.fornecedor)}</div><div class="item-sub">${esc(a.objeto)}</div></div><span class="chip ${v.cls}">${esc(v.txt)}</span>${podeEditar()?`<button class="btn btn-teal btn-sm" onclick="renovarAta('${a.id}')">🔄 Registrar renovação</button>`:''}</div>`; });
     h += `</div>`;
   }
   if(al.length){
@@ -576,8 +579,8 @@ async function salvarMov(){
   if(erros.length){ $('mv-erro').innerHTML = erros.map(esc).join('<br>'); $('mv-erro').style.display='block'; return; }
   const estouro = Object.entries(somaPorItem).filter(([id,q])=>q > posSe(id,orig).saldo + 0.0001).map(([id,q])=>{ const it=item(id); return '• '+it.descricao+': pediu '+fmtN(q)+', saldo '+fmtN(posSe(id,orig).saldo)+' '+it.unidade; });
   if(estouro.length && !confirm('⚠ '+sigla(orig)+' não tem saldo suficiente:\n\n'+estouro.join('\n')+'\n\nO saldo vai ficar negativo. Registrar mesmo assim?')) return;
-  const vencidas = [...new Set(linhas.map(l=>item(l.itemId).ataId))].map(ata).filter(a=>vigencia(a).vencida && data > a.vigenciaFim);
-  if(vencidas.length && !confirm('⚠ '+vencidas.map(a=>'Ata '+a.numero+' venceu em '+fmtData(a.vigenciaFim)).join('\n')+'\n\nSe a ata foi prorrogada, atualize a vigência em "Atas e itens".\n\nRegistrar mesmo assim?')) return;
+  const vencidas = [...new Set(linhas.map(l=>item(l.itemId).ataId))].map(ata).filter(a=>vigencia(a).vencida && data > fimVigente(a));
+  if(vencidas.length && !confirm('⚠ '+vencidas.map(a=>'Ata '+a.numero+' venceu em '+fmtData(fimVigente(a))).join('\n')+'\n\nSe a ata foi renovada, registre a renovação em "Atas e itens".\n\nRegistrar mesmo assim?')) return;
   const novas = [];
   let eventoId = '';
   if(evtNome){
@@ -628,7 +631,8 @@ function renderAtas(){
       <div class="fo">${esc(a.fornecedor)}<small>${esc(a.objeto)}</small></div>
       <span class="chip ${v.cls}">${esc(v.txt)}</span><span style="font-size:12px;font-weight:700;color:#4cd98a;min-width:120px;text-align:right">${fmtBRL(saldoV)}</span></div>`;
     if(aberta){
-      h += `<div style="padding:0 16px 14px"><div style="font-size:11px;color:var(--sub);margin-bottom:10px">Processo: ${esc(a.processo||'—')} · Vigência: ${fmtData(a.vigenciaInicio)} a ${fmtData(a.vigenciaFim)}
+      h += `<div style="padding:0 16px 14px"><div style="font-size:11px;color:var(--sub);margin-bottom:10px">Processo: ${esc(a.processo||'—')} · Vigência original: ${fmtData(a.vigenciaInicio)} a ${fmtData(a.vigenciaFim)}${(a.renovacoes||[]).map(r=>` · <b style="color:#4cd98a">Renovada até ${fmtData(r.ate)}</b>${r.termo?' ('+esc(r.termo)+')':''}`).join('')}
+        ${podeEditar()?` · <a href="#" style="color:var(--gold)" onclick="event.preventDefault();renovarAta('${a.id}')">🔄 registrar renovação</a>`:''}
         ${isAdmin()?` · <a href="#" style="color:var(--gold)" onclick="event.preventDefault();editarAta('${a.id}')">editar ata</a> · <a href="#" style="color:var(--gold)" onclick="event.preventDefault();editarItem(null,'${a.id}')">＋ novo item</a>`:''}</div>
         <div class="tbl-wrap"><table class="mtx"><thead><tr><th>Código</th><th>Item</th><th>Unid.</th><th class="n">Valor unit.</th><th class="n">Registrado</th><th class="n">Distribuído</th><th class="n">Consumido</th><th class="n">Saldo</th>${isAdmin()?'<th></th>':''}</tr></thead><tbody>`;
       its.forEach(it=>{ const r=resumoItem(it); const dif = Math.abs(r.dist-r.reg)>0.0001;
@@ -641,13 +645,46 @@ function renderAtas(){
   });
   $('main').innerHTML = h;
 }
+function renovarAta(id){
+  if(!podeEditar()) return;
+  const a = ata(id); const rs = (a.renovacoes||[]).slice().sort((x,y)=>x.ate.localeCompare(y.ate));
+  const sugestao = (()=>{ const f=fimVigente(a); if(!f) return ''; const d=parseData(f); d.setFullYear(d.getFullYear()+1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+  let h = `<div class="modal-tit">Renovação da ata ${esc(a.numero)}</div><div class="modal-sub">${esc(a.fornecedor)}<br>Vigência original: ${fmtData(a.vigenciaInicio)} a ${fmtData(a.vigenciaFim)}</div>`;
+  if(rs.length){
+    h += `<div class="det-sec" style="margin-top:0;border-top:none;padding-top:0">Renovações registradas</div>`;
+    rs.forEach((r,i)=>{ h += `<div class="anx"><span class="badge">${i+1}ª</span><span class="nm" style="cursor:default">Renovada até <b>${fmtData(r.ate)}</b>${r.termo?' · '+esc(r.termo):''}${r.obs?'<br><span style="color:var(--sub);font-size:11px">'+esc(r.obs)+'</span>':''}</span><span style="font-size:10px;color:var(--sub)">${esc(r.por||'')} · ${r.em?new Date(r.em).toLocaleDateString('pt-BR'):''}</span>${isAdmin()?`<button class="btn btn-rose btn-sm" title="Remover" onclick="removerRenovacao('${id}','${r.id}')">✕</button>`:''}</div>`; });
+  }
+  h += `<div class="det-sec">Nova renovação</div><div class="fgrid">
+    <div class="fg"><label>Renovada até <span class="req">*</span></label><input type="date" id="rn-ate" value="${sugestao}"></div>
+    <div class="fg"><label>Nº do termo aditivo / processo</label><input id="rn-termo" placeholder="ex.: 1º Termo Aditivo"></div>
+    <div class="fg full"><label>Observação</label><input id="rn-obs"></div></div>
+    <div class="msg-erro" id="rn-erro"></div>
+    <div class="mfooter"><button class="btn btn-ghost" onclick="fechar('ov-b')">Fechar</button><button class="btn btn-teal" onclick="salvarRenovacao('${id}')">Registrar renovação</button></div>`;
+  $('box-b').innerHTML = h; abrir('ov-b');
+}
+async function salvarRenovacao(id){
+  const a = ata(id); const ate = $('rn-ate').value;
+  if(!ate){ $('rn-erro').textContent='Informe até quando a ata foi renovada.'; $('rn-erro').style.display='block'; return; }
+  const atual = fimVigente(a);
+  if(atual && ate <= atual){ $('rn-erro').textContent='A nova data precisa ser depois da vigência atual ('+fmtData(atual)+').'; $('rn-erro').style.display='block'; return; }
+  const antes = JSON.stringify(base);
+  a.renovacoes = (a.renovacoes||[]).concat([{ id:novoId(), ate, termo:$('rn-termo').value.trim(), obs:$('rn-obs').value.trim(), em:new Date().toISOString(), por:nomeUsuario() }]);
+  try { await salvarBase(); fechar('ov-b'); toast('🔄 Ata '+a.numero+' renovada até '+fmtData(ate)); renderTudo(); } catch(e){ base = JSON.parse(antes); }
+}
+async function removerRenovacao(id, rid){
+  const a = ata(id); const r = a.renovacoes.find(x=>x.id===rid);
+  if(!confirm('Remover a renovação até '+fmtData(r.ate)+' da ata '+a.numero+'?')) return;
+  const antes = JSON.stringify(base);
+  a.renovacoes = a.renovacoes.filter(x=>x.id!==rid);
+  try { await salvarBase(); renovarAta(id); renderTudo(); } catch(e){ base = JSON.parse(antes); }
+}
 function campoF(id,l,v,t,req,extra){ return `<div class="fg${extra&&extra.full?' full':''}"><label>${l}${req?' <span class="req">*</span>':''}</label><input id="${id}" type="${t||'text'}" value="${esc(v==null?'':v)}" ${extra&&extra.ph?`placeholder="${esc(extra.ph)}"`:''}></div>`; }
 function editarAta(id){
   const a = id ? ata(id) : {};
   $('box-b').innerHTML = `<div class="modal-tit">${id?'Editar ata '+esc(a.numero):'Nova ata'}</div><div class="modal-sub">Depois de criar, adicione os itens e distribua as quantidades entre as secretarias.</div><div class="fgrid">
     ${campoF('ea-num','Nº da ata',a.numero,'text',true,{ph:'ex.: 154/2025'})}${campoF('ea-forn','Fornecedor',a.fornecedor,'text',true)}
     ${campoF('ea-obj','Objeto',a.objeto,'text',false,{full:true})}${campoF('ea-proc','Processo / pregão',a.processo,'text',false,{full:true})}
-    ${campoF('ea-ini','Vigência: início',a.vigenciaInicio,'date')}${campoF('ea-fim','Vigência: fim (atualize se for prorrogada)',a.vigenciaFim,'date')}</div>
+    ${campoF('ea-ini','Vigência: início',a.vigenciaInicio,'date')}${campoF('ea-fim','Vigência original: fim',a.vigenciaFim,'date')}</div>
     <div class="msg-erro" id="ea-erro"></div><div class="mfooter"><button class="btn btn-ghost" onclick="fechar('ov-b')">Cancelar</button><button class="btn btn-teal" onclick="salvarAta(${id?`'${id}'`:'null'})">Salvar</button></div>`;
   abrir('ov-b');
 }
