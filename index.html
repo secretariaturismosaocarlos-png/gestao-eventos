@@ -309,9 +309,9 @@ async function logout() {
 
 async function getContatoAdminAtual() {
   try {
-    const temps = await sbGet('usuarios_permissoes', 'role=eq.admin_temp&ativo=eq.true&select=nome,email&order=criado_em.desc');
-    if (temps && temps.length) {
-      return { email: temps[0].email, label: temps[0].email + ' (Admin Temporário)' };
+    const c = await sbRpc('contato_admin');
+    if (c && c.email) {
+      return { email: c.email, label: c.email + (c.temp ? ' (Admin Temporário)' : '') };
     }
   } catch(e) {}
   return { email: ADMIN_EMAIL, label: ADMIN_EMAIL };
