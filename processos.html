@@ -702,7 +702,8 @@ async function importarFornAtas(){
 function anexoAF(p){ const a=(p.anexos||[]).filter(x=>x.cat==='AF'); return a.length ? a[a.length-1] : null; }
 function linkDocumento(p, a){ return location.href.replace(/[?#].*$/,'').replace(/[^/]*$/,'') + 'documento.html?d=' + encodeURIComponent(p.id+'_'+a.id); }
 function textoMensagem(tipo, p, link, dataPrevista){
-  const assin = '\n\nAtenciosamente,\n'+nomeUsuario()+'\nSecretaria Municipal de Cultura e Turismo\nPrefeitura Municipal de São Carlos';
+  // assina quem é o responsável pelo processo; se o campo estiver vazio, assina quem está logado
+  const assin = '\n\nAtenciosamente,\n'+((p.responsavel||'').trim() || nomeUsuario())+'\nSecretaria Municipal de Cultura e Turismo\nPrefeitura Municipal de São Carlos';
   const f = fornDoProc(p); const ola = 'Olá'+(f&&f.contato?', '+f.contato.split(' ')[0]:'')+'!';
   if(tipo==='af') return ola+'\n\nSegue a Autorização de Fornecimento (AF) nº '+(p.numAF||'')+', referente ao processo nº '+p.numProcesso+' ('+p.objeto+').'+
     (link?'\n\nPDF da AF: '+link:'')+(dataPrevista?'\n\nData prevista para a entrega / realização do serviço: '+fmtData(dataPrevista)+'.':'')+
