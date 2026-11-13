@@ -140,6 +140,9 @@ tr.click:hover td{background:var(--ink3);cursor:pointer}
 .bloqueio{max-width:440px;margin:90px auto;text-align:center;background:var(--ink2);border:1px solid var(--border);border-radius:16px;padding:36px}
 .bloqueio h2{font-family:var(--serif);font-weight:400;color:#fff;margin:10px 0}
 .bloqueio p{font-size:13px;color:var(--muted);margin-bottom:18px}
+.seg{display:inline-flex;background:var(--ink);border:1.5px solid var(--border);border-radius:10px;padding:3px;gap:3px}
+.seg label{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap}
+.seg label:hover{color:#fff}.seg label.on{background:var(--teal);color:#fff}
 .legenda{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:12px}
 .legenda span{display:flex;align-items:center;gap:6px}
 .legenda i{width:10px;height:10px;border-radius:3px;display:inline-block}
@@ -182,7 +185,7 @@ tr.click:hover td{background:var(--ink3);cursor:pointer}
   <div class="tabs">
     <div class="tab active" id="tab-hoje" onclick="setTab('hoje')">✅ O que fazer hoje <span class="cnt" id="cnt-hoje" style="display:none">0</span></div>
     <div class="tab" id="tab-quadro" onclick="setTab('quadro')">🗂 Quadro de etapas</div>
-    <div class="tab" id="tab-lista" onclick="setTab('lista')">📋 Lista</div>
+    <div class="tab" id="tab-lista" onclick="setTab('lista')">🗂 Consultar processos</div>
     <div class="tab" id="tab-forn" onclick="setTab('forn')">🏢 Fornecedores</div>
   </div>
   <div class="main" id="main"></div>
@@ -416,7 +419,9 @@ function renderHoje(){
     <div class="sc gold"><div class="sc-lbl">Pagos no mês</div><div class="sc-val">${pagosMes.length}</div><div class="sc-sub">${fmtBRL(pagosMes.reduce((s,p)=>s+(Number(p.valorNF)||0),0))}</div></div>
   </div>`;
   const comItens = grupos.filter(g=>g.itens.length);
-  if(!at.length){
+  if(!at.length && Object.keys(processos).length){
+    h += `<div class="tudo-ok">✅ Nenhum processo em andamento agora.<br><span style="font-size:12px;color:var(--muted)">Os processos concluídos e cancelados ficam guardados para consulta.</span><br><br><button class="btn btn-ghost" onclick="cons.status='todos';setTab('lista')">🗂 Consultar processos</button> ${podeEditar()?'<button class="btn btn-teal" onclick="abrirForm()">＋ Novo processo</button>':''}</div>`;
+  } else if(!at.length){
     h += `<div class="tudo-ok">Nenhum processo cadastrado ainda.<br><br>${podeEditar()?'<button class="btn btn-teal" onclick="abrirForm()">＋ Cadastrar o primeiro processo</button>':''}</div>`;
   } else if(!comItens.length){
     h += `<div class="tudo-ok">✅ Tudo em dia. Nenhuma pendência para hoje.</div>`;
@@ -491,23 +496,65 @@ function renderQuadro(){
   $('main').innerHTML = h;
 }
 
+// ── Consultar processos: histórico completo, em lista ou em cards ──
+let cons = { status:'todos', vis:(()=>{ try{ return localStorage.getItem('proc_vis')||'cards'; }catch(e){ return 'cards'; } })(), ano:'' };
+function statusDe(p){ return p.cancelado ? 'cancelados' : p.etapa==='pago' ? 'concluidos' : 'andamento'; }
+function consultaFiltrada(){
+  const q = norm(filtro.q);
+  return Object.values(processos).filter(p=>{
+    if(cons.status!=='todos' && statusDe(p)!==cons.status) return false;
+    if(cons.ano && String(p.dataAbertura||'').slice(0,4)!==cons.ano) return false;
+    if(filtro.tipo && p.tipo!==filtro.tipo) return false;
+    if(q && !norm([p.numProcesso,p.objeto,p.fornecedor,p.numEmpenho,p.numAF,p.numNF,p.numSolicitacao,p.evento,p.responsavel].join(' ')).includes(q)) return false;
+    return true;
+  }).sort((a,b)=>(b.dataPagamento||b.atualizadoEm||b.dataAbertura||'').localeCompare(a.dataPagamento||a.atualizadoEm||a.dataAbertura||''));
+}
+function setVis(v){ cons.vis=v; try{ localStorage.setItem('proc_vis',v); }catch(e){} renderTudo(); }
 function renderLista(){
-  const lista = filtrados().sort((a,b)=>(b.dataAbertura||'').localeCompare(a.dataAbertura||''));
-  let h = barraFiltros(true);
-  h += `<div class="tbl-wrap"><table><thead><tr><th>Processo</th><th>Tipo</th><th>Objeto</th><th>Fornecedor</th><th>Valor</th><th>Etapa</th><th>Situação</th><th>Abertura</th></tr></thead><tbody>`;
-  if(!lista.length) h += `<tr><td colspan="8" style="text-align:center;color:var(--sub);padding:24px">Nenhum processo encontrado.</td></tr>`;
-  lista.forEach(p=>{ const s=situacao(p);
-    h += `<tr class="click" onclick="abrirDetalhe('${p.id}')"><td style="font-weight:800;color:var(--gold)">${esc(p.numProcesso)}</td><td>${esc(p.tipo)}</td><td>${esc(p.objeto)}</td><td>${esc(p.fornecedor||'—')}</td>
-      <td style="white-space:nowrap">${fmtBRL(p.valorNF||p.valorEmpenho||p.valorEstimado)}</td><td>${p.cancelado?'Cancelado':esc(ETAPAS[IDX[p.etapa]].nome)}</td><td><span class="chip ${s.cls}">${esc(s.txt)}</span></td><td>${fmtData(p.dataAbertura)}</td></tr>`;
-  });
-  h += `</tbody></table></div><div style="font-size:11px;color:var(--sub);margin-top:8px">${lista.length} processo(s)</div>`;
+  const todos = Object.values(processos);
+  const cont = { todos:todos.length, andamento:0, concluidos:0, cancelados:0 }; todos.forEach(p=>cont[statusDe(p)]++);
+  const anos = [...new Set(todos.map(p=>String(p.dataAbertura||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  const lista = consultaFiltrada();
+  const pill = (k,l) => `<button class="btn btn-sm ${cons.status===k?'btn-teal':'btn-ghost'}" onclick="cons.status='${k}';renderTudo()">${l} <span style="opacity:.75">${cont[k]}</span></button>`;
+  let h = `<div class="filtros" style="justify-content:space-between">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${pill('todos','Todos')}${pill('andamento','⏳ Em andamento')}${pill('concluidos','✅ Concluídos')}${pill('cancelados','✕ Cancelados')}</div>
+      <div class="seg" style="width:auto;padding:3px"><label class="${cons.vis==='cards'?'on':''}" style="padding:6px 14px" onclick="setVis('cards')">▦ Cards</label><label class="${cons.vis==='lista'?'on':''}" style="padding:6px 14px" onclick="setVis('lista')">☰ Lista</label></div></div>
+    <div class="filtros"><input id="f-q" placeholder="🔍 Buscar nº do processo, objeto, fornecedor, empenho, AF, NF, evento..." value="${esc(filtro.q)}" oninput="filtro.q=this.value;atualizarFiltro()">
+      <select onchange="filtro.tipo=this.value;renderTudo()"><option value="">Todos os tipos</option>${TIPOS.map(t=>`<option ${filtro.tipo===t?'selected':''}>${t}</option>`).join('')}</select>
+      <select onchange="cons.ano=this.value;renderTudo()"><option value="">Todos os anos</option>${anos.map(a=>`<option ${cons.ano===a?'selected':''}>${a}</option>`).join('')}</select>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="exportarCSV()">⬇ Exportar planilha (CSV)</button></div>`;
+  if(!lista.length){ h += `<div class="tudo-ok" style="background:var(--ink2);border-color:var(--border);color:var(--muted)">Nenhum processo encontrado com esses filtros.</div>`; $('main').innerHTML = h; return; }
+  const valor = p => p.valorNF||p.valorEmpenho||p.valorEstimado;
+  const selo = p => p.cancelado ? `<span class="chip neutro">✕ Cancelado</span>` : p.etapa==='pago' ? `<span class="chip pago">✅ Pago em ${fmtData(p.dataPagamento)}</span>` : `<span class="chip ${situacao(p).cls}">${esc(ETAPAS[IDX[p.etapa]].nome)}</span>`;
+  if(cons.vis==='lista'){
+    h += `<div class="tbl-wrap"><table><thead><tr><th>Processo</th><th>Tipo</th><th>Objeto</th><th>Fornecedor</th><th class="n">Valor</th><th>Situação</th><th>Aberto em</th><th>AF · NF</th></tr></thead><tbody>`;
+    lista.forEach(p=>{ h += `<tr class="click" onclick="abrirDetalhe('${p.id}')"><td style="font-weight:800;color:var(--gold);white-space:nowrap">${esc(p.numProcesso)}</td><td>${esc(p.tipo)}</td><td>${esc(p.objeto)}</td><td>${esc(p.fornecedor||'—')}</td>
+      <td class="n" style="white-space:nowrap">${fmtBRL(valor(p))}</td><td>${selo(p)}</td><td style="white-space:nowrap">${fmtData(p.dataAbertura)}</td><td style="white-space:nowrap;font-size:11px;color:var(--muted)">${esc(p.numAF?'AF '+p.numAF:'—')}${p.numNF?' · NF '+esc(p.numNF):''}</td></tr>`; });
+    h += `</tbody></table></div>`;
+  } else {
+    h += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">`;
+    lista.forEach(p=>{
+      const i = p.cancelado ? -1 : IDX[p.etapa]; const pct = p.cancelado ? 0 : Math.round(i/(ETAPAS.length-1)*100);
+      const cor = p.cancelado ? 'var(--border)' : p.etapa==='pago' ? 'var(--blue)' : 'var(--teal)';
+      h += `<div class="card ${p.cancelado?'neutro':p.etapa==='pago'?'pago':situacao(p).cls}" style="padding:14px 16px;${p.cancelado?'opacity:.7':''}" onclick="abrirDetalhe('${p.id}')">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="np" style="font-size:13px">Processo ${esc(p.numProcesso)}</span><span class="badge">${esc(p.tipo)}</span></div>
+        <div class="ob" style="font-size:13px;margin:8px 0 4px;min-height:35px">${esc(p.objeto)}</div>
+        <div class="fo">${esc(p.fornecedor||'Fornecedor não informado')}</div>
+        <div style="height:5px;background:var(--ink3);border-radius:3px;margin:12px 0 10px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${cor}"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">${selo(p)}<span class="vl" style="font-size:13px">${fmtBRL(valor(p))}</span></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:10px;color:var(--sub)"><span>Aberto ${fmtData(p.dataAbertura)}</span>${p.numEmpenho?`<span>Empenho ${esc(p.numEmpenho)}</span>`:''}${p.numAF?`<span>AF ${esc(p.numAF)}</span>`:''}${p.numNF?`<span>NF ${esc(p.numNF)}</span>`:''}${(p.anexos||[]).length?`<span>📎 ${(p.anexos||[]).length}</span>`:''}</div>
+      </div>`;
+    });
+    h += `</div>`;
+  }
+  h += `<div style="font-size:11px;color:var(--sub);margin-top:10px">${lista.length} processo(s) · clique para ver tudo, com documentos e histórico</div>`;
   $('main').innerHTML = h;
 }
 
 function exportarCSV(){
   const cols = [['numProcesso','Processo'],['tipo','Tipo'],['objeto','Objeto'],['fornecedor','Fornecedor'],['evento','Evento'],['responsavel','Responsável'],['dataAbertura','Abertura'],['valorEstimado','Valor estimado'],['numEmpenho','Empenho'],['valorEmpenho','Valor empenho'],['numAF','AF'],['dataAF','Data AF'],['afEnviadaEm','AF enviada em'],['dataPrevista','Entrega prevista'],['dataEntrega','Entregue em'],['numNF','NF'],['valorNF','Valor NF'],['dataNF','NF recebida em'],['dataContabilidade','Enviado contabilidade'],['dataPagamento','Pago em']];
   const linhas = [cols.map(c=>c[1]).concat(['Etapa','Situação'])];
-  filtrados().forEach(p=>{ linhas.push(cols.map(c=>{ const v=p[c[0]]; if(v==null) return ''; if(c[0].startsWith('valor')) return String(v).replace('.',','); if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return fmtData(v); return v; }).concat([p.cancelado?'Cancelado':ETAPAS[IDX[p.etapa]].nome, situacao(p).txt])); });
+  (tabAtual==='lista'?consultaFiltrada():filtrados()).forEach(p=>{ linhas.push(cols.map(c=>{ const v=p[c[0]]; if(v==null) return ''; if(c[0].startsWith('valor')) return String(v).replace('.',','); if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return fmtData(v); return v; }).concat([p.cancelado?'Cancelado':ETAPAS[IDX[p.etapa]].nome, situacao(p).txt])); });
   const csv = '﻿'+linhas.map(l=>l.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download = 'processos_'+hojeISO()+'.csv'; a.click();
 }
