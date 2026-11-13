@@ -257,7 +257,7 @@ function diasAte(s){ return Math.round((parseData(s)-parseData(hojeISO()))/86400
 function fmtData(s){ if(!s) return '—'; const [y,m,d]=s.split('-'); return d+'/'+m+'/'+y; }
 function fmtBRL(v){ return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function fmtN(v){ return Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:2}); }
-function parseNum(s){ if(s==null) return null; s=String(s).trim().replace(/R\$\s?/,''); if(!s) return null; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isNaN(n)?null:n; }
+function parseNum(s){ if(s==null) return null; s=String(s).trim().replace(/R\$\s?/,''); if(!s) return null; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); else if(/^-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,''); const n=parseFloat(s); return isNaN(n)?null:n; }
 function novoId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function nomeUsuario(){
   // relê o perfil a cada uso: se o nome foi alterado no portal, vale na hora, mesmo com esta página já aberta
@@ -303,6 +303,40 @@ function vigencia(a){
   if(nivel) return { cls:NIVEIS[nivel].cls, txt:pre+'Vence em '+fmtData(fim)+' · '+d+' dias', vencida:false, ren, nivel, fim };
   return { cls:'ok', txt:(ren?'🔄 Renovada até ':'Vigente até ')+fmtData(fim), vencida:false, ren, nivel:null, fim };
 }
+
+// ═══════════════ MÁSCARA DE VALORES (R$ e quantidades) ═══════════════
+// Enquanto digita: 37235 → 37.235 · 37235,5 → 37.235,5 · ao sair do campo (R$): 37.235,00
+// O ponto é colocado sozinho; a vírgula separa os centavos (o ponto do teclado numérico vira vírgula).
+function formatarNumeroBR(txt, maxDec){
+  let s = String(txt||'').replace(/[^\d.,]/g,'');
+  if(!s.includes(',') && /\.\d{1,2}$/.test(s) && (s.match(/\./g)||[]).length===1 && !/^\d{1,3}\.\d{3}$/.test(s)) s = s.replace(/\.(\d{1,2})$/, ',$1');
+  s = s.replace(/\./g,'');
+  const i = s.indexOf(',');
+  let int = i>=0 ? s.slice(0,i) : s, dec = i>=0 ? s.slice(i+1).replace(/,/g,'').slice(0, maxDec) : null;
+  int = int.replace(/^0+(?=\d)/,'');
+  if(int==='' && dec!==null) int = '0';
+  int = int.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  return dec!==null ? int+','+dec : int;
+}
+function aplicarMascara(el){
+  const maxDec = el.classList.contains('money') ? 2 : (parseInt(el.dataset.dec)||2);
+  const pos = el.selectionStart==null ? el.value.length : el.selectionStart;
+  const antes = el.value.slice(0,pos).replace(/[^\d,]/g,'').length;   // dígitos e vírgula antes do cursor
+  const novo = formatarNumeroBR(el.value, maxDec);
+  if(novo===el.value) return;
+  el.value = novo;
+  let n=0, p=0; while(p<novo.length && n<antes){ if(/[\d,]/.test(novo[p])) n++; p++; }
+  try { el.setSelectionRange(p,p); } catch(e){}
+}
+document.addEventListener('keydown', e=>{
+  const el = e.target; if(!el.classList || !(el.classList.contains('money')||el.classList.contains('numero'))) return;
+  if(e.key==='.' || e.key==='Decimal'){ e.preventDefault(); if(!el.value.includes(',')){ const p=el.selectionStart; el.value = el.value.slice(0,p)+','+el.value.slice(el.selectionEnd); el.setSelectionRange(p+1,p+1); aplicarMascara(el); } }
+});
+document.addEventListener('input', e=>{ const el=e.target; if(el.classList && (el.classList.contains('money')||el.classList.contains('numero'))) aplicarMascara(el); });
+document.addEventListener('focusout', e=>{
+  const el=e.target; if(!el.classList || !el.classList.contains('money') || !el.value.trim()) return;
+  const n = parseNum(el.value); if(n!=null) el.value = n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+});
 
 // ═══════════════ SUPABASE ═══════════════
 const H = () => ({ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Content-Type':'application/json' });
@@ -578,7 +612,7 @@ function renderLinhas(){
       <div class="fg"><label>Ata</label><select id="ln-ata-${i}" onchange="movLinhas[${i}].itemId='';renderLinhas()"><option value="">Ata...</option>${base.atas.map(a=>`<option value="${a.id}" ${l.ataId===a.id?'selected':''}>${esc(a.numero)}${vigencia(a).vencida?' (vencida)':''}</option>`).join('')}</select></div>
       <div class="fg"><label>Item</label><select id="ln-it-${i}" onchange="renderLinhas()"><option value="">${l.ataId?'Escolha o item...':'Escolha a ata primeiro'}</option>${its.map(x=>{ const px=orig?posSe(x.id,orig):null; return `<option value="${x.id}" ${l.itemId===x.id?'selected':''}>${esc(x.codigo)} — ${esc(x.descricao)}${px?' · saldo '+fmtN(px.saldo):''}</option>`; }).join('')}</select>
         ${p&&it?`<div style="font-size:10px;margin-top:4px;color:${p.saldo>0?'#4cd98a':'#f07a7a'}">Saldo de ${esc(sigla(orig))}: ${fmtN(p.saldo)} ${esc(it.unidade)}</div>`:''}</div>
-      <div class="fg"><label>Quantidade${it?' ('+esc(it.unidade)+')':''}</label><input id="ln-q-${i}" inputmode="decimal" value="${esc(l.qtd)}"></div>
+      <div class="fg"><label>Quantidade${it?' ('+esc(it.unidade)+')':''}</label><input id="ln-q-${i}" class="numero" inputmode="decimal" value="${esc(l.qtd)}"></div>
       <button class="btn btn-rose btn-sm" style="height:38px" title="Remover" onclick="lerLinhasDoForm();movLinhas.splice(${i},1);if(!movLinhas.length)movLinhas.push({ataId:'',itemId:'',qtd:''});renderLinhas()">✕</button></div>`;
   }).join('');
 }
@@ -721,8 +755,8 @@ function editarItem(id, ataId){
   $('box-b').innerHTML = `<div class="modal-tit">${id?'Editar item':'Novo item'}</div><div class="modal-sub">Ata ${esc((ata(it.ataId)||{}).numero)}</div><div class="fgrid">
     ${campoF('ei-cod','Código',it.codigo,'text',true)}${campoF('ei-un','Unidade',it.unidade,'text',true,{ph:'ex.: Unid/Dia, Horas, m²'})}
     ${campoF('ei-desc','Descrição',it.descricao,'text',true,{full:true})}
-    <div class="fg"><label>Valor unitário (R$) <span class="req">*</span></label><input id="ei-vu" inputmode="decimal" value="${it.valorUnitario!=null?Number(it.valorUnitario).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4}):''}"></div>
-    <div class="fg"><label>Quantidade registrada na ata <span class="req">*</span></label><input id="ei-qtd" inputmode="decimal" value="${it.qtdRegistrada!=null?fmtN(it.qtdRegistrada):''}"></div></div>
+    <div class="fg"><label>Valor unitário (R$) <span class="req">*</span></label><input id="ei-vu" class="numero" data-dec="4" inputmode="decimal" value="${it.valorUnitario!=null?Number(it.valorUnitario).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4}):''}"></div>
+    <div class="fg"><label>Quantidade registrada na ata <span class="req">*</span></label><input id="ei-qtd" class="numero" inputmode="decimal" value="${it.qtdRegistrada!=null?fmtN(it.qtdRegistrada):''}"></div></div>
     <div class="msg-erro" id="ei-erro"></div><div class="mfooter"><button class="btn btn-ghost" onclick="fechar('ov-b')">Cancelar</button><button class="btn btn-teal" onclick="salvarItem(${id?`'${id}'`:'null'},'${it.ataId}')">Salvar</button></div>`;
   abrir('ov-b');
 }
@@ -736,7 +770,7 @@ async function salvarItem(id, ataId){
 function editarDistribuicao(itemId){
   const it = item(itemId); const r = resumoItem(it);
   let h = `<div class="modal-tit">Distribuição inicial</div><div class="modal-sub">${esc(it.descricao)} · Ata ${esc(ata(it.ataId).numero)}<br>Quanto cada secretaria recebeu pela planilha quantitativa. Registrado na ata: <b style="color:#fff">${fmtN(it.qtdRegistrada)} ${esc(it.unidade)}</b>.</div><div class="fgrid">`;
-  base.secretarias.forEach(s=>{ const p=posSe(itemId,s.id); h += `<div class="fg"><label title="${esc(s.nome)}">${esc(s.sigla)}${p.con||p.sai||p.ent?` <span style="color:var(--sub);text-transform:none">(usado ${fmtN(p.con+p.sai)})</span>`:''}</label><input class="dist-in" data-sec="${s.id}" inputmode="decimal" value="${p.ini?fmtN(p.ini):''}" oninput="somaDist(${Number(it.qtdRegistrada)||0})"></div>`; });
+  base.secretarias.forEach(s=>{ const p=posSe(itemId,s.id); h += `<div class="fg"><label title="${esc(s.nome)}">${esc(s.sigla)}${p.con||p.sai||p.ent?` <span style="color:var(--sub);text-transform:none">(usado ${fmtN(p.con+p.sai)})</span>`:''}</label><input class="dist-in numero" data-sec="${s.id}" inputmode="decimal" value="${p.ini?fmtN(p.ini):''}" oninput="somaDist(${Number(it.qtdRegistrada)||0})"></div>`; });
   h += `</div><div id="dist-soma" style="font-size:12px;margin-top:12px"></div><div class="mfooter"><button class="btn btn-ghost" onclick="fechar('ov-b')">Cancelar</button><button class="btn btn-teal" onclick="salvarDistribuicao('${itemId}')">Salvar distribuição</button></div>`;
   $('box-b').innerHTML = h; abrir('ov-b'); somaDist(Number(it.qtdRegistrada)||0);
 }

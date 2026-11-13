@@ -294,7 +294,7 @@ function diasEntre(a,b){ return Math.round((parseData(b)-parseData(a))/86400000)
 function fmtData(s){ if(!s) return '—'; const [y,m,d]=s.split('-'); return d+'/'+m+'/'+y; }
 function fmtDH(iso){ const d=new Date(iso); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function fmtBRL(v){ return (v==null||v==='')?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-function parseBRL(s){ if(s==null) return null; s=String(s).trim().replace(/R\$\s?/,''); if(!s) return null; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isNaN(n)?null:n; }
+function parseBRL(s){ if(s==null) return null; s=String(s).trim().replace(/R\$\s?/,''); if(!s) return null; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); else if(/^-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,''); const n=parseFloat(s); return isNaN(n)?null:n; }
 function moneyInput(v){ return v==null?'':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function novoId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function nomeUsuario(){
@@ -309,6 +309,40 @@ function fechar(id){ $(id).classList.remove('open'); if(id==='ov-det') detId=nul
 function sync(st){ const el=$('sync'); const m={saving:['⏳ Salvando...','#1a3a6a'],saved:['☁ Salvo','#1e4d30'],error:['⚠ Erro ao salvar','#8b1a1a'],live:['🔄 Atualizado','#1a3a6a']}[st]; el.textContent=m[0]; el.style.background=m[1]; el.style.opacity='1'; clearTimeout(window._st); if(st!=='saving'&&st!=='error') window._st=setTimeout(()=>el.style.opacity='0',2200); }
 function lerValor(v){ if(typeof v==='string'){ try{ return JSON.parse(v); }catch(e){ return null; } } return v; }
 function prazoDe(etapaId){ return prazos[etapaId]!=null ? prazos[etapaId] : ETAPAS[IDX[etapaId]].prazo; }
+
+// ═══════════════ MÁSCARA DE VALORES (R$ e quantidades) ═══════════════
+// Enquanto digita: 37235 → 37.235 · 37235,5 → 37.235,5 · ao sair do campo (R$): 37.235,00
+// O ponto é colocado sozinho; a vírgula separa os centavos (o ponto do teclado numérico vira vírgula).
+function formatarNumeroBR(txt, maxDec){
+  let s = String(txt||'').replace(/[^\d.,]/g,'');
+  if(!s.includes(',') && /\.\d{1,2}$/.test(s) && (s.match(/\./g)||[]).length===1 && !/^\d{1,3}\.\d{3}$/.test(s)) s = s.replace(/\.(\d{1,2})$/, ',$1');
+  s = s.replace(/\./g,'');
+  const i = s.indexOf(',');
+  let int = i>=0 ? s.slice(0,i) : s, dec = i>=0 ? s.slice(i+1).replace(/,/g,'').slice(0, maxDec) : null;
+  int = int.replace(/^0+(?=\d)/,'');
+  if(int==='' && dec!==null) int = '0';
+  int = int.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  return dec!==null ? int+','+dec : int;
+}
+function aplicarMascara(el){
+  const maxDec = el.classList.contains('money') ? 2 : (parseInt(el.dataset.dec)||2);
+  const pos = el.selectionStart==null ? el.value.length : el.selectionStart;
+  const antes = el.value.slice(0,pos).replace(/[^\d,]/g,'').length;   // dígitos e vírgula antes do cursor
+  const novo = formatarNumeroBR(el.value, maxDec);
+  if(novo===el.value) return;
+  el.value = novo;
+  let n=0, p=0; while(p<novo.length && n<antes){ if(/[\d,]/.test(novo[p])) n++; p++; }
+  try { el.setSelectionRange(p,p); } catch(e){}
+}
+document.addEventListener('keydown', e=>{
+  const el = e.target; if(!el.classList || !(el.classList.contains('money')||el.classList.contains('numero'))) return;
+  if(e.key==='.' || e.key==='Decimal'){ e.preventDefault(); if(!el.value.includes(',')){ const p=el.selectionStart; el.value = el.value.slice(0,p)+','+el.value.slice(el.selectionEnd); el.setSelectionRange(p+1,p+1); aplicarMascara(el); } }
+});
+document.addEventListener('input', e=>{ const el=e.target; if(el.classList && (el.classList.contains('money')||el.classList.contains('numero'))) aplicarMascara(el); });
+document.addEventListener('focusout', e=>{
+  const el=e.target; if(!el.classList || !el.classList.contains('money') || !el.value.trim()) return;
+  const n = parseBRL(el.value); if(n!=null) el.value = n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+});
 
 // ═══════════════ SUPABASE ═══════════════
 const H = () => ({ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Content-Type':'application/json' });
@@ -635,7 +669,7 @@ function inp(k, l, v, t, extra){
   let ctl;
   if(t==='select') ctl = `<select id="ff-${k}">${extra.vazio?'<option value="">—</option>':''}${extra.op.map(o=>{ const val=typeof o==='object'?o.v:o, txt=typeof o==='object'?o.t:o; return `<option value="${esc(val)}" ${String(v)===String(val)?'selected':''}>${esc(txt)}</option>`; }).join('')}</select>`;
   else if(t==='textarea') ctl = `<textarea id="ff-${k}">${esc(v||'')}</textarea>`;
-  else if(t==='money') ctl = `<input id="ff-${k}" inputmode="decimal" placeholder="0,00" value="${esc(moneyInput(v))}">`;
+  else if(t==='money') ctl = `<input id="ff-${k}" class="money" inputmode="decimal" placeholder="0,00" value="${esc(moneyInput(v))}">`;
   else ctl = `<input id="ff-${k}" type="${t}" value="${esc(v||'')}" ${extra.ph?`placeholder="${esc(extra.ph)}"`:''}>`;
   return `<div class="fg${extra.full?' full':''}" id="fgw-${k}"><label>${l}${req}</label>${ctl}</div>`;
 }
@@ -1102,7 +1136,7 @@ function cardDoc(d){
   const vNF = parseBRL(x.valorNF), vEmp = p ? (parseBRL(x.valorEmpenho) ?? p.valorEmpenho) : parseBRL(x.valorEmpenho);
   if(x.tipo==='Nota fiscal' && vNF!=null && vEmp!=null && Math.abs(vNF-vEmp)>0.009) aviso = `⚠ O valor da NF (${fmtBRL(vNF)}) é diferente do empenho (${fmtBRL(vEmp)}).`;
   if(p && x.fornecedor && p.fornecedor && norm(x.fornecedor).slice(0,12)!==norm(p.fornecedor).slice(0,12)) aviso += (aviso?'<br>':'')+`⚠ O fornecedor do documento (${esc(x.fornecedor)}) parece diferente do processo (${esc(p.fornecedor)}).`;
-  const campo = (k,l,t) => { let v = x[k]; if(t==='money') v = v!=null&&v!==''?moneyInput(parseBRL(v)):''; return `<div class="fg"><label>${esc(l)}</label><input data-doc="${d.id}" data-k="${k}" data-t="${t}" type="${t==='money'?'text':t}" ${t==='money'?'inputmode="decimal"':''} value="${esc(v==null?'':v)}" onchange="lerCamposDoc('${d.id}')"></div>`; };
+  const campo = (k,l,t) => { let v = x[k]; if(t==='money') v = v!=null&&v!==''?moneyInput(parseBRL(v)):''; return `<div class="fg"><label>${esc(l)}</label><input data-doc="${d.id}" data-k="${k}" data-t="${t}" type="${t==='money'?'text':t}" ${t==='money'?'class="money" inputmode="decimal"':''} value="${esc(v==null?'':v)}" onchange="lerCamposDoc('${d.id}')"></div>`; };
   return `<div class="grupo" style="margin:0;padding:16px 18px;${d.duvida&&!d.procId?'border-color:#6b4a10':''}">
     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><b style="color:#fff;word-break:break-all">📄 ${esc(d.file.name)}</b>
       ${d.achadoPor&&d.achadoPor!=='escolhido'?(d.sugestao?`<span class="chip atencao">❓ Sugestão pelo fornecedor: confira o processo</span>`:`<span class="chip ok">✓ Encontrei pelo ${esc(d.achadoPor)}</span>`):''}</div>
@@ -1197,7 +1231,7 @@ function abrirTransicao(id){
     let ctl;
     let v = p[c.k]; if(c.t==='date' && !v) v = hojeISO(); if(c.k==='dataPrevista' && !p.dataPrevista) v = '';
     if(c.t==='select') ctl = `<select id="${id2}"><option value="">Selecione...</option>${c.op.map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select>`;
-    else if(c.t==='money') ctl = `<input id="${id2}" inputmode="decimal" placeholder="0,00" value="${esc(moneyInput(v!=null?v:(c.k==='valorNF'?p.valorEmpenho:null)))}">`;
+    else if(c.t==='money') ctl = `<input id="${id2}" class="money" inputmode="decimal" placeholder="0,00" value="${esc(moneyInput(v!=null?v:(c.k==='valorNF'?p.valorEmpenho:null)))}">`;
     else if(c.t==='file') ctl = `<input id="${id2}" type="file" accept=".pdf,image/*">`;
     else ctl = `<input id="${id2}" type="${c.t}" value="${esc(v||'')}">`;
     h += `<div class="fg${c.full?' full':''}" id="w-${id2}"><label>${esc(c.l)}${req}</label>${ctl}</div>`;
