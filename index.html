@@ -82,7 +82,7 @@ body{font-family:'DM Sans',sans-serif;background:#0f1923;min-height:100vh;displa
 .card.teal .badge{background:#04342c;color:#9fe1cb}
 .no-access{text-align:center;padding:60px 20px;color:#3a4a5a;width:100%}
 .no-access .ico{font-size:48px;margin-bottom:16px}
-.admin-panel{display:none;width:100%;max-width:960px;margin-top:40px;background:#1a2535;border:1px solid #2a3a50;border-radius:16px;overflow:hidden}
+.admin-panel{display:none;width:100%;max-width:1240px;margin-top:40px;background:#1a2535;border:1px solid #2a3a50;border-radius:16px;overflow:hidden}
 .admin-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #2a3a50}
 .admin-hdr h3{font-family:'DM Serif Display',serif;font-size:18px;color:#fff}
 .btn-add{padding:8px 16px;background:#2e7d4f;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
@@ -406,6 +406,7 @@ async function loadUsers() {
   tb.innerHTML = '<div style="text-align:center;padding:16px;color:#3a4a5a"><span class="spin">⚙</span> Carregando...</div>';
   try {
     var users = await sbGet('usuarios_permissoes', 'order=criado_em.asc');
+    _usersCache = users;
     if (!users.length) { tb.innerHTML = '<div style="text-align:center;padding:24px;color:#5a6a7a">Nenhum usuário cadastrado.</div>'; return; }
     users.sort(function(a,b){ return (a.ativo===b.ativo)?0:a.ativo?1:-1; });
     var nPend = users.filter(function(u){ return !u.ativo; }).length;
@@ -437,7 +438,8 @@ function renderUserCard(u) {
   return '<div style="background:'+bg+';border:1.5px solid '+bd+';border-radius:12px;padding:16px 18px;margin-bottom:10px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">'+
     '<div style="min-width:200px;flex:1">'+
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
-        '<span style="font-weight:700;color:#e0e8f0;font-size:13px">'+(u.nome||'—')+'</span>'+
+        '<span style="font-weight:700;color:#e0e8f0;font-size:13px">'+escHtml(u.nome||'—')+'</span>'+
+        '<button title="Editar nome (é o nome que assina as mensagens e aparece nos históricos)" onclick="editarNome(\''+id+'\')" style="background:transparent;border:1px solid #2a3a50;border-radius:6px;color:#8a9bb0;font-size:10px;padding:2px 7px;cursor:pointer;font-family:inherit">✏️ nome</button>'+
         (isPend?'<span style="background:#4a1a2a;color:#f08080;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px">⏳ PENDENTE</span>':'')+
       '</div>'+
       '<div style="font-size:11px;color:#5a6a7a">'+u.email+'</div>'+
@@ -465,6 +467,20 @@ function renderUserCard(u) {
 
 async function toggleAtivo(id, ativo) {
   await savePerm(id, 'ativo', !ativo);
+}
+
+function escHtml(t){ return String(t==null?'':t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let _usersCache = [];
+async function editarNome(id) {
+  const u = _usersCache.find(x => String(x.id) === String(id)) || {};
+  const novo = prompt('Nome que vai aparecer nas assinaturas das mensagens e nos históricos:', u.nome || '');
+  if (novo === null) return;
+  const nome = novo.trim().replace(/\s+/g, ' ');
+  if (nome.length < 3) { toast('❌ Informe um nome com pelo menos 3 letras.'); return; }
+  await savePerm(id, 'nome', nome);
+  if (_curUser && u.user_id === _curUser.id) {
+    try { const p = JSON.parse(localStorage.getItem('smct_perfil') || '{}'); p.nome = nome; localStorage.setItem('smct_perfil', JSON.stringify(p)); } catch(e) {}
+  }
 }
 
 async function savePerm(id, campo, val) {
