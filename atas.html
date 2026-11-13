@@ -259,7 +259,11 @@ function fmtBRL(v){ return Number(v||0).toLocaleString('pt-BR',{style:'currency'
 function fmtN(v){ return Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:2}); }
 function parseNum(s){ if(s==null) return null; s=String(s).trim().replace(/R\$\s?/,''); if(!s) return null; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isNaN(n)?null:n; }
 function novoId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
-function nomeUsuario(){ return perfil.nome || perfil.email || 'Usuário'; }
+function nomeUsuario(){
+  // relê o perfil a cada uso: se o nome foi alterado no portal, vale na hora, mesmo com esta página já aberta
+  try { const p = JSON.parse(localStorage.getItem('smct_perfil')||'{}'); if(p.email===perfil.email && p.nome) perfil.nome = p.nome; } catch(e){}
+  return perfil.nome || perfil.email || 'Usuário';
+}
 function podeEditar(){ return perfil.isAdmin===true || perfil.role==='editor' || perfil.role==='admin' || perfil.role==='admin_temp'; }
 function isAdmin(){ return perfil.isAdmin===true; }
 function toast(msg, erro){ const t=$('toast'); t.textContent=msg; t.className='toast'+(erro?' erro':''); t.style.opacity='1'; clearTimeout(window._tt); window._tt=setTimeout(()=>t.style.opacity='0', 3000); }
